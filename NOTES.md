@@ -264,3 +264,37 @@ type information for qmlcachegen (`CONFIG += qmltypes` in qmake, or CMake's
 `qt_add_qml_module`); typed book/group/author objects instead of `var`. Most of these
 bindings run once when an item is created (layout maths), so the likely gain is in the
 list delegates (`BookRow`, `GroupRow`), created while scrolling.
+
+## Rockchip RK3566 (InkPad One / PB1030)
+
+Tested and working on PocketBook InkPad One (PB1030) with firmware 6.11+. The RK3566
+devices need a separate SDK profile and a shell wrapper around the binary; the
+pocketbook-kit changes for this belong in that repo. This section records what the device
+needs so they can be implemented there.
+
+**ABI — armhf, not armel.** The kernel is aarch64 (`5.10.226pocketbook`) but the
+userland is 32-bit ARM hard-float. The binary must request
+`/lib/ld-linux-armhf.so.3`; one built for soft-float (`/lib/ld-linux.so.3`, as the
+B288/B300 builds are) fails immediately with `not found`. Build flags:
+`-mfloat-abi=hard -mfpu=neon`.
+
+**Firmware 6.11 executable-stack check.** As noted in the TODO, firmware 6.11 rejects
+libraries marked `GNU_STACK RWE`. A shell wrapper around the binary that exports
+`GLIBC_TUNABLES="${GLIBC_TUNABLES}${GLIBC_TUNABLES:+:}glibc.rtld.execstack=2"`
+before `exec`-ing it resolves this (the same workaround KOReader uses). The binary's
+own stack is `RW`, so only the system libraries trigger the check.
+
+**Software RHI.** The InkPad One's display (1404x1872 monochrome E Ink) does not
+support hardware OpenGL. Qt SceneGraph fails with `Qt: Failed to create RHI (backend 2)`
+unless `QSG_RHI_BACKEND=software` and `QT_QUICK_BACKEND=software` are set.
+
+**Qt platform plugin path.** The `pocketbook2` platform plugin is at
+`/ebrmain/plugins/platforms/libqpocketbook2.so`. The wrapper must add
+`/ebrmain/plugins/platforms` to `QT_QPA_PLATFORM_PLUGIN_PATH` and `/ebrmain/lib` to
+`LD_LIBRARY_PATH` so Qt finds both the plugin and the system Qt libraries.
+
+**qtquickcompiler on mismatched Qt.** The InkPad One ships Qt 6.10.3; the SDK used to
+build the app is 6.8.2. The compiled QML units in the binary record `6.8.2` in their
+header and are silently rejected at startup on any other Qt version, so QML is compiled
+from source on every launch. Removing `qtquickcompiler` from `CONFIG` avoids this without
+any other effect on the build.
