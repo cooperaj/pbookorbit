@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/booklistmodel.h"
+#include "core/libraryselection.h"
 
 #include <QColor>
 #include <QElapsedTimer>
@@ -42,7 +43,15 @@ class BookOrbitClient : public QObject
     // fail at once with NO_CONNECTION.
     Q_PROPERTY(bool online READ online NOTIFY onlineChanged)
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
+    // The libraries the user can choose from, {id, name, label, bookCount} in the server's
+    // order. Empty until loaded.
+    Q_PROPERTY(QVariantList libraries READ libraries NOTIFY librariesChanged)
+    // -1 until one is chosen
+    Q_PROPERTY(int currentLibraryId READ currentLibraryId NOTIFY currentLibraryChanged)
+    Q_PROPERTY(QString currentLibraryLabel READ currentLibraryLabel NOTIFY currentLibraryChanged)
     Q_PROPERTY(BookListModel *books READ books CONSTANT)
+    // Whether the book list's latest query has its first page, so no rows means no books
+    Q_PROPERTY(bool booksLoaded READ booksLoaded NOTIFY booksChanged)
     Q_PROPERTY(int totalBooks READ totalBooks NOTIFY booksChanged)
     // Jump rail sections for the A-Z sorts, e.g. [{label: "A", index: 2}, ...]. Empty for
     // date sorts.
@@ -84,6 +93,22 @@ class BookOrbitClient : public QObject
     Q_PROPERTY(BookListModel *authorSeriesList READ authorSeriesList CONSTANT)
     Q_PROPERTY(QVariantList authorSeriesJumpSections READ authorSeriesJumpSections NOTIFY authorSeriesChanged)
     Q_PROPERTY(bool authorSeriesLoaded READ authorSeriesLoaded NOTIFY authorSeriesChanged)
+    // The library's genres, from its books' genres: {id, name (exact), bookCount (an ebook and
+    // its audiobook count once), covers (first two books), formats, books (key -> formats),
+    // readProgress (always 0)}
+    Q_PROPERTY(BookListModel *genresList READ genresList CONSTANT)
+    Q_PROPERTY(QVariantList genreJumpSections READ genreJumpSections NOTIFY genresChanged)
+    // Whether there's something to show in place of the spinner
+    Q_PROPERTY(bool genresLoaded READ genresLoaded NOTIFY genresChanged)
+    // "idle", "loading", "complete" (all pages, cached), "incomplete" (failed, showing the
+    // pages that loaded), "stale" (failed, showing the last complete list), "failed" (nothing
+    // to show) or "local" (offline, the downloaded books')
+    Q_PROPERTY(QString genresStatus READ genresStatus NOTIFY genresChanged)
+    // Books looked up so far, and the library's books with genres (-1 until known)
+    Q_PROPERTY(int genresProgress READ genresProgress NOTIFY genresChanged)
+    Q_PROPERTY(int genresTotal READ genresTotal NOTIFY genresChanged)
+    // Whether the rows are the last complete list, shown while a load runs or after it failed
+    Q_PROPERTY(bool genresCached READ genresCached NOTIFY genresChanged)
     // Jump sections for booksOf: letters for an author's books, series numbers for a
     // series (e.g. [{label: "12", index: 11}, ...])
     Q_PROPERTY(QVariantList booksOfJumpSections READ booksOfJumpSections NOTIFY jumpSectionsChanged)
@@ -110,7 +135,11 @@ public:
     bool busy() const { return m_pending > 0; }
     bool online() const { return m_online; }
     QString error() const { return m_error; }
+    QVariantList libraries() const;
+    int currentLibraryId() const { return m_libraryId; }
+    QString currentLibraryLabel() const { return m_libraryLabel; }
     BookListModel *books() { return &m_list.model; }
+    bool booksLoaded() const { return m_list.listGeneration == m_list.queryGeneration; }
     int totalBooks() const { return m_list.total; }
     QVariantList jumpSections() const { return m_list.jumpSections; }
     BookListModel *searchResults() { return &m_search.model; }
@@ -131,6 +160,13 @@ public:
     BookListModel *authorSeriesList() { return &m_authorSeries.model; }
     bool authorSeriesLoaded() const { return m_authorSeries.loaded; }
     QVariantList authorSeriesJumpSections() const { return m_authorSeries.jumpSections; }
+    BookListModel *genresList() { return &m_genres.model; }
+    QVariantList genreJumpSections() const { return m_genres.jumpSections; }
+    bool genresLoaded() const { return m_genres.loaded; }
+    QString genresStatus() const { return m_genresStatus; }
+    int genresProgress() const { return m_genresReceived; }
+    int genresTotal() const { return m_genresTotal; }
+    bool genresCached() const { return m_genresComplete; }
     QStringList recentSearches() const { return m_recentSearches; }
     QColor accentColor() const;
     QColor accentTextColor() const;
@@ -144,6 +180,12 @@ public:
     Q_INVOKABLE void signOut();
     // Asks the system to connect Wi-Fi (its own dialog), then checks the server is there
     Q_INVOKABLE void goOnline();
+
+    // Fetches the list of libraries, if signed in and online. The rows stay, unless the
+    // current library has gone.
+    Q_INVOKABLE void refreshLibraries();
+    // Switches to a listed library other than the current one, if signed in and online
+    Q_INVOKABLE void selectLibrary(int id);
 
     // Sets the book list's sort and filter, and reloads it.
     //   sortField   addedAt, title, author or lastReadAt
@@ -200,6 +242,11 @@ public:
     Q_INVOKABLE void showAuthorSeries(const QString &author);
     // Same fields as setSeriesSort()
     Q_INVOKABLE void setAuthorSeriesSort(const QString &field, bool descending);
+    // Lists the library's genres from its books with any, 200 a page (see genresStatus).
+    // Offline, the downloaded books' genres.
+    Q_INVOKABLE void loadGenres();
+    // Sorts genres by "name" or "bookCount"
+    Q_INVOKABLE void setGenreSort(const QString &field, bool descending);
     // The author's unfiltered row from authorsList, or empty if not listed
     Q_INVOKABLE QVariantMap authorRow(int authorId) const;
     // Placeholder for a missing author photo, as BookOrbit draws it: initials ("AT" for
@@ -227,7 +274,8 @@ public:
     // it doesn't set busy.
     void request(const QByteArray &method, const QString &path, const QJsonDocument &body,
                  DataHandler onSuccess, ErrorHandler onError);
-    // Calls then with the library id, fetching it first if needed
+    // Calls then with the current library's id, waiting for the list of libraries if needed.
+    // The id is for the caller to keep: switching library later doesn't change it.
     void withLibrary(std::function<void(int libraryId)> then, ErrorHandler onError);
 
 protected:
@@ -240,6 +288,13 @@ signals:
     void busyChanged();
     void onlineChanged();
     void errorChanged();
+    void librariesChanged();
+    void currentLibraryChanged();
+    // The library changed mid-session and every library list was emptied. Not on the first
+    // choice after signing in or starting.
+    void librarySwitched();
+    // The saved library is no longer available, so another was chosen
+    void libraryFallback();
     void booksChanged();
     void jumpSectionsChanged();
     void searchChanged();
@@ -248,6 +303,7 @@ signals:
     void seriesListChanged();
     void authorsChanged();
     void authorSeriesChanged();
+    void genresChanged();
     void authorDetails(int authorId, const QVariantMap &details);
     void bookDetails(int bookId, const QVariantMap &details);
     void recentSearchesChanged();
@@ -367,6 +423,15 @@ private:
     // books, as though looked up
     void showLocalSeries(Groups &groups);
     void showLocalAuthors();
+    // A page of the genre list from page onwards, for load generation in libraryId
+    void loadGenresPage(int page, int generation, int libraryId);
+    // The rows of the genres seen so far in this load
+    void buildGenreRows();
+    // Ends a genre load that failed: keeps the last complete list or the rows that loaded
+    void settleFailedGenres();
+    void setGenresStatus(const QString &status);
+    // Rows from the local books' genres, while offline
+    void showLocalGenres();
     // Offline: the saved collections with local books, counting only those
     void showLocalCollections();
     // Updates the saved entries of any of these books (see Database::updateBooks)
@@ -396,15 +461,34 @@ private:
     // Sends with the access token, refreshing and retrying once on a 401
     void call(const QByteArray &method, const QString &path, const QJsonDocument &body,
               DataHandler onSuccess, ErrorHandler onError, bool quiet = false,
-              bool retried = false);
+              bool retried = false, int originEpoch = -1);
     // call() for JSON replies. Errors set the error property, then call onFailed.
     void callJson(const QByteArray &method, const QString &path, const QJsonDocument &body,
                   std::function<void(const QJsonDocument &)> onSuccess,
                   std::function<void()> onFailed = nullptr);
     // Reads the accent colour from the user's synced theme, if any
     void loadAccent();
-    // Fetches the library id, then calls then
+    // Calls then once there's a current library, fetching the list if needed
     void loadLibrary(std::function<void()> then);
+    // The one place that reads /libraries. Calls made while it's in flight share the reply.
+    void fetchLibraries();
+    void applyLibraries(const QList<LibraryChoice> &libraries);
+    // Drops what's waiting for a library, and tells BookFinder's request why. lost: a list
+    // waiting now has no way to load until there's a library.
+    void failLibraryWaiters(int status, const QString &message, bool lost);
+    void setLibraryError(const QString &message);
+    // Changes the current library mid-session, leaving no sign of the old one's lists
+    void switchToLibrary(int id);
+    // Empties every list that belongs to a library. Not the collections or local books.
+    void resetLibraryViews();
+    // Removes rows restored from the cache of a library that's no longer available, leaving
+    // lists of local books alone
+    void dropCachedLibraryRows();
+    void setCurrentLibrary(int id);
+    // The choice saved for this server and user, or 0
+    int savedLibraryId() const;
+    // Whose caches to use: the current library, or until it's known the saved one
+    int cacheLibraryId() const;
     // Builds the BookOrbit query for a list's sort and filter
     static QJsonObject bookQuery(const PagedBooks &list);
     // Reloads from page one, or lists the local books
@@ -465,8 +549,23 @@ private:
     int m_pending = 0;
     QString m_error;
     int m_libraryId = -1;
-    // Waiting for loadLibrary()'s request; not empty while it's in flight
+    QList<LibraryChoice> m_libraries;
+    QString m_libraryLabel;
+    // Bumped whenever replies to earlier requests stop being about the current library
+    int m_libraryEpoch = 0;
+    bool m_librariesLoading = false;
+    // The server took away the libraries, or refused to list them while lists were waiting.
+    // Those lists are empty, so they reload once there's a library.
+    bool m_libraryLost = false;
+    // What the error property says because of the last /libraries reply, to clear with a good one
+    QString m_libraryError;
+    // Waiting for a current library: list loads, then withLibrary()'s callers
     QList<std::function<void()>> m_afterLibrary;
+    struct LibraryWaiter {
+        std::function<void(int libraryId)> then;
+        ErrorHandler onError;
+    };
+    QList<LibraryWaiter> m_libraryWaiters;
     // Main library list
     PagedBooks m_list;
     // Saves the library's list cache once a refresh settles
@@ -484,6 +583,20 @@ private:
     Groups m_authorSeries;
     // Author whose series m_authorSeries holds
     QString m_authorSeriesName;
+    Groups m_genres;
+    // See genresStatus, genresProgress and genresTotal
+    QString m_genresStatus = "idle";
+    int m_genresReceived = 0;
+    int m_genresTotal = -1;
+    // The genres of the books loaded so far: name -> companion key -> formats, and cover ids
+    // in order
+    QMap<QString, QHash<QString, QStringList>> m_genreBooks;
+    QMap<QString, QVariantList> m_genreCovers;
+    // The error the last genre page set, so a later success clears only that
+    QString m_genresError;
+    // The rows are the last complete list, read from the cache when a load started (it may
+    // be empty)
+    bool m_genresComplete = false;
     QStringList m_recentSearches;
     QVariantList m_localBooks;
     QString m_accent;   // BookOrbit accent name, e.g. "teal"; empty for the default
