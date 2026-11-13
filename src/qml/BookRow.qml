@@ -99,6 +99,7 @@ Item {
         height: row.height
 
         Text {
+            objectName: "title"
             y: Units.dp(24) - baselineOffset
             width: parent.width
             text: row.book.title
@@ -108,6 +109,7 @@ Item {
         }
         Text {
             id: author
+            objectName: "author"
             y: Units.dp(49) - baselineOffset
             // Leave room for the formats on the right
             width: parent.width - (formats.width > 0 ? formats.width + Units.dp(12) : 0)
@@ -129,6 +131,7 @@ Item {
                 Item {
                     id: format
                     required property string modelData
+                    objectName: "format " + modelData
                     readonly property bool onDevice: row.formatsOnDevice.indexOf(modelData) >= 0
                     anchors.verticalCenter: parent.verticalCenter
                     width: onDevice ? pill.width : label.implicitWidth
@@ -187,6 +190,7 @@ Item {
 
             Text {
                 id: status
+                objectName: "status"
                 y: Units.dp(73) - baselineOffset
                 visible: text !== ""
                 width: Math.min(implicitWidth, details.width)
@@ -196,6 +200,7 @@ Item {
                 elide: Text.ElideRight
             }
             Text {
+                objectName: "separator"
                 y: Units.dp(73) - baselineOffset
                 visible: status.visible && series.visible
                 text: "|"
@@ -204,6 +209,7 @@ Item {
             }
             Text {
                 id: series
+                objectName: "series"
                 y: Units.dp(73) - baselineOffset
                 visible: text !== ""
                 width: Math.max(0, details.width - x)
@@ -226,6 +232,7 @@ Item {
 
     // Section letter or number: a floating square at top left, over the cover's corner
     Rectangle {
+        objectName: "squareSection"
         z: 1    // above the focus frame too
         visible: row.sectionStart && row.squareSection && row.book.sectionLabel !== ""
         x: 0
@@ -250,6 +257,7 @@ Item {
 
     // Section date: a narrow box down the left edge, written upwards
     Rectangle {
+        objectName: "dateSection"
         z: 1
         visible: row.sectionStart && !row.squareSection
         x: 0
