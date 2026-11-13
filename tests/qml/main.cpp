@@ -1,10 +1,12 @@
 #include <QDir>
+#include <QFile>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickImageProvider>
 #include <QTemporaryDir>
 #include <QtQuickTest>
+#include <inkview.h>
 #include <memory>
 
 #include "core/bookfinder.h"
@@ -48,15 +50,26 @@ public:
     // New objects on a new database, set as bookOrbit, downloads, covers and bookFinder.
     // settings go in the database first, as though the app had been used before, e.g.
     // {serverUrl: "https://books.example.com", username: "reader"}. A refreshToken as well
-    // makes a saved session.
-    Q_INVOKABLE void reset(const QVariantMap &settings = {})
+    // makes a saved session. options:
+    //   offline: start as though there were no network (PBOOKORBIT_OFFLINE)
+    //   books: book entries saved in the database, as BookOrbit lists them. One with a
+    //          file, e.g. "dune.epub", is downloaded: the file is made in the Books folder.
+    Q_INVOKABLE void reset(const QVariantMap &settings = {}, const QVariantMap &options = {})
     {
         auto objects = std::make_unique<Objects>();
         QDir::setCurrent(objects->dir.path());
         objects->database = std::make_unique<Database>(objects->dir.filePath("pbookorbit.db"));
         for (auto it = settings.begin(); it != settings.end(); ++it)
             objects->database->setText(it.key(), it.value().toString());
+        for (const QVariant &value : options.value("books").toList())
+            saveBook(objects->database.get(), value.toMap());
+        // The client reads it once, when it's made
+        const bool offline = options.value("offline").toBool();
+        if (offline)
+            qputenv("PBOOKORBIT_OFFLINE", "1");
         objects->client = std::make_unique<BookOrbitClient>(objects->database.get());
+        if (offline)
+            qunsetenv("PBOOKORBIT_OFFLINE");
         objects->covers = std::make_unique<Covers>(objects->client.get(), objects->dir.filePath("covers"));
         objects->downloads = std::make_unique<Downloads>(objects->client.get(), objects->database.get());
         objects->bookFinder = std::make_unique<BookFinder>(objects->client.get(), objects->downloads.get(),
@@ -77,6 +90,22 @@ public:
     }
 
 private:
+    static void saveBook(Database *database, QVariantMap entry)
+    {
+        const int id = entry.value("id").toInt();
+        const QString file = entry.take("file").toString();
+        database->saveBook(id, entry);
+        if (file.isEmpty())
+            return;
+        // Where Downloads puts ebooks; relative on the PC build, so in the temporary folder
+        const QString folder = QString::fromUtf8(FLASHDIR "/Books");
+        QDir().mkpath(folder);
+        QFile book(folder + "/" + file);
+        if (!book.open(QIODevice::WriteOnly) || book.write("test book") < 0)
+            qFatal("TestApp: can't write %s", qPrintable(book.fileName()));
+        database->addBookFile(id, book.fileName());
+    }
+
     // Members are destroyed in reverse order, so each goes before what it uses, and the
     // folder last
     struct Objects {

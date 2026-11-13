@@ -81,6 +81,7 @@ Rectangle {
     // them, its edge picks up black from outside the image.
     Image {
         id: offlineIcon
+        objectName: "offlineIcon"
         visible: header.offline
         width: Math.round(Units.dp(17))
         height: width

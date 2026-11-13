@@ -11,9 +11,10 @@ UiTestCase {
         fakeServer.reset()
     }
 
-    // Opens the app on a new database holding the given settings
-    function open(settings) {
-        testApp.reset(settings || {})
+    // Opens the app on a new database holding the given settings, with options for how it
+    // starts (see TestApp::reset() in main.cpp), e.g. {offline: true, books: [...]}
+    function open(settings, options) {
+        testApp.reset(settings || {}, options || {})
         const component = Qt.createComponent(Qt.resolvedUrl("../../../src/qml/main.qml"))
         compare(component.status, Component.Ready, component.errorString())
         root = createTemporaryObject(component, test)
