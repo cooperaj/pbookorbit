@@ -1,1 +1,36 @@
-{"buckets":[{"key":"a","label":"A","index":0},{"key":"b","label":"B","index":5},{"key":"c","label":"C","index":10},{"key":"f","label":"F","index":15},{"key":"m","label":"M","index":20},{"key":"t","label":"T","index":25}],"total":30,"kind":"letter"}
+{
+  "buckets": [
+    {
+      "key": "a",
+      "label": "A",
+      "index": 0
+    },
+    {
+      "key": "b",
+      "label": "B",
+      "index": 5
+    },
+    {
+      "key": "c",
+      "label": "C",
+      "index": 10
+    },
+    {
+      "key": "f",
+      "label": "F",
+      "index": 15
+    },
+    {
+      "key": "m",
+      "label": "M",
+      "index": 20
+    },
+    {
+      "key": "t",
+      "label": "T",
+      "index": 25
+    }
+  ],
+  "total": 30,
+  "kind": "letter"
+}
