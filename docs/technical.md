@@ -152,27 +152,36 @@ and exits non-zero if any failed. Everything is under `tests/`:
 - `tests/unit/<name>/` holds one C++ test program each, written with Qt Test
   (`tst_<name>.cpp`). Every private slot is a test; a `<test>_data()` slot makes it
   data-driven, and `QSignalSpy` records signals.
-- `tests/qml/` holds the QML tests, written with Qt Quick Test. Every `tst_*.qml` in the
-  folder is picked up, and every `test_*` function in it runs as one test. They import
-  the pages and components from `src/qml` directly, and find items by `objectName`.
+- `tests/qml/` holds the QML tests, written with Qt Quick Test. Every `tst_*.qml` in it
+  or its subfolders is picked up, and every `test_*` function in one runs as one test.
+  `app/` tests the whole app, a file per feature (`tst_signin.qml`), and `components/`
+  tests one component on its own. They import the QML from `src/qml` directly.
 - `tests/support/` has `FakeServer`, a stand-in BookOrbit server on 127.0.0.1, and
   `tests/fixtures/` the JSON it replies with.
 - `tests/appcore/` builds everything in `src/sources.pri`, the app without `main.cpp`,
   as a static library the tests link against.
 
-`tests/qml/main.cpp` sets up the globals the QML expects. `bookOrbit` is the real
-`BookOrbitClient`; `testApp.reset()` replaces it with a new one on an empty database, in a
-new temporary folder that is also the working directory. `fakeServer` is the fake server.
-Objects that drive the device (`eink`, `diagnostics`) are stand-ins from
-`tests/qml/stubs/`. A test of a page typically resets both in `init()`, says what the
-server replies with `fakeServer.respond(method, path, status, fixture)`, types and taps
-into the page, then waits for the result with `tryCompare`. `fakeServer.requests` lists
-what the client sent. See `tests/qml/tst_loginpage.qml`.
+`tests/qml/main.cpp` sets up the globals the QML expects. `bookOrbit`, `downloads`,
+`covers` and `bookFinder` are the app's real objects. `testApp.reset(settings)` replaces
+them with new ones on a new database, in a new temporary folder that is also the working
+directory. `settings` go in the database first, as though the app had been used before:
+`{serverUrl, username}` is a signed-out user, and a `refreshToken` as well makes a saved
+session. `fakeServer` is the fake server. Objects that drive the device (`eink`,
+`diagnostics`, `browser`, `launcherTile`) are stand-ins from `tests/qml/stubs/`.
+
+Tests build on two types in `tests/qml/helpers/`. `UiTestCase` finds items by
+`objectName` under its `root` with `find(name)`, and has `tap(name)`, `type(name, text)`
+and `signIn(server, username, password)`. `AppTestCase` adds `open(settings)`, which
+resets `testApp` with those settings and opens `main.qml` as `root`, in a window of its
+own. A test typically opens the app or page, says what the server replies with
+`fakeServer.respond(method, path, status, fixture)`, taps and types, then waits for the
+result with `tryCompare` or `tryVerify`. `fakeServer.requests` lists what the client sent.
 
 To add a C++ test, copy a folder under `tests/unit/`, rename its `.pro` and `.cpp`, and
 add it to `SUBDIRS` and the `depends` lines in `tests/tests.pro`. To add a QML test, add a
-`tst_<name>.qml` to `tests/qml/`. A page that reads another global gets a stub in
-`tests/qml/stubs/` and a `setStub()` line in `tests/qml/main.cpp`.
+`tst_<name>.qml` to a folder under `tests/qml/`, with an `AppTestCase` or `UiTestCase` (from
+`import "../helpers"`) whose `name` says what it covers. A page that reads another global
+gets a stub in `tests/qml/stubs/` and a `setStub()` line in `tests/qml/main.cpp`.
 
 The tests never call `InitInkview()`. The network calls (`QueryNetwork()`,
 `NetConnect2()`) are left out of the PC build, and `GetDeviceModel()` and `einkColor()`

@@ -108,6 +108,7 @@ Window {
     // Signed out
     LoginPage {
         id: loginPage
+        objectName: "loginPage"
         visible: !bookOrbit.signedIn
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
@@ -342,6 +343,7 @@ Window {
 
     ListView {
         id: bookList
+        objectName: "bookList"
         visible: bookOrbit.signedIn && !root.showingCollections && !root.showingSeries && !root.showingAuthors
         anchors.top: header.bottom
         anchors.bottom: footer.top

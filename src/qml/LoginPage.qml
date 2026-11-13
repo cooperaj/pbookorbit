@@ -108,6 +108,7 @@ Item {
             // The saved server, in the accent colour, at field height
             Rectangle {
                 id: serverPill
+                objectName: "serverPill"
                 visible: bookOrbit.serverUrl !== ""
                 width: parent.width
                 height: serverField.implicitHeight
@@ -116,6 +117,7 @@ Item {
                 readonly property color textColor: Night.color(bookOrbit.accentTextColor)
 
                 Text {
+                    objectName: "serverPillText"
                     anchors.left: parent.left
                     anchors.leftMargin: Units.dp(16)
                     anchors.right: forget.left

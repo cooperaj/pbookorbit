@@ -1,16 +1,12 @@
 import QtQuick
 import QtTest
-import "../../src/qml"
+import "../helpers"
+import "../../../src/qml"
 
-// The smallest kind of QML test: one component on its own. A TestCase is invisible unless
-// told otherwise, and an invisible item gets no mouse events.
-TestCase {
+// The smallest kind of QML test: one component on its own
+UiTestCase {
     id: test
     name: "PillButton"
-    when: windowShown
-    visible: true
-    width: 400
-    height: 200
 
     Component {
         id: pill

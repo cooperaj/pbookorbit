@@ -7,9 +7,12 @@
 #include <QtQuickTest>
 #include <memory>
 
+#include "core/bookfinder.h"
 #include "core/bookorbitclient.h"
 #include "core/database.h"
+#include "core/downloads.h"
 #include "fakeserver.h"
+#include "ui/covers.h"
 
 // Theme icons come from the device's theme through inkview, which the tests don't start.
 // This answers image://theme/<name> with a blank so the components don't warn about it.
@@ -29,7 +32,7 @@ public:
 
 // The app's real objects, made afresh by reset() in a new temporary folder, which is also
 // the working directory. On the PC build inkview's paths are relative, so the database,
-// downloads and log all stay in there.
+// downloads, covers and log all stay in there.
 class TestApp : public QObject
 {
     Q_OBJECT
@@ -38,35 +41,59 @@ public:
     explicit TestApp(QQmlEngine *engine) : QObject(engine), m_engine(engine) { reset(); }
     ~TestApp() override
     {
-        m_client.reset();
-        m_database.reset();
+        m_objects.reset();
         QDir::setCurrent(QDir::tempPath());
     }
 
-    // A new client with an empty database, as on first start, and set as bookOrbit
-    Q_INVOKABLE void reset()
+    // New objects on a new database, set as bookOrbit, downloads, covers and bookFinder.
+    // settings go in the database first, as though the app had been used before, e.g.
+    // {serverUrl: "https://books.example.com", username: "reader"}. A refreshToken as well
+    // makes a saved session.
+    Q_INVOKABLE void reset(const QVariantMap &settings = {})
     {
-        auto dir = std::make_unique<QTemporaryDir>();
-        QDir::setCurrent(dir->path());
-        auto database = std::make_unique<Database>(dir->filePath("pbookorbit.db"));
-        auto client = std::make_unique<BookOrbitClient>(database.get());
-        m_engine->rootContext()->setContextProperty("bookOrbit", client.get());
+        auto objects = std::make_unique<Objects>();
+        QDir::setCurrent(objects->dir.path());
+        objects->database = std::make_unique<Database>(objects->dir.filePath("pbookorbit.db"));
+        for (auto it = settings.begin(); it != settings.end(); ++it)
+            objects->database->setText(it.key(), it.value().toString());
+        objects->client = std::make_unique<BookOrbitClient>(objects->database.get());
+        objects->covers = std::make_unique<Covers>(objects->client.get(), objects->dir.filePath("covers"));
+        objects->downloads = std::make_unique<Downloads>(objects->client.get(), objects->database.get());
+        objects->bookFinder = std::make_unique<BookFinder>(objects->client.get(), objects->downloads.get(),
+                                                           objects->database.get());
+        // As in the app's main.cpp
+        connect(objects->downloads.get(), &Downloads::downloaded, objects->client.get(),
+                &BookOrbitClient::loadBookDetails);
+        connect(objects->client.get(), &BookOrbitClient::savedBooksChanged, objects->downloads.get(),
+                &Downloads::entriesChanged);
+
+        QQmlContext *context = m_engine->rootContext();
+        context->setContextProperty("bookOrbit", objects->client.get());
+        context->setContextProperty("covers", objects->covers.get());
+        context->setContextProperty("downloads", objects->downloads.get());
+        context->setContextProperty("bookFinder", objects->bookFinder.get());
         // Only now nothing refers to the old ones
-        m_client = std::move(client);
-        m_database = std::move(database);
-        m_dir = std::move(dir);
+        m_objects = std::move(objects);
     }
 
 private:
+    // Members are destroyed in reverse order, so each goes before what it uses, and the
+    // folder last
+    struct Objects {
+        QTemporaryDir dir;
+        std::unique_ptr<Database> database;
+        std::unique_ptr<BookOrbitClient> client;
+        std::unique_ptr<Covers> covers;
+        std::unique_ptr<Downloads> downloads;
+        std::unique_ptr<BookFinder> bookFinder;
+    };
+
     QQmlEngine *m_engine;
-    // Destroyed in reverse order: the client before its database, both before the folder
-    std::unique_ptr<QTemporaryDir> m_dir;
-    std::unique_ptr<Database> m_database;
-    std::unique_ptr<BookOrbitClient> m_client;
+    std::unique_ptr<Objects> m_objects;
 };
 
 // The app's components read globals that main.cpp puts in the root context. The tests get
-// dpScale, the real BookOrbitClient (see TestApp), a fake server, and a stand-in from
+// the screen size, the app's real objects (see TestApp), a fake server, and a stand-in from
 // stubs/ for each object that drives the device. Add one by writing stubs/<Name>.qml and a
 // setStub() line in qmlEngineAvailable().
 class Setup : public QObject
@@ -79,10 +106,14 @@ public slots:
         engine->addImageProvider("theme", new BlankImageProvider);
         QQmlContext *context = engine->rootContext();
         context->setContextProperty("dpScale", 1.0);
+        context->setContextProperty("screenWidth", 600);
+        context->setContextProperty("windowHeight", 800);
         context->setContextProperty("fakeServer", new FakeServer(engine));
         context->setContextProperty("testApp", new TestApp(engine));
         setStub(engine, "eink", "Eink");
         setStub(engine, "diagnostics", "Diagnostics");
+        setStub(engine, "browser", "Browser");
+        setStub(engine, "launcherTile", "LauncherTile");
     }
 
 private:
