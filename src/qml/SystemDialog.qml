@@ -100,6 +100,7 @@ Item {
                 Item {
                     required property var modelData
                     required property int index
+                    objectName: modelData[1] + "Button"
                     width: buttonRow.width / dialog.buttons.length
                     height: buttonRow.height
 

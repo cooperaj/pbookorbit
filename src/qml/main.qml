@@ -933,6 +933,7 @@ Window {
     }
     FindBooksDialog {
         id: findBooksDialog
+        objectName: "findBooksDialog"
         anchors.fill: parent
     }
     // Shown when tapping the title six times turns diagnostics logging on or off

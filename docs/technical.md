@@ -175,17 +175,19 @@ session. `fakeServer` is the fake server. Objects that drive the device (`eink`,
 `diagnostics`, `browser`, `launcherTile`) are stand-ins from `tests/qml/stubs/`.
 
 Tests build on two types in `tests/qml/helpers/`. `UiTestCase` finds items by `objectName`
-under its `root` with `find(name)`, and has `tap(name)`, `type(name, text)` and
-`signIn(server, username, password)`. `AppTestCase` adds `open(settings, options)`, which
-resets `testApp`, opens `main.qml` as `root` in a window of its own, and once it's drawn
-calls `bookOrbit.start()` as `main.cpp` does. `options` can have `offline: true`, to start
-with no network as `PBOOKORBIT_OFFLINE=1` does (`testApp.offline` turns it on or off while
-the app is open), and `books`, entries saved in the database first. A book with a `file`,
-e.g. `"dune.epub"`, is downloaded: the file is made in the Books folder. A test typically
-opens the app or page, says what the server replies with `fakeServer.respond(method, path,
-status, fixture)`, taps and types, then waits for the result with `tryCompare` or
-`tryVerify`. `fakeServer.requests` lists what the client sent, and `fakeServer.reachable =
-false` refuses connections, as when the network is down.
+under its `root`, or under another item, with `find(name, under)`, and has `tap(name,
+under)`, `type(name, text)` and `signIn(server, username, password)`. `AppTestCase` adds
+`open(settings, options)`, which resets `testApp`, opens `main.qml` as `root` in a window
+of its own, and once it's drawn calls `bookOrbit.start()` as `main.cpp` does. `options`
+can have `offline: true`, to start with no network as `PBOOKORBIT_OFFLINE=1` does
+(`testApp.offline` turns it on or off while the app is open), and `books`, entries saved
+in the database first. A book with a `file`, e.g. `"dune.epub"`, is downloaded: the file
+is made in the Books folder. `files` are book files in the Books folder the app hasn't
+recorded, for "Find books". A test typically opens the app or page, says what the server
+replies with `fakeServer.respond(method, path, status, fixture)`, taps and types, then
+waits for the result with `tryCompare` or `tryVerify`. `fakeServer.requests` lists what
+the client sent, and `fakeServer.reachable = false` refuses connections, as when the
+network is down.
 
 To add a C++ test, copy a folder under `tests/unit/`, rename its `.pro` and `.cpp`, and
 add it to `SUBDIRS` and the `depends` lines in `tests/tests.pro`. To add a QML test, add a

@@ -136,6 +136,7 @@ Item {
 
                     Rectangle {
                         id: pill
+                        objectName: "onDevicePill"
                         visible: format.onDevice
                         width: pillContent.width + 2 * Units.dp(7)
                         height: Units.dp(16)

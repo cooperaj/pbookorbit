@@ -12,14 +12,15 @@ TestCase {
     // Where find() looks
     property var root
 
-    function find(name) {
-        const item = findChild(root, name)
+    // The item with this objectName under root, or under another item
+    function find(name, under) {
+        const item = findChild(under || root, name)
         verify(item, "no item named " + name)
         return item
     }
 
-    function tap(name) {
-        mouseClick(find(name))
+    function tap(name, under) {
+        mouseClick(find(name, under))
     }
 
     // Taps the field and types into it, a key at a time
