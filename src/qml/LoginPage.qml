@@ -98,6 +98,7 @@ Item {
             height: serverField.implicitHeight + serverLabel.implicitHeight
             FormField {
                 id: serverField
+                objectName: "serverField"
                 visible: bookOrbit.serverUrl === ""
                 text: bookOrbit.suggestedServer
                 inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
@@ -154,6 +155,7 @@ Item {
             width: parent.width
             FormField {
                 id: usernameField
+                objectName: "usernameField"
                 text: bookOrbit.username
                 inputMethodHints: Qt.ImhNoAutoUppercase
                 onAccepted: passwordField.forceActiveFocus()
@@ -166,6 +168,7 @@ Item {
             width: parent.width
             FormField {
                 id: passwordField
+                objectName: "passwordField"
                 echoMode: TextInput.Password
                 onAccepted: page.signIn()
                 onActiveFocusChanged: Qt.callLater(page.updateKeyboardShift)
@@ -175,6 +178,7 @@ Item {
 
         // The last error. Keeps its space so the button doesn't jump.
         Text {
+            objectName: "errorText"
             width: parent.width
             height: Math.max(implicitHeight, Units.dp(40))
             text: bookOrbit.busy ? "" : bookOrbit.error
@@ -183,6 +187,7 @@ Item {
         }
 
         PillButton {
+            objectName: "signInButton"
             anchors.horizontalCenter: parent.horizontalCenter
             text: "Sign in"
             busy: bookOrbit.busy

@@ -77,10 +77,10 @@ make arm      # build for the device, into build/pbookorbit/<sdk>/arm/pbookorbit
 
 The kit lives in `kit/` as a submodule. See its README for picking an SDK (use
 `kit/pb.sh use B300-6.10` for the Era Color and other B300 devices), making the emulator
-match your device, and running headless tests with `kit/pb.sh test . <script>`. Set
-`PBOOKORBIT_DB=<file>` to point the app at a different database, which keeps tests away
-from your own sign-in; for `make run`, pass it through the kit as
-`PB_ENV="PBOOKORBIT_DB=<file>"`.
+match your device, and driving the app headless with `kit/pb.sh drive . <script>`. `make
+test` runs the tests in `tests/`. Set `PBOOKORBIT_DB=<file>` to point the app at a
+different database, which keeps tests away from your own sign-in; for `make run`, pass it
+through the kit as `PB_ENV="PBOOKORBIT_DB=<file>"`.
 
 If you're handing the app to people who all use the same server, you can build it with
 the server already filled in. They can still change it.

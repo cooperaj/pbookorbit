@@ -143,6 +143,44 @@ Every frame on e-ink is a slow screen update, so `frames` should be 0 when the a
 idle. Anything that animates (a blinking cursor, `BusyIndicator`, transitions, Flickable
 momentum) keeps the display busy and makes the whole device feel frozen.
 
+## Tests
+
+`make test` builds the app and the tests for PC, then runs the tests headless in the kit's
+build container, on Qt's offscreen platform. It prints Qt's PASS/FAIL line for each test
+and exits non-zero if any failed. Everything is under `tests/`:
+
+- `tests/unit/<name>/` holds one C++ test program each, written with Qt Test
+  (`tst_<name>.cpp`). Every private slot is a test; a `<test>_data()` slot makes it
+  data-driven, and `QSignalSpy` records signals.
+- `tests/qml/` holds the QML tests, written with Qt Quick Test. Every `tst_*.qml` in the
+  folder is picked up, and every `test_*` function in it runs as one test. They import
+  the pages and components from `src/qml` directly, and find items by `objectName`.
+- `tests/support/` has `FakeServer`, a stand-in BookOrbit server on 127.0.0.1, and
+  `tests/fixtures/` the JSON it replies with.
+- `tests/appcore/` builds everything in `src/sources.pri`, the app without `main.cpp`,
+  as a static library the tests link against.
+
+`tests/qml/main.cpp` sets up the globals the QML expects. `bookOrbit` is the real
+`BookOrbitClient`; `testApp.reset()` replaces it with a new one on an empty database, in a
+new temporary folder that is also the working directory. `fakeServer` is the fake server.
+Objects that drive the device (`eink`, `diagnostics`) are stand-ins from
+`tests/qml/stubs/`. A test of a page typically resets both in `init()`, says what the
+server replies with `fakeServer.respond(method, path, status, fixture)`, types and taps
+into the page, then waits for the result with `tryCompare`. `fakeServer.requests` lists
+what the client sent. See `tests/qml/tst_loginpage.qml`.
+
+To add a C++ test, copy a folder under `tests/unit/`, rename its `.pro` and `.cpp`, and
+add it to `SUBDIRS` and the `depends` lines in `tests/tests.pro`. To add a QML test, add a
+`tst_<name>.qml` to `tests/qml/`. A page that reads another global gets a stub in
+`tests/qml/stubs/` and a `setStub()` line in `tests/qml/main.cpp`.
+
+The tests never call `InitInkview()`. The network calls (`QueryNetwork()`,
+`NetConnect2()`) are left out of the PC build, and `GetDeviceModel()` and `einkColor()`
+work without it, but other inkview calls (the theme, `GetSupportedFileTypes()`) are
+untried. On the PC build, inkview's storage paths (`FLASHDIR`, `CONFIGPATH`) are relative
+to the working directory, which is why `testApp` runs in a temporary folder. The client's
+log has no folder there, so it goes to the test output.
+
 ## The BookOrbit API
 
 BookOrbit's API isn't documented. This comes from its source (`server/src/modules/`,
