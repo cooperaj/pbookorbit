@@ -427,6 +427,7 @@ Window {
     // No downloaded books, or the library couldn't load. The spinner shows while the first
     // books load.
     EmptyState {
+        objectName: "libraryEmptyState"
         anchors.fill: bookList
         anchors.topMargin: bookList.headerItem ? bookList.headerItem.height : 0
         visible: bookList.visible && bookList.count === 0
@@ -620,6 +621,7 @@ Window {
     }
     PopupMenu {
         id: filterMenu
+        objectName: "filterMenu"
         visible: false
         z: 3
         x: openTab.filterMenuX
@@ -633,6 +635,7 @@ Window {
             RadioMenuItem {
                 required property string modelData
                 required property int index
+                objectName: modelData
                 text: modelData
                 checked: index === root.activeQuery.filterIndex
                 showSeparator: index < root.filterOptions.length - 1
@@ -644,6 +647,7 @@ Window {
         }
         // Tied to the content type, so the menu stays open for that choice too
         SwitchMenuItem {
+            objectName: "downloadedOnly"
             text: "Downloaded only"
             checked: root.activeQuery.downloadedOnly
             // Always on offline
@@ -703,6 +707,7 @@ Window {
 
         // Offline: asks the system to connect
         PopupMenuItem {
+            objectName: "reconnect"
             visible: bookOrbit.signedIn && !bookOrbit.online
             text: "Reconnect"
             onClicked: {

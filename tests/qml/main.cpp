@@ -17,14 +17,16 @@
 #include "ui/covers.h"
 
 // Theme icons come from the device's theme through inkview, which the tests don't start.
-// This answers image://theme/<name> with a blank so the components don't warn about it.
+// This answers image://theme/<name> with a blank, at the size asked for or else about a
+// theme icon's, so buttons sized by their icon can still be tapped.
 class BlankImageProvider : public QQuickImageProvider
 {
 public:
     BlankImageProvider() : QQuickImageProvider(QQuickImageProvider::Image) {}
-    QImage requestImage(const QString &, QSize *size, const QSize &) override
+    QImage requestImage(const QString &, QSize *size, const QSize &requested) override
     {
-        QImage image(1, 1, QImage::Format_ARGB32);
+        QImage image(requested.width() > 0 ? requested.width() : 32,
+                     requested.height() > 0 ? requested.height() : 32, QImage::Format_ARGB32);
         image.fill(Qt::transparent);
         if (size)
             *size = image.size();

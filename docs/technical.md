@@ -187,10 +187,13 @@ recorded, for "Find books". `savedSession` is a signed-in user of `fakeServer`,
 `serveLibrary(books, jumpBuckets)` has the server answer for the library with those
 fixtures (three books by default), and `openLibrary(books, jumpBuckets, options)` does
 both and opens the app on the library. A test typically opens the app or page, says what
-the server replies with `fakeServer.respond(method, path, status, fixture)`, taps and
-types, then waits for the result with `tryCompare` or `tryVerify`. `fakeServer.requests`
-lists what the client sent, and `fakeServer.reachable = false` refuses connections, as
-when the network is down.
+the server replies with `fakeServer.respond(method, path, status, fixture, match)`, taps
+and types, then waits for the result with `tryCompare` or `tryVerify`. With `match`, a
+reply is only for requests whose body has those fields, e.g. `{sort: [{field:
+"author"}]}`, so one path can answer each sort or filter with its own fixture; objects and
+arrays in it need only be part of the body's, and the latest reply that matches wins.
+`fakeServer.requests` lists what the client sent, and `fakeServer.reachable = false`
+refuses connections, as when the network is down.
 
 To add a C++ test, copy a folder under `tests/unit/`, rename its `.pro` and `.cpp`, and
 add it to `SUBDIRS` and the `depends` lines in `tests/tests.pro`. To add a QML test, add a

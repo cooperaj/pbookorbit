@@ -1,0 +1,49 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "title": "Dune",
+      "authors": [
+        "Frank Herbert"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 11,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Neuromancer",
+      "authors": [
+        "William Gibson"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-02T10:00:00.000Z",
+      "files": [
+        {
+          "id": 31,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000
+        }
+      ]
+    }
+  ],
+  "total": 2,
+  "page": 0,
+  "size": 40
+}

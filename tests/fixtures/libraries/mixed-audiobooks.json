@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "id": 4,
+      "title": "The Martian",
+      "authors": [
+        "Andy Weir"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-01T10:00:00.000Z",
+      "files": [
+        {
+          "id": 41,
+          "format": "m4b",
+          "role": "primary",
+          "sizeBytes": 1000
+        }
+      ]
+    }
+  ],
+  "total": 1,
+  "page": 0,
+  "size": 40
+}

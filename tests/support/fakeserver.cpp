@@ -1,8 +1,12 @@
 #include "fakeserver.h"
 
 #include <QFile>
+#include <QJsonArray>
 #include <QJsonDocument>
+#include <QJSValue>
+#include <QJsonObject>
 #include <QTcpSocket>
+#include <algorithm>
 
 FakeServer::FakeServer(QObject *parent) : QObject(parent)
 {
@@ -33,7 +37,8 @@ void FakeServer::setReachable(bool reachable)
     emit reachableChanged();
 }
 
-void FakeServer::respond(const QString &method, const QString &path, int status, const QString &fixture)
+void FakeServer::respond(const QString &method, const QString &path, int status, const QString &fixture,
+                         const QVariant &match)
 {
     QByteArray body;
     if (!fixture.isEmpty()) {
@@ -42,7 +47,34 @@ void FakeServer::respond(const QString &method, const QString &path, int status,
             qFatal("FakeServer: no fixture %s", qPrintable(file.fileName()));
         body = file.readAll();
     }
-    m_responses.insert(method + ' ' + path, {status, body});
+    // A JavaScript object arrives wrapped, and QJsonValue only reads plain maps and lists
+    const QVariant plain = match.metaType() == QMetaType::fromType<QJSValue>() ? match.value<QJSValue>().toVariant()
+                                                                              : match;
+    m_responses[method + ' ' + path].append({status, body, QJsonValue::fromVariant(plain)});
+}
+
+// Whether body has everything in match: each of its fields, and each of its array items
+// somewhere in the body's array
+bool FakeServer::matches(const QJsonValue &body, const QJsonValue &match)
+{
+    if (match.isObject()) {
+        const QJsonObject wanted = match.toObject();
+        const QJsonObject have = body.toObject();
+        for (auto it = wanted.begin(); it != wanted.end(); ++it) {
+            if (!have.contains(it.key()) || !matches(have.value(it.key()), it.value()))
+                return false;
+        }
+        return body.isObject();
+    }
+    if (match.isArray()) {
+        const QJsonArray have = body.toArray();
+        for (const QJsonValue &wanted : match.toArray()) {
+            if (std::none_of(have.begin(), have.end(), [&](const QJsonValue &v) { return matches(v, wanted); }))
+                return false;
+        }
+        return body.isArray();
+    }
+    return body == match;
 }
 
 void FakeServer::reset()
@@ -75,14 +107,28 @@ void FakeServer::readRequest(QTcpSocket *socket)
     const QString method = QString::fromLatin1(requestLine.value(0));
     const QString path = QString::fromLatin1(requestLine.value(1)).section('?', 0, 0);
     const QByteArray body = data.mid(headerEnd + 4, length);
+    const QJsonDocument json = QJsonDocument::fromJson(body);
     m_requests.append(QVariantMap{
         {"method", method},
         {"path", path},
-        {"body", QJsonDocument::fromJson(body).toVariant()},
+        {"body", json.toVariant()},
     });
     emit requestsChanged();
 
-    const Response response = m_responses.value(method + ' ' + path, {404, R"({"statusCode":404,"message":"Not found"})"});
+    const QJsonValue bodyValue = json.isObject() ? QJsonValue(json.object())
+                               : json.isArray() ? QJsonValue(json.array()) : QJsonValue();
+    Response response{404, R"({"statusCode":404,"message":"Not found"})", {}};
+    const QList<Response> candidates = m_responses.value(method + ' ' + path);
+    const auto matched = std::find_if(candidates.rbegin(), candidates.rend(), [&](const Response &r) {
+        return !r.match.isUndefined() && !r.match.isNull() && matches(bodyValue, r.match);
+    });
+    const auto general = std::find_if(candidates.rbegin(), candidates.rend(), [](const Response &r) {
+        return r.match.isUndefined() || r.match.isNull();
+    });
+    if (matched != candidates.rend())
+        response = *matched;
+    else if (general != candidates.rend())
+        response = *general;
     socket->write(QString("HTTP/1.1 %1 Fake\r\nContent-Type: application/json\r\n"
                           "Content-Length: %2\r\nConnection: close\r\n\r\n")
                       .arg(response.status).arg(response.body.size()).toLatin1());

@@ -86,6 +86,7 @@ Item {
         // before the label
         MouseArea {
             id: iconMouse
+            objectName: "iconButton"
             visible: button.iconIsButton && !bar.onlyOpenTab
             width: content.x + iconImage.width + button.spacing / 2
             height: parent.height
@@ -107,6 +108,7 @@ Item {
 
     DropdownButton {
         id: filterButton
+        objectName: "filterButton"
         x: Units.dp(26)
         icon: "filter_empty"
         text: bar.filterText

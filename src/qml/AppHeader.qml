@@ -108,6 +108,7 @@ Rectangle {
         }
         IconButton {
             id: menuButton
+            objectName: "menuButton"
             visible: header.showMenu
             // bw_menu_close_b is the inverted look, shown while pressed or while the menu
             // is open

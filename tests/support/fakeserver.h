@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QHash>
+#include <QJsonValue>
 #include <QObject>
 #include <QTcpServer>
 #include <QVariantList>
@@ -25,9 +26,12 @@ public:
     void setReachable(bool reachable);
 
     // The reply to method and path (e.g. "POST", "/api/v1/auth/login"): the status, and
-    // the body from tests/fixtures/<fixture>, or none if fixture is empty
+    // the body from tests/fixtures/<fixture>, or none if fixture is empty. With match, only
+    // for requests whose body has those fields, e.g. {sort: [{field: "author"}]}. Objects
+    // and arrays in match need only be part of the body's. The latest that matches wins,
+    // and one without match answers the rest.
     Q_INVOKABLE void respond(const QString &method, const QString &path, int status,
-                             const QString &fixture = QString());
+                             const QString &fixture = QString(), const QVariant &match = QVariant());
     // Forgets the responses and requests, and is reachable again
     Q_INVOKABLE void reset();
 
@@ -39,13 +43,16 @@ private:
     struct Response {
         int status;
         QByteArray body;
+        QJsonValue match;
     };
+
+    static bool matches(const QJsonValue &body, const QJsonValue &match);
 
     void readRequest(QTcpSocket *socket);
 
     QTcpServer m_server;
     // Kept so the url stays the same while unreachable
     quint16 m_port = 0;
-    QHash<QString, Response> m_responses;
+    QHash<QString, QList<Response>> m_responses;
     QVariantList m_requests;
 };
