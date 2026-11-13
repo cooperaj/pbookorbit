@@ -29,6 +29,11 @@ for (`QueryNetwork()`) when the user taps or presses a key, at most every 3 seco
 the user asks (`goOnline()`); any reply means online.
 A session refresh that fails offline keeps the session.
 
+Signed out with no network (`networkConnected`, from `QueryNetwork()`), the sign-in page
+shows "Currently offline" in place of the form, with a Connect button (`goOnline()`) that
+shows the system's Wi-Fi dialog. The form comes back once the app is online. A sign-in
+that gets no reply while the network is up keeps the form, with "The server didn't reply".
+
 Offline, a red badge with a crossed-out Wi-Fi sign follows the header's title, the header menu has
 Reconnect (`goOnline()`), and every list shows downloaded
 books only, with the switch for it turned on and disabled. Back online, each list goes
@@ -169,15 +174,18 @@ directory. `settings` go in the database first, as though the app had been used 
 session. `fakeServer` is the fake server. Objects that drive the device (`eink`,
 `diagnostics`, `browser`, `launcherTile`) are stand-ins from `tests/qml/stubs/`.
 
-Tests build on two types in `tests/qml/helpers/`. `UiTestCase` finds items by
-`objectName` under its `root` with `find(name)`, and has `tap(name)`, `type(name, text)`
-and `signIn(server, username, password)`. `AppTestCase` adds `open(settings, options)`,
-which resets `testApp` and opens `main.qml` as `root`, in a window of its own. `options`
-can have `offline: true`, to start as `PBOOKORBIT_OFFLINE=1` does, and `books`, entries
-saved in the database first. A book with a `file`, e.g. `"dune.epub"`, is downloaded: the
-file is made in the Books folder. A test typically opens the app or page, says what the server replies with
-`fakeServer.respond(method, path, status, fixture)`, taps and types, then waits for the
-result with `tryCompare` or `tryVerify`. `fakeServer.requests` lists what the client sent.
+Tests build on two types in `tests/qml/helpers/`. `UiTestCase` finds items by `objectName`
+under its `root` with `find(name)`, and has `tap(name)`, `type(name, text)` and
+`signIn(server, username, password)`. `AppTestCase` adds `open(settings, options)`, which
+resets `testApp`, opens `main.qml` as `root` in a window of its own, and once it's drawn
+calls `bookOrbit.start()` as `main.cpp` does. `options` can have `offline: true`, to start
+with no network as `PBOOKORBIT_OFFLINE=1` does (`testApp.offline` turns it on or off while
+the app is open), and `books`, entries saved in the database first. A book with a `file`,
+e.g. `"dune.epub"`, is downloaded: the file is made in the Books folder. A test typically
+opens the app or page, says what the server replies with `fakeServer.respond(method, path,
+status, fixture)`, taps and types, then waits for the result with `tryCompare` or
+`tryVerify`. `fakeServer.requests` lists what the client sent, and `fakeServer.reachable =
+false` refuses connections, as when the network is down.
 
 To add a C++ test, copy a folder under `tests/unit/`, rename its `.pro` and `.cpp`, and
 add it to `SUBDIRS` and the `depends` lines in `tests/tests.pro`. To add a QML test, add a

@@ -8,6 +8,7 @@ FakeServer::FakeServer(QObject *parent) : QObject(parent)
 {
     if (!m_server.listen(QHostAddress::LocalHost))
         qFatal("FakeServer: can't listen: %s", qPrintable(m_server.errorString()));
+    m_port = m_server.serverPort();
     connect(&m_server, &QTcpServer::newConnection, this, [this] {
         while (QTcpSocket *socket = m_server.nextPendingConnection()) {
             connect(socket, &QTcpSocket::readyRead, this, [this, socket] { readRequest(socket); });
@@ -18,7 +19,18 @@ FakeServer::FakeServer(QObject *parent) : QObject(parent)
 
 QString FakeServer::url() const
 {
-    return QString("http://127.0.0.1:%1").arg(m_server.serverPort());
+    return QString("http://127.0.0.1:%1").arg(m_port);
+}
+
+void FakeServer::setReachable(bool reachable)
+{
+    if (reachable == m_server.isListening())
+        return;
+    if (!reachable)
+        m_server.close();
+    else if (!m_server.listen(QHostAddress::LocalHost, m_port))
+        qFatal("FakeServer: can't listen again: %s", qPrintable(m_server.errorString()));
+    emit reachableChanged();
 }
 
 void FakeServer::respond(const QString &method, const QString &path, int status, const QString &fixture)
@@ -38,6 +50,7 @@ void FakeServer::reset()
     m_responses.clear();
     m_requests.clear();
     emit requestsChanged();
+    setReachable(true);
 }
 
 // Waits for the whole request (headers, then Content-Length bytes of body) before answering.

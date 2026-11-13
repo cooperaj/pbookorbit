@@ -38,20 +38,33 @@ public:
 class TestApp : public QObject
 {
     Q_OBJECT
+    // Whether the device has no network, as with make run-offline. Can be changed while
+    // the app is open, like turning Wi-Fi off or on.
+    Q_PROPERTY(bool offline READ offline WRITE setOffline)
 
 public:
     explicit TestApp(QQmlEngine *engine) : QObject(engine), m_engine(engine) { reset(); }
     ~TestApp() override
     {
         m_objects.reset();
+        setOffline(false);
         QDir::setCurrent(QDir::tempPath());
+    }
+
+    bool offline() const { return qEnvironmentVariableIsSet("PBOOKORBIT_OFFLINE"); }
+    void setOffline(bool offline)
+    {
+        if (offline)
+            qputenv("PBOOKORBIT_OFFLINE", "1");
+        else
+            qunsetenv("PBOOKORBIT_OFFLINE");
     }
 
     // New objects on a new database, set as bookOrbit, downloads, covers and bookFinder.
     // settings go in the database first, as though the app had been used before, e.g.
     // {serverUrl: "https://books.example.com", username: "reader"}. A refreshToken as well
     // makes a saved session. options:
-    //   offline: start as though there were no network (PBOOKORBIT_OFFLINE)
+    //   offline: start with no network (see the offline property)
     //   books: book entries saved in the database, as BookOrbit lists them. One with a
     //          file, e.g. "dune.epub", is downloaded: the file is made in the Books folder.
     Q_INVOKABLE void reset(const QVariantMap &settings = {}, const QVariantMap &options = {})
@@ -63,13 +76,8 @@ public:
             objects->database->setText(it.key(), it.value().toString());
         for (const QVariant &value : options.value("books").toList())
             saveBook(objects->database.get(), value.toMap());
-        // The client reads it once, when it's made
-        const bool offline = options.value("offline").toBool();
-        if (offline)
-            qputenv("PBOOKORBIT_OFFLINE", "1");
+        setOffline(options.value("offline").toBool());
         objects->client = std::make_unique<BookOrbitClient>(objects->database.get());
-        if (offline)
-            qunsetenv("PBOOKORBIT_OFFLINE");
         objects->covers = std::make_unique<Covers>(objects->client.get(), objects->dir.filePath("covers"));
         objects->downloads = std::make_unique<Downloads>(objects->client.get(), objects->database.get());
         objects->bookFinder = std::make_unique<BookFinder>(objects->client.get(), objects->downloads.get(),

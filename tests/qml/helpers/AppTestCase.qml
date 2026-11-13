@@ -25,5 +25,8 @@ UiTestCase {
         // Taps before the first frame miss, which shows when a test is the first to open
         // the app
         waitForRendering(root.contentItem)
+        // As main.cpp does once the first frame is drawn. A saved session then asks the
+        // server for the library.
+        bookOrbit.start()
     }
 }

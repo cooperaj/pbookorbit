@@ -59,8 +59,7 @@ BookOrbitClient::BookOrbitClient(Database *database, QObject *parent)
     // A saved session counts as signed in, so the app opens on the book list. If the server
     // has revoked it, the first request signs out.
     m_signedIn = !m_serverUrl.isEmpty() && !m_refreshToken.isEmpty();
-    m_simulateOffline = qEnvironmentVariableIntValue("PBOOKORBIT_OFFLINE") != 0;
-    m_online = !m_simulateOffline;
+    m_online = !simulatingOffline();
 
     // Offline, each tap or key press looks whether Wi-Fi has connected (see eventFilter)
     qApp->installEventFilter(this);
@@ -2193,9 +2192,25 @@ void BookOrbitClient::refreshSession(std::function<void()> then)
         });
 }
 
+bool BookOrbitClient::simulatingOffline()
+{
+    return qEnvironmentVariableIntValue("PBOOKORBIT_OFFLINE") != 0;
+}
+
+bool BookOrbitClient::networkConnected() const
+{
+    if (simulatingOffline())
+        return false;
+#ifdef EMULATOR
+    return true;
+#else
+    return QueryNetwork() & NET_CONNECTED;
+#endif
+}
+
 bool BookOrbitClient::ensureNetwork()
 {
-    if (m_simulateOffline)
+    if (simulatingOffline())
         return false;
 #ifndef EMULATOR
     if (!(QueryNetwork() & NET_CONNECTED)) {
@@ -2213,7 +2228,7 @@ bool BookOrbitClient::ensureNetwork()
 
 void BookOrbitClient::whenNetwork(std::function<void(bool connected)> then)
 {
-    if (m_simulateOffline) {
+    if (simulatingOffline()) {
         then(false);
         return;
     }
@@ -2337,7 +2352,7 @@ void BookOrbitClient::sendNow(const QByteArray &method, const QString &path, con
                              .arg(data.size()).arg(timer.elapsed()));
         if (reply->error() != QNetworkReply::NoError) {
             if (status == 0) {
-                onError(0, NO_CONNECTION);
+                onError(0, networkConnected() ? NO_REPLY : NO_CONNECTION);
                 return;
             }
             // NestJS error body: {"statusCode": 401, "message": "Invalid credentials" | [...]}

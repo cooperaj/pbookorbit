@@ -4,15 +4,17 @@ import "units.js" as Units
 // What a page shows when it has nothing to list, or couldn't load: a light title with a
 // short explanation under it, centred a little above the middle, as the system apps do
 // (the Audiobooks app's "No audiobooks", screenshot 20). Fill the space below the page's
-// toolbars with it.
+// toolbars with it. Anything inside it, such as a button, goes under the explanation.
 Item {
     id: state
     property alias title: titleText.text
     property alias text: bodyText.text
+    default property alias content: column.data
     // The explanation for lists cut down to downloaded books while offline
     readonly property string offlineText: "You're currently offline, only downloaded books can be shown."
 
     Column {
+        id: column
         x: Units.dp(90)
         width: parent.width - 2 * x
         // The middle of the text 38% of the way down

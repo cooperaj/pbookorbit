@@ -41,6 +41,10 @@ class BookOrbitClient : public QObject
     // on any reply. While false, requests other than goOnline(), sign-in and downloads
     // fail at once with NO_CONNECTION.
     Q_PROPERTY(bool online READ online NOTIFY onlineChanged)
+    // Whether the device has a network connection, as the system reports it. Nothing tells
+    // the app when that changes, so it's looked at again whenever online changes. Offline
+    // with it true means the server didn't reply.
+    Q_PROPERTY(bool networkConnected READ networkConnected NOTIFY onlineChanged)
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
     Q_PROPERTY(BookListModel *books READ books CONSTANT)
     Q_PROPERTY(int totalBooks READ totalBooks NOTIFY booksChanged)
@@ -100,6 +104,8 @@ public:
     using ErrorHandler = std::function<void(int status, const QString &message)>;
     // The error for requests that can't be sent, with status 0
     static inline const QString NO_CONNECTION = QStringLiteral("No connection");
+    // The error for requests sent that got no reply, with the network up
+    static inline const QString NO_REPLY = QStringLiteral("The server didn't reply");
 
     explicit BookOrbitClient(Database *database, QObject *parent = nullptr);
 
@@ -109,6 +115,7 @@ public:
     bool signedIn() const { return m_signedIn; }
     bool busy() const { return m_pending > 0; }
     bool online() const { return m_online; }
+    bool networkConnected() const;
     QString error() const { return m_error; }
     BookListModel *books() { return &m_list.model; }
     int totalBooks() const { return m_list.total; }
@@ -373,6 +380,9 @@ private:
     void updateSavedBooks(const QJsonArray &items);
     // Offline: the local books matching the search text
     void searchLocalBooks(const QString &text);
+    // PBOOKORBIT_OFFLINE=1: no network, and every request fails. Read each time, so tests
+    // can turn it off.
+    static bool simulatingOffline();
     // On the device, connects Wi-Fi if needed, with the system's dialog. Returns whether it's
     // connected.
     bool ensureNetwork();
@@ -455,8 +465,6 @@ private:
     QString m_refreshToken;
     bool m_signedIn = false;
     bool m_online = true;
-    // PBOOKORBIT_OFFLINE=1: every request fails as though there were no network
-    bool m_simulateOffline = false;
     // Wi-Fi connected at the last look, and when that was (see eventFilter)
     bool m_networkConnected = false;
     QElapsedTimer m_networkLook;

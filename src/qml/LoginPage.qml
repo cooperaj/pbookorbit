@@ -5,7 +5,9 @@ import "night.js" as Night
 
 // Sign-in form, centred: server, username and password fields, status line and button. Uses
 // the BookOrbit website's username and password. The server is a field until a sign-in
-// succeeds, then a pill whose cross clears it.
+// succeeds, then a pill whose cross clears it. With no network, signing in can't work, so a
+// message with a Connect button shows instead. When only the server didn't reply, the form
+// stays, with that error.
 Item {
     id: page
     // The form can slide up under the header while the keyboard is open
@@ -84,8 +86,12 @@ Item {
         }
     }
 
+    readonly property bool noNetwork: !bookOrbit.online && !bookOrbit.networkConnected
+
     Column {
         id: form
+        objectName: "signInForm"
+        visible: !page.noNetwork
         anchors.centerIn: parent
         anchors.verticalCenterOffset: -page.keyboardShift
         width: Math.min(parent.width - 2 * Units.dp(20), Units.dp(360))
@@ -195,6 +201,29 @@ Item {
             busy: bookOrbit.busy
             enabled: page.canSignIn
             onClicked: page.signIn()
+        }
+    }
+
+    EmptyState {
+        objectName: "offlineState"
+        anchors.fill: parent
+        visible: page.noNetwork
+        title: "Currently offline"
+        text: "Connect to Wi-Fi to sign in to BookOrbit."
+
+        // Shows the system's Wi-Fi dialog, and the form again once connected
+        Item {
+            width: parent.width
+            height: connectButton.height + Units.dp(30)
+            PillButton {
+                id: connectButton
+                objectName: "connectButton"
+                anchors.bottom: parent.bottom
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Connect"
+                busy: bookOrbit.busy
+                onClicked: bookOrbit.goOnline()
+            }
         }
     }
 }
