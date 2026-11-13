@@ -183,11 +183,14 @@ can have `offline: true`, to start with no network as `PBOOKORBIT_OFFLINE=1` doe
 (`testApp.offline` turns it on or off while the app is open), and `books`, entries saved
 in the database first. A book with a `file`, e.g. `"dune.epub"`, is downloaded: the file
 is made in the Books folder. `files` are book files in the Books folder the app hasn't
-recorded, for "Find books". A test typically opens the app or page, says what the server
-replies with `fakeServer.respond(method, path, status, fixture)`, taps and types, then
-waits for the result with `tryCompare` or `tryVerify`. `fakeServer.requests` lists what
-the client sent, and `fakeServer.reachable = false` refuses connections, as when the
-network is down.
+recorded, for "Find books". `savedSession` is a signed-in user of `fakeServer`,
+`serveLibrary(books, jumpBuckets)` has the server answer for the library with those
+fixtures (three books by default), and `openLibrary(books, jumpBuckets, options)` does
+both and opens the app on the library. A test typically opens the app or page, says what
+the server replies with `fakeServer.respond(method, path, status, fixture)`, taps and
+types, then waits for the result with `tryCompare` or `tryVerify`. `fakeServer.requests`
+lists what the client sent, and `fakeServer.reachable = false` refuses connections, as
+when the network is down.
 
 To add a C++ test, copy a folder under `tests/unit/`, rename its `.pro` and `.cpp`, and
 add it to `SUBDIRS` and the `depends` lines in `tests/tests.pro`. To add a QML test, add a

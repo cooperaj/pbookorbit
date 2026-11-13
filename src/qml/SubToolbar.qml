@@ -117,6 +117,7 @@ Item {
     }
     DropdownButton {
         id: sortButton
+        objectName: "sortButton"
         x: bar.width - Units.dp(26) - width
         icon: bar.sortReversed ? "sorting_ascending" : "sorting_descending"
         text: bar.sortText

@@ -11,6 +11,25 @@ UiTestCase {
         fakeServer.reset()
     }
 
+    // A signed-in user of fakeServer, as saved from an earlier sign-in
+    readonly property var savedSession: ({serverUrl: fakeServer.url, username: "reader",
+                                          refreshToken: "saved-token"})
+
+    // The server's library: one page of books, and the A-Z sections for it
+    function serveLibrary(books, jumpBuckets) {
+        fakeServer.respond("GET", "/api/v1/libraries", 200, "libraries/list.json")
+        fakeServer.respond("POST", "/api/v1/libraries/1/books", 200, books || "libraries/books.json")
+        fakeServer.respond("POST", "/api/v1/libraries/1/books/jump-buckets", 200,
+                           jumpBuckets || "libraries/jump-buckets.json")
+    }
+
+    // Opens the app signed in, on the library, with the server answering for it
+    function openLibrary(books, jumpBuckets, options) {
+        fakeServer.respond("POST", "/api/v1/auth/refresh", 200, "auth/refresh-success.json")
+        serveLibrary(books, jumpBuckets)
+        open(savedSession, options)
+    }
+
     // Opens the app on a new database holding the given settings, with options for how it
     // starts (see TestApp::reset() in main.cpp), e.g. {offline: true, books: [...]}
     function open(settings, options) {

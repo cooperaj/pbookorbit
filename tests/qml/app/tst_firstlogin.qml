@@ -11,9 +11,7 @@ AppTestCase {
     function init() {
         fakeServer.reset()
         fakeServer.respond("POST", "/api/v1/auth/login", 200, "auth/login-success.json")
-        fakeServer.respond("GET", "/api/v1/libraries", 200, "libraries/list.json")
-        fakeServer.respond("POST", "/api/v1/libraries/1/books", 200, "libraries/books.json")
-        fakeServer.respond("POST", "/api/v1/libraries/1/books/jump-buckets", 200, "libraries/jump-buckets.json")
+        serveLibrary()
         fakeServer.respond("GET", "/api/v1/books/1", 200, "books/1.json")
     }
 

@@ -452,6 +452,7 @@ Window {
     // when the sub-toolbar scrolls away.
     JumpRail {
         id: libraryRail
+        objectName: "libraryRail"
         list: bookList
         sections: bookOrbit.jumpSections
         descending: libraryQuery.sortDescending
@@ -652,6 +653,7 @@ Window {
     }
     PopupMenu {
         id: sortMenu
+        objectName: "sortMenu"
         visible: false
         z: 3
         x: openTab.sortMenuRight - width
@@ -665,6 +667,7 @@ Window {
             RadioMenuItem {
                 required property string modelData
                 required property int index
+                objectName: modelData
                 text: modelData
                 checked: index === root.activeQuery.sortIndex
                 showSeparator: index < root.activeQuery.sortOptions.length - 1
