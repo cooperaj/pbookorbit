@@ -162,17 +162,18 @@ and exits non-zero if any failed. Everything is under `tests/`:
   `app/` tests the whole app, a file per feature (`tst_signin.qml`), and `components/`
   tests one component on its own. They import the QML from `src/qml` directly.
 - `tests/support/` has `FakeServer`, a stand-in BookOrbit server on 127.0.0.1, and
-  `tests/fixtures/` the JSON it replies with.
+  `FakeInkview`, stand-ins for the inkview calls that would reach the device (see
+  below). `tests/fixtures/` has the JSON and files the server replies with.
 - `tests/appcore/` builds everything in `src/sources.pri`, the app without `main.cpp`,
   as a static library the tests link against.
 
-`tests/qml/main.cpp` sets up the globals the QML expects. `bookOrbit`, `downloads`,
-`covers` and `bookFinder` are the app's real objects. `testApp.reset(settings)` replaces
-them with new ones on a new database, in a new temporary folder that is also the working
-directory. `settings` go in the database first, as though the app had been used before:
-`{serverUrl, username}` is a signed-out user, and a `refreshToken` as well makes a saved
-session. `fakeServer` is the fake server. Objects that drive the device (`eink`,
-`diagnostics`, `browser`, `launcherTile`) are stand-ins from `tests/qml/stubs/`.
+`tests/qml/main.cpp` sets up the globals the QML expects, as the app's `main.cpp` does,
+with the app's real objects and image providers. `testApp.reset(settings, options)`
+replaces the objects with new ones on a new database, in a new temporary folder that is
+also the working directory. `settings` go in the database first, as though the app had
+been used before: `{serverUrl, username}` is a signed-out user, and a `refreshToken` as
+well makes a saved session. `fakeServer` is the fake server, and `inkview` the fake
+inkview.
 
 Tests build on two types in `tests/qml/helpers/`. `UiTestCase` finds items by `objectName`
 under its `root`, or under another item, with `find(name, under)`, and has `tap(name,
@@ -180,10 +181,12 @@ under)`, `type(name, text)` and `signIn(server, username, password)`. `AppTestCa
 `open(settings, options)`, which resets `testApp`, opens `main.qml` as `root` in a window
 of its own, and once it's drawn calls `bookOrbit.start()` as `main.cpp` does. `options`
 can have `offline: true`, to start with no network as `PBOOKORBIT_OFFLINE=1` does
-(`testApp.offline` turns it on or off while the app is open), and `books`, entries saved
-in the database first. A book with a `file`, e.g. `"dune.epub"`, is downloaded: the file
-is made in the Books folder. `files` are book files in the Books folder the app hasn't
-recorded, for "Find books". `savedSession` is a signed-in user of `fakeServer`,
+(`testApp.offline` turns it on or off while the app is open); `books`, entries saved in
+the database first, where a book with a `file`, e.g. `"dune.epub"`, is downloaded, the
+file made in `Books`, or `Audio Books` for an audiobook; `files`, book files there the app
+hasn't recorded, for "Find books"; `apps`, the system's apps for each format, e.g. `{epub:
+[{app: "koreader.app", name: "KOReader"}]}`, for Open with; and `nightMode: true`, to
+start with the system in night mode. `savedSession` is a signed-in user of `fakeServer`,
 `serveLibrary(books, jumpBuckets)` has the server answer for the library with those
 fixtures (three books by default), and `openLibrary(books, jumpBuckets, options)` does
 both and opens the app on the library. A test typically opens the app or page, says what
@@ -200,15 +203,38 @@ its way.
 To add a C++ test, copy a folder under `tests/unit/`, rename its `.pro` and `.cpp`, and
 add it to `SUBDIRS` and the `depends` lines in `tests/tests.pro`. To add a QML test, add a
 `tst_<name>.qml` to a folder under `tests/qml/`, with an `AppTestCase` or `UiTestCase` (from
-`import "../helpers"`) whose `name` says what it covers. A page that reads another global
-gets a stub in `tests/qml/stubs/` and a `setStub()` line in `tests/qml/main.cpp`.
+`import "../helpers"`) whose `name` says what it covers.
 
-The tests never call `InitInkview()`. The network calls (`QueryNetwork()`,
-`NetConnect2()`) are left out of the PC build, and `GetDeviceModel()` and `einkColor()`
-work without it, but other inkview calls (the theme, `GetSupportedFileTypes()`) are
-untried. On the PC build, inkview's storage paths (`FLASHDIR`, `CONFIGPATH`) are relative
-to the working directory, which is why `testApp` runs in a temporary folder. The client's
-log has no folder there, so it goes to the test output.
+### inkview in tests
+
+The tests never call `InitInkview()`, so the inkview calls that would reach the device are
+faked. `tests/support/fakeinkview.cpp` defines them, and since a function defined in the
+test program takes the place of a shared library's, the app's code calls these instead of
+libinkview's; every other inkview call is the real one. They're compiled against the SDK's
+`inkview.h`, so a fake whose signature drifts from the real one won't build. Faked:
+
+- Opening books and apps (`OpenBook()`, `OpenTask()`, `SetFileHandler()`): recorded, as
+  `inkview.openedBooks` (`[{path, app}]`) and `inkview.openedTasks` (`[{app, args}]`).
+  Nothing opens.
+- The library scan after a download or delete (`SendEventTo()`): counted, as
+  `inkview.libraryScans`.
+- The system's apps per format (`GetSupportedFileTypes()`, `GetLangText()`): from the
+  `apps` option.
+- Theme icons (`GetResource()`): a white 32x32 bitmap for every name, about a theme
+  icon's size, so the real `ThemeImageProvider` works and buttons sized by their icon can
+  be tapped.
+- Night mode (`IvGetScreenModeInversion()` and the app capabilities): from the
+  `nightMode` option.
+- The device model and the task manager (`GetDeviceModel()`, `GetCurrentTask()`,
+  `GetTaskInfo()`, `SetTaskParameters()`, `SetSubtaskInfo()`).
+- `QueryNetwork()`: connected unless `testApp.offline`. The client's network calls are
+  left out of the PC build anyway, so `PBOOKORBIT_OFFLINE` is what turns its network off.
+
+Code that calls an inkview function not on this list makes the real call. Pure ones such as
+`adjustAreaDefault()` and `NewBitmap8()` work without `InitInkview()`; anything that talks
+to the system needs a fake added. On the PC build, inkview's storage paths (`FLASHDIR`,
+`CONFIGPATH`) are relative to the working directory, which is why `testApp` runs in a
+temporary folder. The client's log has no folder there, so it goes to the test output.
 
 ## The BookOrbit API
 

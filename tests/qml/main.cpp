@@ -4,7 +4,6 @@
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
-#include <QQuickImageProvider>
 #include <QTemporaryDir>
 #include <QtQuickTest>
 #include <inkview.h>
@@ -12,33 +11,23 @@
 
 #include "core/bookfinder.h"
 #include "core/bookorbitclient.h"
+#include "core/browser.h"
 #include "core/database.h"
+#include "core/diagnostics.h"
 #include "core/downloads.h"
 #include "core/formats.h"
+#include "fakeinkview.h"
 #include "fakeserver.h"
 #include "ui/covers.h"
-
-// Theme icons come from the device's theme through inkview, which the tests don't start.
-// This answers image://theme/<name> with a blank, at the size asked for or else about a
-// theme icon's, so buttons sized by their icon can still be tapped.
-class BlankImageProvider : public QQuickImageProvider
-{
-public:
-    BlankImageProvider() : QQuickImageProvider(QQuickImageProvider::Image) {}
-    QImage requestImage(const QString &, QSize *size, const QSize &requested) override
-    {
-        QImage image(requested.width() > 0 ? requested.width() : 32,
-                     requested.height() > 0 ? requested.height() : 32, QImage::Format_ARGB32);
-        image.fill(Qt::transparent);
-        if (size)
-            *size = image.size();
-        return image;
-    }
-};
+#include "ui/eink.h"
+#include "ui/invertedimageprovider.h"
+#include "ui/launchertile.h"
+#include "ui/themeimageprovider.h"
 
 // The app's real objects, made afresh by reset() in a new temporary folder, which is also
 // the working directory. On the PC build inkview's paths are relative, so the database,
-// downloads, covers and log all stay in there.
+// downloads, covers and log all stay in there. Where they'd reach the device through
+// inkview, they reach FakeInkview instead.
 class TestApp : public QObject
 {
     Q_OBJECT
@@ -47,7 +36,10 @@ class TestApp : public QObject
     Q_PROPERTY(bool offline READ offline WRITE setOffline)
 
 public:
-    explicit TestApp(QQmlEngine *engine) : QObject(engine), m_engine(engine) { reset(); }
+    TestApp(QQmlEngine *engine, FakeInkview *inkview) : QObject(engine), m_engine(engine), m_inkview(inkview)
+    {
+        reset();
+    }
     ~TestApp() override
     {
         m_objects.reset();
@@ -70,11 +62,14 @@ public:
             qunsetenv("PBOOKORBIT_OFFLINE");
     }
 
-    // New objects on a new database, set as bookOrbit, downloads, covers and bookFinder.
-    // settings go in the database first, as though the app had been used before, e.g.
-    // {serverUrl: "https://books.example.com", username: "reader"}. A refreshToken as well
-    // makes a saved session. options:
+    // New objects on a new database, set as the globals main.cpp sets: bookOrbit, downloads
+    // and the rest. settings go in the database first, as though the app had been used
+    // before, e.g. {serverUrl: "https://books.example.com", username: "reader"}. A
+    // refreshToken as well makes a saved session. options:
     //   offline: start with no network (see the offline property)
+    //   apps: the system's apps for each format, {epub: [{app: "koreader.app", name:
+    //         "KOReader"}]}, for Open with
+    //   nightMode: start with the system in night mode
     //   books: book entries saved in the database, as BookOrbit lists them. One with a
     //          file, e.g. "dune.epub", is downloaded: the file is made where downloads go,
     //          Books, or Audio Books for an audiobook.
@@ -92,6 +87,8 @@ public:
         for (const QVariant &file : options.value("files").toList())
             makeBookFile(file.toString());
         setOffline(options.value("offline").toBool());
+        m_inkview->reset(options.value("apps").toMap(), options.value("nightMode").toBool());
+        objects->log = std::make_unique<diagnostics::Log>(objects->database.get());
         objects->client = std::make_unique<BookOrbitClient>(objects->database.get());
         objects->covers = std::make_unique<Covers>(objects->client.get(), objects->dir.filePath("covers"));
         objects->downloads = std::make_unique<Downloads>(objects->client.get(), objects->database.get());
@@ -102,12 +99,20 @@ public:
                 &BookOrbitClient::loadBookDetails);
         connect(objects->client.get(), &BookOrbitClient::savedBooksChanged, objects->downloads.get(),
                 &Downloads::entriesChanged);
+        objects->browser = std::make_unique<Browser>();
+        objects->eink = std::make_unique<Eink>();
+        objects->eink->followNightMode();
+        objects->launcherTile = std::make_unique<LauncherTile>();
 
         QQmlContext *context = m_engine->rootContext();
         context->setContextProperty("bookOrbit", objects->client.get());
         context->setContextProperty("covers", objects->covers.get());
         context->setContextProperty("downloads", objects->downloads.get());
         context->setContextProperty("bookFinder", objects->bookFinder.get());
+        context->setContextProperty("browser", objects->browser.get());
+        context->setContextProperty("eink", objects->eink.get());
+        context->setContextProperty("diagnostics", objects->log.get());
+        context->setContextProperty("launcherTile", objects->launcherTile.get());
         // Only now nothing refers to the old ones
         m_objects = std::move(objects);
     }
@@ -140,20 +145,24 @@ private:
     struct Objects {
         QTemporaryDir dir;
         std::unique_ptr<Database> database;
+        std::unique_ptr<diagnostics::Log> log;
         std::unique_ptr<BookOrbitClient> client;
         std::unique_ptr<Covers> covers;
         std::unique_ptr<Downloads> downloads;
         std::unique_ptr<BookFinder> bookFinder;
+        std::unique_ptr<Browser> browser;
+        std::unique_ptr<Eink> eink;
+        std::unique_ptr<LauncherTile> launcherTile;
     };
 
     QQmlEngine *m_engine;
+    FakeInkview *m_inkview;
     std::unique_ptr<Objects> m_objects;
 };
 
 // The app's components read globals that main.cpp puts in the root context. The tests get
-// the screen size, the app's real objects (see TestApp), a fake server, and a stand-in from
-// stubs/ for each object that drives the device. Add one by writing stubs/<Name>.qml and a
-// setStub() line in qmlEngineAvailable().
+// the screen size, the image providers and the app's real objects (see TestApp), a fake
+// server, and inkview, which says what the app asked of the device (see FakeInkview).
 class Setup : public QObject
 {
     Q_OBJECT
@@ -161,28 +170,16 @@ class Setup : public QObject
 public slots:
     void qmlEngineAvailable(QQmlEngine *engine)
     {
-        engine->addImageProvider("theme", new BlankImageProvider);
+        engine->addImageProvider("theme", new ThemeImageProvider);
+        engine->addImageProvider("inverted", new InvertedImageProvider);
         QQmlContext *context = engine->rootContext();
         context->setContextProperty("dpScale", 1.0);
         context->setContextProperty("screenWidth", 600);
         context->setContextProperty("windowHeight", 800);
         context->setContextProperty("fakeServer", new FakeServer(engine));
-        context->setContextProperty("testApp", new TestApp(engine));
-        setStub(engine, "eink", "Eink");
-        setStub(engine, "diagnostics", "Diagnostics");
-        setStub(engine, "browser", "Browser");
-        setStub(engine, "launcherTile", "LauncherTile");
-    }
-
-private:
-    void setStub(QQmlEngine *engine, const char *name, const QString &file)
-    {
-        QQmlComponent component(engine, QUrl::fromLocalFile(QStringLiteral(QUICK_TEST_SOURCE_DIR "/stubs/") + file + ".qml"));
-        QObject *stub = component.create();
-        if (!stub)
-            qFatal("stubs/%s.qml: %s", qPrintable(file), qPrintable(component.errorString()));
-        stub->setParent(engine);
-        engine->rootContext()->setContextProperty(QString::fromUtf8(name), stub);
+        auto *inkview = new FakeInkview(engine);
+        context->setContextProperty("inkview", inkview);
+        context->setContextProperty("testApp", new TestApp(engine, inkview));
     }
 };
 
