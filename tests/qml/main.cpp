@@ -49,6 +49,9 @@ public:
 
     bool offline() const { return qEnvironmentVariableIsSet("PBOOKORBIT_OFFLINE"); }
 
+    // A setting as the app saved it in its database, e.g. "refreshToken"
+    Q_INVOKABLE QString setting(const QString &key) const { return m_objects->database->text(key); }
+
     // The files in a folder of the device's storage, e.g. "Books", hidden ones too, by name
     Q_INVOKABLE QStringList filesIn(const QString &folder) const
     {

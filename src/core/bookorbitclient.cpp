@@ -2119,11 +2119,18 @@ void BookOrbitClient::callJson(const QByteArray &method, const QString &path, co
 void BookOrbitClient::call(const QByteArray &method, const QString &path, const QJsonDocument &body,
                            DataHandler onSuccess, ErrorHandler onError, bool quiet, bool retried)
 {
+    // After a refresh: sent if it gave an access token. If not, it isn't tried again, or a
+    // request waiting for a failed refresh would start another.
+    const auto afterRefresh = [=]() {
+        if (!m_signedIn)
+            return;
+        if (!m_accessToken.isEmpty())
+            call(method, path, body, onSuccess, onError, quiet, retried);
+        else if (!m_online)
+            onError(0, NO_CONNECTION);
+    };
     if (m_refreshing) {
-        m_afterRefresh.append([=]() {
-            if (m_signedIn)
-                call(method, path, body, onSuccess, onError, quiet, retried);
-        });
+        m_afterRefresh.append(afterRefresh);
         return;
     }
     if (!m_online) {
@@ -2136,15 +2143,8 @@ void BookOrbitClient::call(const QByteArray &method, const QString &path, const 
             return;
         }
         // Saved session but no access token yet (first request, or the last refresh failed,
-        // e.g. offline): get one first. No retry if that fails.
-        refreshSession([=]() {
-            if (!m_signedIn)
-                return;
-            if (!m_accessToken.isEmpty())
-                call(method, path, body, onSuccess, onError, quiet, retried);
-            else if (!m_online)
-                onError(0, NO_CONNECTION);
-        });
+        // e.g. offline): get one first
+        refreshSession(afterRefresh);
         return;
     }
     send(method, path, body, onSuccess, [=](int status, const QString &message) {
