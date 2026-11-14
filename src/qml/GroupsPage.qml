@@ -67,6 +67,7 @@ Item {
             // An error over rows already shown
             Text {
                 id: status
+                objectName: "errorLine"
                 x: Units.dp(26)
                 width: parent.width - 2 * x
                 visible: bookOrbit.error !== "" && groupList.count > 0
@@ -111,6 +112,7 @@ Item {
         visible: bookOrbit.error === "" && groupList.count === 0 && !page.loaded && bookOrbit.online
     }
     JumpRail {
+        objectName: "jumpRail"
         list: groupList
         sections: page.jumpSections
         descending: page.descending

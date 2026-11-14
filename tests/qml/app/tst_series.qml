@@ -122,6 +122,29 @@ AppTestCase {
         compare(rows(), "The Expanse (2), Hyperion Cantos (1), Dune (3)", "Z to A")
     }
 
+    // A-Z sections for the name sort only
+    function test_jumpRailSectionsByName() {
+        openLoadedSeries()
+        const rail = find("jumpRail", find("seriesPage"))
+        compare(rail.sections.map(s => s.label).join(""), "DHT")
+
+        sortBy("Book count")
+
+        compare(rail.sections.length, 0, "none by book count")
+    }
+
+    function test_spinnerUntilTheSeriesArrive() {
+        fakeServer.hold("GET", series)
+        const page = openSeries()
+
+        verify(find("spinner", page).visible, "the spinner")
+        verify(!find("emptyState", page).visible)
+
+        fakeServer.release("GET", series)
+        tryVerify(() => rows() !== "", 5000)
+        verify(!find("spinner", page).visible, "the spinner goes")
+    }
+
     function test_tappingASeriesListsItsBooksInOrder() {
         openLoadedSeries()
 
@@ -136,6 +159,19 @@ AppTestCase {
         verify(fakeServer.requests.some(r => r.path === books && r.body.sort && r.body.sort[0].field === "seriesIndex"
                                              && JSON.stringify(r.body.filter).indexOf("\"Dune\"") >= 0),
                "asked for in series order")
+    }
+
+    function test_backFromASeriesReturnsToTheTab() {
+        openLoadedSeries()
+        mouseClick(row("Dune"))
+        const books = find("booksOfPage")
+        verify(books.visible)
+
+        tap("backButton", books)
+
+        verify(!books.visible, "the series closes")
+        verify(find("seriesPage").visible, "the Series view is back")
+        compare(rows(), "Dune (3), Hyperion Cantos (1), The Expanse (2)")
     }
 
     function test_loadedOnlyTheFirstTime() {
@@ -190,6 +226,41 @@ AppTestCase {
         tryVerify(() => rows() === "Dune (1), The Expanse (1)", 5000, "only series of downloaded books: " + rows())
         compare(row("The Expanse").group.formats, ["m4b"])
         compare(fakeServer.requests.length, 0, "the server isn't asked")
+    }
+
+    // An error loading the series shows over the saved rows
+    function test_errorOverSavedRows() {
+        openLoadedSeries()
+        fakeServer.respond("GET", series, 500, "server-error.json")
+
+        reopen()
+        const page = find("seriesPage")
+        tap("SeriesTab")
+
+        const error = find("errorLine", page)
+        tryVerify(() => error.visible, 5000, "the error shows")
+        compare(error.text, "Internal server error (HTTP 500)")
+        compare(rows(), "Dune (3), Hyperion Cantos (1), The Expanse (2)", "over the saved rows")
+        verify(!find("emptyState", page).visible)
+    }
+
+    // Back online, the server's series replace the downloaded books'
+    function test_reconnectingShowsTheServersSeries() {
+        open(savedSession, {offline: true, books: [
+            {id: 1, title: "Dune", authors: ["Frank Herbert"], seriesName: "Dune", seriesIndex: 1,
+             formats: ["epub"], file: "Dune.epub"}]})
+        tap("SeriesTab")
+        tryVerify(() => rows() === "Dune (1)", 5000, "the downloaded book's series")
+        fakeServer.respond("POST", "/api/v1/auth/refresh", 200, "auth/refresh-success.json")
+        serveLibrary()
+        serveSeries()
+
+        testApp.offline = false
+        tap("menuButton")
+        tap("reconnect")
+
+        tryVerify(() => rows() === "Dune (3), Hyperion Cantos (1), The Expanse (2)", 5000,
+                  "the server's series: " + rows())
     }
 
     function test_offlineWithoutDownloadsSaysSo() {

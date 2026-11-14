@@ -89,6 +89,40 @@ AppTestCase {
         compare(rows(), "Empty Shelf (0), Space Opera (1), Classics (2)", "reversed")
     }
 
+    function test_sortIconReverses() {
+        openCollections()
+        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000)
+
+        tap("iconButton", find("sortButton", find("collectionsPage")))
+
+        compare(rows(), "Space Opera (1), Empty Shelf (0), Classics (2)", "Z to A")
+    }
+
+    // A-Z sections for the name sort only
+    function test_jumpRailSectionsByName() {
+        const page = openCollections()
+        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000)
+        const rail = find("jumpRail", page)
+        compare(rail.sections.map(s => s.label).join(""), "CES")
+
+        tap("sortButton", page)
+        tap("Book count", find("sortMenu"))
+
+        compare(rail.sections.length, 0, "none by book count")
+    }
+
+    function test_spinnerUntilTheCollectionsArrive() {
+        fakeServer.hold("GET", collections)
+        const page = openCollections()
+
+        verify(find("spinner", page).visible, "the spinner")
+        verify(!find("emptyState", page).visible)
+
+        fakeServer.release("GET", collections)
+        tryVerify(() => rows() !== "", 5000)
+        verify(!find("spinner", page).visible, "the spinner goes")
+    }
+
     function test_tappingACollectionListsItsBooks() {
         openCollections()
 
@@ -103,6 +137,20 @@ AppTestCase {
         verify(fakeServer.requests.some(r => r.path === collections + "/2/books/query" && r.body.sort
                                              && r.body.sort[0].field === "title"),
                "asked for by title")
+    }
+
+    function test_backFromACollectionReturnsToTheTab() {
+        const page = openCollections()
+        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000)
+        mouseClick(row("Classics"))
+        const books = find("booksOfPage")
+        verify(books.visible)
+
+        tap("backButton", books)
+
+        verify(!books.visible, "the collection closes")
+        verify(page.visible, "the Collections view is back")
+        compare(rows(), "Classics (2), Empty Shelf (0), Space Opera (1)")
     }
 
     function test_noCollectionsSaysSo() {
@@ -152,6 +200,42 @@ AppTestCase {
 
         tryVerify(() => rows() === "Classics (1)", 5000, "Classics, with Dune: " + rows())
         compare(row("Classics").group.formats, ["epub"])
+        compare(collectionRequests(), 1, "the server isn't asked again")
+    }
+
+    // An error loading the collections shows over the saved rows
+    function test_errorOverSavedRows() {
+        openCollections()
+        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000)
+        fakeServer.respond("GET", collections, 500, "server-error.json")
+
+        reopen()
+        const page = find("collectionsPage")
+        tap("CollectionsTab")
+
+        const error = find("errorLine", page)
+        tryVerify(() => error.visible, 5000, "the error shows")
+        compare(error.text, "Internal server error (HTTP 500)")
+        compare(rows(), "Classics (2), Empty Shelf (0), Space Opera (1)", "over the saved rows")
+        verify(!find("emptyState", page).visible)
+    }
+
+    // Back online, the server's collections replace the offline ones
+    function test_reconnectingShowsTheServersCollections() {
+        open(savedSession, {offline: true, books: [Object.assign({}, dune, {file: "Dune.epub"})]})
+        tap("CollectionsTab")
+        const empty = find("emptyState", find("collectionsPage"))
+        tryVerify(() => empty.visible, 5000, "none saved yet")
+        fakeServer.respond("POST", "/api/v1/auth/refresh", 200, "auth/refresh-success.json")
+        serveLibrary()
+        serveCollections()
+
+        testApp.offline = false
+        tap("menuButton")
+        tap("reconnect")
+
+        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000,
+                  "the server's collections: " + rows())
     }
 
     function test_offlineWithoutDownloadsSaysSo() {
