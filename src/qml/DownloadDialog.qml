@@ -10,8 +10,11 @@ SystemDialog {
     property var book: ({})
     // Versions to choose from: [{bookId, fileId, format, sizeBytes, kind, book}]
     property var options: []
-    // The version downloading, or last attempted
-    property var chosen: null
+    // The version downloading, or last attempted, by its index in options. Kept as an index
+    // because QML gives a new wrapper each time an object is read from a var array, so
+    // options.indexOf(chosen) wouldn't find it.
+    property int chosenIndex: -1
+    readonly property var chosen: chosenIndex >= 0 ? options[chosenIndex] : null
     readonly property bool hasFile: options.length > 0
     readonly property bool downloading: chosen !== null && downloads.bookId === chosen.bookId
     // Set when a download fails, until the next attempt
@@ -37,8 +40,10 @@ SystemDialog {
                 list = [{ bookId: newBook.id, fileId: file.id, format: file.format,
                           sizeBytes: file.sizeBytes, kind: "", book: newBook }]
         }
+        // Cleared first, so it never points past the end of the new list
+        chosenIndex = -1
         options = list
-        chosen = options.length === 1 ? options[0] : null
+        chosenIndex = options.length === 1 ? 0 : -1
         error = ""
         visible = true
     }
@@ -81,7 +86,7 @@ SystemDialog {
     // Buttons left to right, as [label, action]; an option's index downloads it
     buttons: downloading ? [["Cancel", "close"]]
              : !hasFile ? [["Close", "close"]]
-             : error !== "" ? [["Try again", options.indexOf(chosen)], ["Cancel", "close"]]
+             : error !== "" ? [["Try again", chosenIndex], ["Cancel", "close"]]
              : chosen === null ? options.map((o, i) => [o.kind, i]).concat([["Cancel", "close"]])
              : [["Download", 0], ["Cancel", "close"]]
 
@@ -91,7 +96,7 @@ SystemDialog {
             return
         }
         error = ""
-        chosen = options[action]
+        chosenIndex = action
         downloads.download(chosen.book, chosen.fileId)
     }
 

@@ -87,6 +87,25 @@ AppTestCase {
         verify(downloads.pathsOnDevice(1)[0].endsWith("Dune - Frank Herbert (2).epub"), "the new file is the book's")
     }
 
+    // A failed download leaves nothing behind, and can be tried again
+    function test_failedDownloadCanBeTriedAgain() {
+        openDownloadsLibrary()
+        fakeServer.respond("GET", duneDownload, 500, "server-error.json")
+        const dialog = tapBook("Dune")
+
+        tapButton("Download", dialog)
+
+        tryCompare(dialog, "message", "The server couldn't send the book (HTTP 500)")
+        compare(testApp.filesIn("Books"), [], "no part file left")
+        verify(!downloads.isOnDevice(1), "not recorded")
+
+        fakeServer.respondFile(duneDownload, "files/book.epub", "Dune - Frank Herbert.epub")
+        tapButton("Try again", dialog)
+
+        tryVerify(() => !dialog.visible, 5000, "the second try opens the book")
+        compare(testApp.filesIn("Books"), ["Dune - Frank Herbert.epub"])
+    }
+
     function test_cancellingStopsTheDownload() {
         openDownloadsLibrary()
         fakeServer.respondFile(duneDownload, "files/book.epub", "Dune - Frank Herbert.epub")
