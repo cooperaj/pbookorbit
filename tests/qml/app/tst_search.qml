@@ -250,18 +250,19 @@ AppTestCase {
         compare(dialog.book.title, "Dune Messiah")
     }
 
+    // Holding a result also ends typing, which saves the search. A real hold is BookRow's
+    // and BookListPage's to test.
     function test_holdingAResultOpensItsMenu() {
         openSearchLibrary()
         openSearch()
         searchFor("dune")
-        const row = resultRow("Dune Messiah")
         const menu = find("bookMenu")
 
-        mousePress(row)
-        tryVerify(() => menu.visible, 3000, "the menu opens")
-        mouseRelease(row)
+        resultRow("Dune Messiah").held()
 
+        tryVerify(() => menu.visible, 3000, "the menu opens")
         compare(menu.book.title, "Dune Messiah", "for that book")
+        compare(bookOrbit.recentSearches, ["dune"], "the search is saved")
     }
 
     // Offline, every word must be in the title, an author or a series, in any case

@@ -45,9 +45,21 @@ wired separately.
 
 ## Open questions
 
-The spinner and empty-state rules differ between the library (busy, downloaded only), the
-group lists (`loaded`), books-of (total) and search. Each difference gets listed and
-decided when ListPage takes them over: deliberate, or drift.
+BookListPage and GroupsPage take their spinner and empty-state rules as inputs, so each
+view still decides them as before. Side by side, each to be decided as deliberate or
+drift:
+
+| Rule | Library | Books-of | Search | Group lists |
+|---|---|---|---|---|
+| Spinner while | the client is busy | the total is unknown | never (in the search box) | not loaded, online |
+| Empty state when no rows | only with an error or downloaded only | always, once loaded | always, once searched | once loaded, or an error |
+| Online, no books, no error | blank | "No books found" | "No books found" | "No …" text |
+| Error line over rows | yes | no | no sub-toolbar | yes |
+| Error, no rows | "Something went wrong" | "Something went wrong" | untested | "Something went wrong" |
+
+One rule changed in step 3: a books-of page's rail now starts below the sub-toolbar, as
+the library's does, rather than over it. It lines up with the library's rail as before
+(the emulator's screens are pixel-identical).
 
 ## Testing
 
@@ -71,6 +83,6 @@ survive the refactor.
    behaviour, with the shared client behaviour in Series.
 2. Done: an author's series, its own behaviour only (straight to the books for a single
    series, exact author matching, reloading per author, the sort kept between authors).
-3. BookListPage for the library, books-of and search, with a component test. Then their
-   feature files are trimmed to what's particular to each.
+3. Done: BookListPage for the library, books-of and search, with a component test. Their
+   feature files drop what it covers, and books-of has its own feature file.
 4. Steps 1, 3 and 4 of the target, with every test passing after each.

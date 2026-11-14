@@ -12,7 +12,7 @@ import "units.js" as Units
 Rectangle {
     id: page
     // For the page-turn keys, which main.qml forwards to the front page
-    readonly property alias pageButtons: resultsPages
+    readonly property alias pageButtons: results.pageButtons
     color: "white"
 
     // Same height as the main toolbar, so the page below doesn't jump
@@ -26,7 +26,7 @@ Rectangle {
     readonly property bool searching: showResults && (searchTimer.running || bookOrbit.searchTotal === -1)
     // The recent searches stay until there are results, or there are none. A refined
     // search keeps the last results until its own arrive.
-    readonly property bool showingResults: showResults && (results.count > 0 || !searching)
+    readonly property bool showingResults: showResults && (results.list.count > 0 || !searching)
 
     signal back()
     signal bookClicked(var book)
@@ -267,90 +267,40 @@ Rectangle {
         }
     }
 
-    // Matching books, as library rows without sections. Loads on scroll like the library
-    // list.
-    ListView {
+    // Matching books, as library rows without sections, loaded on scroll
+    BookListPage {
         id: results
-        objectName: "searchResults"
         visible: page.showingResults
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
         width: parent.width
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
+        listName: "searchResults"
+        emptyName: "noBooksFound"
         model: bookOrbit.searchResults
-
-        function loadVisibleBooks() {
-            if (count === 0)
-                return
-            let first = indexAt(width / 2, contentY)
-            let last = indexAt(width / 2, contentY + height - 1)
-            if (first < 0)
-                first = 0
-            if (last < 0)
-                last = count - 1
-            const screenful = last - first + 1
-            bookOrbit.loadSearchResults(first - screenful, last + screenful)
+        // The spinner is in the search box
+        empty: true
+        emptyTitle: "No books found"
+        emptyText: bookOrbit.online ? "Try a different title, author or series."
+                                    : "You're currently offline, only downloaded books can be searched."
+        onRowsWanted: (first, last) => bookOrbit.loadSearchResults(first, last)
+        // Scrolling or tapping a book ends typing, which saves the search
+        onScrollStarted: page.hideKeyboard()
+        onBookClicked: (book) => {
+            page.hideKeyboard()
+            page.bookClicked(book)
         }
-        Timer {
-            id: loadTimer
-            interval: 150
-            onTriggered: results.loadVisibleBooks()
+        onBookHeld: (row) => {
+            page.hideKeyboard()
+            page.bookHeld(row)
         }
-        onContentYChanged: loadTimer.restart()
-        onCountChanged: loadTimer.restart()
 
         // New results start at the top
         Connections {
             target: bookOrbit
             function onSearchChanged() {
                 if (bookOrbit.searchTotal === -1)
-                    results.positionViewAtBeginning()
+                    results.list.positionViewAtBeginning()
             }
         }
-
-        // Fast black-and-white updates while scrolling, as in the library list. Scrolling
-        // also ends typing.
-        onMovementStarted: {
-            page.hideKeyboard()
-            const pos = mapToGlobal(0, 0)
-            eink.enterA2ForFlick(pos.x, pos.y, width, height)
-        }
-        onMovementEnded: eink.leaveA2Soon()
-        onVisibleChanged: if (!visible) eink.leaveA2()
-
-        delegate: BookRow {
-            id: bookRow
-            required book
-            // Also ends typing, which saves the search
-            onClicked: {
-                page.hideKeyboard()
-                page.bookClicked(book)
-            }
-            onHeld: {
-                page.hideKeyboard()
-                page.bookHeld(bookRow)
-            }
-        }
-    }
-
-    ListScrollbar {
-        list: results
-        bottomInset: resultsPages.height
-    }
-    PageButtons {
-        id: resultsPages
-        list: results
-        anchors.bottom: results.bottom
-    }
-
-    // When nothing matches
-    EmptyState {
-        objectName: "noBooksFound"
-        anchors.fill: results
-        visible: page.showingResults && results.count === 0
-        title: "No books found"
-        text: bookOrbit.online ? "Try a different title, author or series."
-                               : "You're currently offline, only downloaded books can be searched."
     }
 }

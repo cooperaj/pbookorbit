@@ -10,12 +10,6 @@ AppTestCase {
         tryCompare(find("bookList"), "count", 30)
     }
 
-    function firstTitleShown() {
-        const list = find("bookList")
-        const row = list.itemAtIndex(list.indexAt(list.width / 2, list.contentY + 1))
-        return row ? row.book.title : ""
-    }
-
     // A-Z, the default sort, has the server's sections on the rail
     function test_titleSortShowsServerSections() {
         openLibrary30()
@@ -23,17 +17,6 @@ AppTestCase {
         const rail = find("libraryRail")
         tryVerify(() => rail.visible, 5000, "the rail shows")
         compare(rail.sections.map(s => s.label + s.index).join(" "), "A0 B5 C10 F15 M20 T25")
-    }
-
-    function test_railJumpsInTheLibrary() {
-        openLibrary30()
-        const rail = find("libraryRail")
-        tryVerify(() => rail.visible, 5000, "the rail shows")
-
-        const m = rail.entries.findIndex(entry => entry.label === "M")
-        mouseClick(rail, rail.width / 2, rail.entriesTop + (m + 0.5) * rail.pitch)
-
-        tryVerify(() => firstTitleShown() === "Maple", 5000, "Maple, the first M, is at the top")
     }
 
     // Dates have no letter sections

@@ -28,6 +28,7 @@
         <file>qml/BookMenu.qml</file>
         <file>qml/PageHeader.qml</file>
         <file>qml/BookInfoPage.qml</file>
+        <file>qml/BookListPage.qml</file>
         <file>qml/BooksOfPage.qml</file>
         <file>qml/PageButtons.qml</file>
         <file>qml/JumpRail.qml</file>

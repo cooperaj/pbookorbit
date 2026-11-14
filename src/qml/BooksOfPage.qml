@@ -11,7 +11,7 @@ import "units.js" as Units
 Rectangle {
     id: page
     // For the page-turn keys, which main.qml forwards to the front page
-    readonly property alias pageButtons: booksPages
+    readonly property alias pageButtons: books.pageButtons
     color: "white"
 
     // "Author", "Series" or "Collection", and the name
@@ -21,18 +21,15 @@ Rectangle {
     property real jumpRailTop: NaN
     // And its entry spacing
     property real jumpRailPitch: NaN
-    // For the sub-toolbar, in SubToolbar's terms
-    property string filterText
-    property string sortText
-    property bool sortReversed: false
-    property bool sortDescending: false
+    // Its sort and filter, for the sub-toolbar
+    property ListQuery query: null
     // In series order: each book under its number, with a number rail
     property bool seriesOrder: false
     property bool downloadedOnly: false
     property bool filterOpen: false
     property bool sortOpen: false
     property int tabOverhang: Units.dp(4)
-    readonly property alias list: books
+    readonly property alias list: books.list
 
     signal back()
     signal filterClicked()
@@ -48,110 +45,50 @@ Rectangle {
         onBack: page.back()
     }
 
-    ListView {
+    BookListPage {
         id: books
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
         width: parent.width
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
+        listName: "booksOfList"
         model: bookOrbit.booksOf
-
-        // The sub-toolbar scrolls away with the books, like the library's
-        header: SubToolbar {
-            width: ListView.view ? ListView.view.width : 0
-            filterText: page.filterText
-            sortText: page.sortText
-            sortReversed: page.sortReversed
-            filterOpen: page.filterOpen
-            sortOpen: page.sortOpen
-            tabOverhang: page.tabOverhang
-            onFilterClicked: page.filterClicked()
-            onSortClicked: page.sortClicked()
-            onSortIconClicked: page.sortIconClicked()
-        }
-
-        function loadVisibleBooks() {
-            if (count === 0)
-                return
-            let first = indexAt(width / 2, contentY)
-            let last = indexAt(width / 2, contentY + height - 1)
-            if (first < 0)
-                first = 0
-            if (last < 0)
-                last = count - 1
-            const screenful = last - first + 1
-            bookOrbit.loadBooksOf(first - screenful, last + screenful)
-        }
-        Timer {
-            id: loadTimer
-            interval: 150
-            onTriggered: books.loadVisibleBooks()
-        }
-        onContentYChanged: loadTimer.restart()
-        onCountChanged: loadTimer.restart()
+        query: page.query
+        filterOpen: page.filterOpen
+        sortOpen: page.sortOpen
+        tabOverhang: page.tabOverhang
+        // No error over books already shown
+        showErrorLine: false
+        onFilterClicked: page.filterClicked()
+        onSortClicked: page.sortClicked()
+        onSortIconClicked: page.sortIconClicked()
+        jumpSections: bookOrbit.booksOfJumpSections
+        // In the list's coordinates, below the header
+        jumpRailTop: page.jumpRailTop - y
+        jumpRailPitch: page.jumpRailPitch
+        alphabetical: !page.seriesOrder
+        descending: page.query ? page.query.sortDescending : false
+        // Short series are quick enough to scroll without one
+        minSections: page.seriesOrder ? 16 : 1
+        // Until the first page says how many there are. No books, or they failed to load,
+        // says so.
+        loading: bookOrbit.booksOfTotal !== 0
+        empty: true
+        emptyTitle: bookOrbit.booksOfTotal !== 0 ? "Something went wrong"
+                    : page.downloadedOnly ? "No downloaded books" : "No books found"
+        emptyText: bookOrbit.booksOfTotal !== 0 ? bookOrbit.error
+                   : !page.downloadedOnly ? ""
+                   : bookOrbit.online ? "Turn off Downloaded only to see them all." : offlineText
+        onRowsWanted: (first, last) => bookOrbit.loadBooksOf(first, last)
+        onBookClicked: (book) => page.bookClicked(book)
+        onBookHeld: (row) => page.bookHeld(row)
 
         // A different author or series starts at the top
         Connections {
             target: bookOrbit
             function onBooksOfChanged() {
                 if (bookOrbit.booksOfTotal === -1)
-                    books.positionViewAtBeginning()
+                    books.list.positionViewAtBeginning()
             }
         }
-
-        // Fast black-and-white updates while scrolling, as in the library list
-        onMovementStarted: {
-            const pos = mapToGlobal(0, 0)
-            eink.enterA2ForFlick(pos.x, pos.y, width, height)
-        }
-        onMovementEnded: eink.leaveA2Soon()
-        onVisibleChanged: if (!visible) eink.leaveA2()
-
-        delegate: BookRow {
-            id: bookRow
-            required book
-            onClicked: page.bookClicked(book)
-            onHeld: page.bookHeld(bookRow)
-        }
-    }
-
-    ListScrollbar {
-        list: books
-        bottomInset: booksPages.height
-    }
-    JumpRail {
-        list: books
-        sections: bookOrbit.booksOfJumpSections
-        alignTop: page.jumpRailTop
-        alignPitch: page.jumpRailPitch
-        alphabetical: !page.seriesOrder
-        descending: page.sortDescending
-        // Short series are quick enough to scroll without one
-        minSections: page.seriesOrder ? 16 : 1
-        bottomInset: booksPages.height
-    }
-    PageButtons {
-        id: booksPages
-        list: books
-        anchors.bottom: books.bottom
-    }
-
-    Spinner {
-        id: spinner
-        list: books
-        visible: books.count === 0 && bookOrbit.booksOfTotal !== 0 && bookOrbit.error === ""
-    }
-    // If there are no books, or they failed to load
-    EmptyState {
-        id: empty
-        anchors.fill: books
-        anchors.topMargin: books.headerItem ? books.headerItem.height : 0
-        visible: books.count === 0 && !spinner.visible
-        title: bookOrbit.booksOfTotal !== 0 ? "Something went wrong"
-               : page.downloadedOnly ? "No downloaded books" : "No books found"
-        text: bookOrbit.booksOfTotal !== 0 ? bookOrbit.error
-              : !page.downloadedOnly ? ""
-              : bookOrbit.online ? "Turn off Downloaded only to see them all." : offlineText
     }
 }

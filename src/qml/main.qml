@@ -81,7 +81,7 @@ Window {
                                            : showingAuthorSeries ? authorSeriesPage.list
                                            : showingCollections ? collectionsPage.list
                                            : showingSeries ? seriesPage.list
-                                           : showingAuthors ? authorsPage.list : bookList
+                                           : showingAuthors ? authorsPage.list : libraryPage.list
 
     AppHeader {
         id: header
@@ -119,7 +119,7 @@ Window {
 
     // Signed in: sub-toolbar with filter and sort, the book list, and a footer for the
     // views, modelled on Libby
-    readonly property var filterOptions: ["All titles", "Ebooks", "Audiobooks"]
+    readonly property var filterOptions: libraryQuery.filterOptions
     // File formats per filter option (BookOrbit's EBOOK_FORMAT_LIST and AUDIO_FORMAT_LIST)
     readonly property var filterFormats: [
         [],
@@ -137,7 +137,7 @@ Window {
         onApplied: {
             bookOrbit.setBookQuery(sortFields[sortIndex], descending(), root.filterFormats[filterIndex],
                                    downloadedOnly)
-            bookList.positionViewAtBeginning()
+            libraryPage.list.positionViewAtBeginning()
         }
     }
     // Collection sorts from BookOrbit's collections page, minus "Custom order": A-Z, and
@@ -304,7 +304,7 @@ Window {
                                                     : showingCollections ? collectionsPage.pageButtons
                                                     : showingSeries ? seriesPage.pageButtons
                                                     : showingAuthors ? authorsPage.pageButtons
-                                                    : pageButtons
+                                                    : libraryPage.pageButtons
     readonly property bool overlayOpen: dropdownOpen || menu.visible || bookMenu.visible
                                         || deleteDialog.visible || downloadDialog.visible
                                         || findBooksDialog.visible || bookInfoPage.menuOpen
@@ -333,7 +333,8 @@ Window {
         closeDropdowns()
         if (open) {
             // Bring a partly scrolled-off bar fully into view first
-            if (activeList.headerItem.mapToItem(root.contentItem, 0, 0).y < activeList.y)
+            if (activeList.headerItem.mapToItem(root.contentItem, 0, 0).y
+                    < activeList.mapToItem(root.contentItem, 0, 0).y)
                 activeList.positionViewAtBeginning()
             // Align the menu and the tab copy with where the sub-toolbar has scrolled to.
             // The list can't move while a menu is open, since the fade takes taps.
@@ -342,131 +343,40 @@ Window {
         }
     }
 
-    ListView {
-        id: bookList
-        objectName: "bookList"
+    BookListPage {
+        id: libraryPage
+        objectName: "libraryPage"
+        listName: "bookList"
+        railName: "libraryRail"
+        emptyName: "libraryEmptyState"
         visible: bookOrbit.signedIn && !root.showingCollections && !root.showingSeries && !root.showingAuthors
         anchors.top: header.bottom
         anchors.bottom: footer.top
         anchors.left: parent.left
         anchors.right: parent.right
-        clip: true
-        // No bounce at the ends; on e-ink that's just extra redraws
-        boundsBehavior: Flickable.StopAtBounds
         model: bookOrbit.books
-
-        // Load the visible books plus a screen either side once scrolling pauses, so a fast
-        // flick doesn't fetch every page it passes
-        function loadVisibleBooks() {
-            if (count === 0)
-                return
-            let first = indexAt(width / 2, contentY)
-            let last = indexAt(width / 2, contentY + height - 1)
-            if (first < 0)
-                first = 0   // the sub-toolbar is at the top
-            if (last < 0)
-                last = count - 1
-            const screenful = last - first + 1
-            bookOrbit.loadBooks(first - screenful, last + screenful)
-        }
-        Timer {
-            id: loadTimer
-            interval: 150
-            onTriggered: bookList.loadVisibleBooks()
-        }
-        onContentYChanged: loadTimer.restart()
-        onCountChanged: loadTimer.restart()
-
-        // The filter/sort bar and any status line scroll with the books. The first row sits
-        // right under the bar, as in the system library.
-        header: Column {
-            width: ListView.view.width
-            bottomPadding: status.visible ? Units.dp(8) : 0
-
-            SubToolbar {
-                width: parent.width
-                filterText: root.filterOptions[libraryQuery.filterIndex]
-                sortText: "By " + libraryQuery.sortOptions[libraryQuery.sortIndex]
-                sortReversed: libraryQuery.sortReversed
-                filterOpen: filterMenu.visible
-                sortOpen: sortMenu.visible
-                tabOverhang: filterMenu.border.width - 1
-                onFilterClicked: root.toggleDropdown(filterMenu)
-                onSortClicked: root.toggleDropdown(sortMenu)
-                onSortIconClicked: libraryQuery.reverseSort()
-            }
-            // An error over books already shown
-            Text {
-                id: status
-                x: Units.dp(26)
-                width: parent.width - 2 * x
-                visible: bookOrbit.error !== "" && bookList.count > 0
-                topPadding: Units.dp(8)
-                text: bookOrbit.error
-                font.pointSize: 8
-                wrapMode: Text.Wrap
-            }
-        }
-
-        // Fast black-and-white (A2) updates for the list while it scrolls. A2 takes screen
-        // coordinates, hence mapToGlobal (as in the SDK's qml_test).
-        onMovementStarted: {
-            const pos = mapToGlobal(0, 0)
-            eink.enterA2ForFlick(pos.x, pos.y, width, height)
-        }
-        // Fires when momentum stops, not when the finger lifts
-        onMovementEnded: eink.leaveA2Soon()
-        onVisibleChanged: if (!visible) eink.leaveA2()
-        delegate: BookRow {
-            id: bookRow
-            required book
-            onClicked: root.openBook(book)
-            onHeld: bookMenu.open(bookRow)
-        }
-    }
-
-    // No downloaded books, or the library couldn't load. The spinner shows while the first
-    // books load.
-    EmptyState {
-        objectName: "libraryEmptyState"
-        anchors.fill: bookList
-        anchors.topMargin: bookList.headerItem ? bookList.headerItem.height : 0
-        visible: bookList.visible && bookList.count === 0
-                 && (bookOrbit.error !== "" || (!bookOrbit.busy && libraryQuery.downloadedOnly))
-        title: bookOrbit.error !== "" ? "Something went wrong"
-               : ["No downloaded books", "No downloaded ebooks", "No downloaded audiobooks"][libraryQuery.filterIndex]
-        text: bookOrbit.error !== "" ? bookOrbit.error
-              : !bookOrbit.online ? offlineText
-              : "Books you download show here, and can be read offline."
-    }
-
-    ListScrollbar {
-        list: bookList
-        bottomInset: pageButtons.height
-    }
-    // Only until the first books arrive; later pages load on scroll
-    Spinner {
-        list: bookList
-        visible: bookList.visible && bookOrbit.error === "" && bookList.count === 0 && bookOrbit.busy
-    }
-
-    // For A-Z sorts. Starts below the sub-toolbar, clear of the sort button, and stays put
-    // when the sub-toolbar scrolls away.
-    JumpRail {
-        id: libraryRail
-        objectName: "libraryRail"
-        list: bookList
-        sections: bookOrbit.jumpSections
+        query: libraryQuery
+        filterOpen: filterMenu.visible
+        sortOpen: sortMenu.visible
+        tabOverhang: filterMenu.border.width - 1
+        onFilterClicked: root.toggleDropdown(filterMenu)
+        onSortClicked: root.toggleDropdown(sortMenu)
+        onSortIconClicked: libraryQuery.reverseSort()
+        // For A-Z sorts
+        jumpSections: bookOrbit.jumpSections
         descending: libraryQuery.sortDescending
-        topInset: bookList.headerItem ? bookList.headerItem.height : 0
-        bottomInset: pageButtons.height
-    }
-
-    // Over the bottom of the list, above the footer
-    PageButtons {
-        id: pageButtons
-        list: bookList
-        anchors.bottom: bookList.bottom
+        // The spinner only until the first books arrive; later pages load on scroll. No
+        // downloaded books, or the library couldn't load, says so.
+        loading: bookOrbit.busy
+        empty: bookOrbit.error !== "" || (!bookOrbit.busy && libraryQuery.downloadedOnly)
+        emptyTitle: bookOrbit.error !== "" ? "Something went wrong"
+                    : ["No downloaded books", "No downloaded ebooks", "No downloaded audiobooks"][libraryQuery.filterIndex]
+        emptyText: bookOrbit.error !== "" ? bookOrbit.error
+                   : !bookOrbit.online ? libraryPage.offlineText
+                   : "Books you download show here, and can be read offline."
+        onRowsWanted: (first, last) => bookOrbit.loadBooks(first, last)
+        onBookClicked: (book) => root.openBook(book)
+        onBookHeld: (row) => bookMenu.open(row)
     }
 
     GroupsPage {
@@ -487,8 +397,8 @@ Window {
         sortReversed: collectionsQuery.sortReversed
         descending: collectionsQuery.sortDescending
         // Jump rail aligned and spaced like the library's
-        jumpRailTop: libraryRail.entriesY - y
-        jumpRailPitch: libraryRail.pitch
+        jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
+        jumpRailPitch: libraryPage.rail.pitch
         sortOpen: sortMenu.visible
         tabOverhang: sortMenu.border.width - 1
         onSortClicked: root.toggleDropdown(sortMenu)
@@ -517,8 +427,8 @@ Window {
         sortReversed: seriesQuery.sortReversed
         descending: seriesQuery.sortDescending
         // Jump rail aligned and spaced like the library's
-        jumpRailTop: libraryRail.entriesY - y
-        jumpRailPitch: libraryRail.pitch
+        jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
+        jumpRailPitch: libraryPage.rail.pitch
         sortOpen: sortMenu.visible
         tabOverhang: sortMenu.border.width - 1
         onSortClicked: root.toggleDropdown(sortMenu)
@@ -555,8 +465,8 @@ Window {
         sortReversed: authorsQuery.sortReversed
         descending: authorsQuery.sortDescending
         // Jump rail aligned and spaced like the library's
-        jumpRailTop: libraryRail.entriesY - y
-        jumpRailPitch: libraryRail.pitch
+        jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
+        jumpRailPitch: libraryPage.rail.pitch
         sortOpen: sortMenu.visible
         tabOverhang: sortMenu.border.width - 1
         onFilterClicked: root.toggleDropdown(filterMenu)
@@ -811,8 +721,8 @@ Window {
             sortReversed: authorSeriesQuery.sortReversed
             descending: authorSeriesQuery.sortDescending
             // Jump rail aligned and spaced like the library's
-            jumpRailTop: libraryRail.entriesY - y
-            jumpRailPitch: libraryRail.pitch
+            jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
+            jumpRailPitch: libraryPage.rail.pitch
             sortOpen: sortMenu.visible
             tabOverhang: sortMenu.border.width - 1
             onSortClicked: root.toggleDropdown(sortMenu)
@@ -825,13 +735,10 @@ Window {
         id: booksOfPage
         objectName: "booksOfPage"
         // Jump rail aligned and spaced like the library's
-        jumpRailTop: libraryRail.entriesY
-        jumpRailPitch: libraryRail.pitch
+        jumpRailTop: libraryPage.y + libraryPage.rail.entriesY
+        jumpRailPitch: libraryPage.rail.pitch
         // Sub-toolbar, using the shared menus
-        filterText: root.filterOptions[root.booksOfQuery.filterIndex]
-        sortText: "By " + root.booksOfQuery.sortOptions[root.booksOfQuery.sortIndex]
-        sortReversed: root.booksOfQuery.sortReversed
-        sortDescending: root.booksOfQuery.sortDescending
+        query: root.booksOfQuery
         seriesOrder: root.booksOfQuery.sortFields[root.booksOfQuery.sortIndex] === "seriesIndex"
         downloadedOnly: root.booksOfQuery.downloadedOnly
         filterOpen: filterMenu.visible

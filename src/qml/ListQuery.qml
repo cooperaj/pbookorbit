@@ -10,6 +10,8 @@ QtObject {
     property var sortDescendingByDefault: []
     // Whether the view has the filter button (content type and downloaded only)
     property bool hasFilter: true
+    // The content types, as filterIndex counts them
+    readonly property var filterOptions: ["All titles", "Ebooks", "Audiobooks"]
 
     property int sortIndex: 0
     property bool sortReversed: false
