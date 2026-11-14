@@ -19,8 +19,13 @@ TestCase {
         return item
     }
 
+    // Waits for the item's row or column to be laid out first. Something that has just
+    // opened or changed, such as a menu or a dialog's buttons, has its items all at the same
+    // place until the next frame, and a tap then lands on the last one.
     function tap(name, under) {
-        mouseClick(find(name, under))
+        const item = find(name, under)
+        waitForItemPolished(item.parent)
+        mouseClick(item)
     }
 
     // A dialog's button by its label, e.g. "Download"
@@ -41,8 +46,7 @@ TestCase {
         return button
     }
 
-    // Waits for the buttons to be laid out first: a dialog that has just opened, or just
-    // changed its buttons, has them all at the same place until the next frame
+    // Waits for the buttons to be laid out first, as tap() does
     function tapButton(label, under) {
         const button = findButton(label, under)
         waitForItemPolished(button.parent)

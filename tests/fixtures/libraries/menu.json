@@ -1,0 +1,70 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "title": "Dune",
+      "authors": [
+        "Frank Herbert"
+      ],
+      "seriesName": "Dune",
+      "seriesIndex": 1,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 11,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1950000
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Dune Messiah",
+      "authors": [
+        "Frank Herbert"
+      ],
+      "seriesName": "Dune",
+      "seriesIndex": 2,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-02T10:00:00.000Z",
+      "files": [
+        {
+          "id": 61,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1950000
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Hyperion",
+      "authors": [
+        "Dan Simmons"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-01T10:00:00.000Z",
+      "files": [
+        {
+          "id": 21,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1950000
+        }
+      ]
+    }
+  ],
+  "total": 3,
+  "page": 0,
+  "size": 40
+}

@@ -817,6 +817,7 @@ Window {
 
     BooksOfPage {
         id: booksOfPage
+        objectName: "booksOfPage"
         // Jump rail aligned and spaced like the library's
         jumpRailTop: libraryRail.entriesY
         jumpRailPitch: libraryRail.pitch
@@ -845,6 +846,7 @@ Window {
 
     BookInfoPage {
         id: bookInfoPage
+        objectName: "bookInfoPage"
         anchors.fill: parent
         visible: root.showingInfo
         onBack: root.showingInfo = false
@@ -862,6 +864,7 @@ Window {
     // Over the pages, opened from any of their book lists
     BookMenu {
         id: bookMenu
+        objectName: "bookMenu"
         anchors.fill: parent
         onInfoChosen: (book) => {
             bookInfoPage.show(book)
@@ -876,6 +879,7 @@ Window {
     // With an ebook and an audiobook on the device it asks which, as DownloadDialog does.
     SystemDialog {
         id: deleteDialog
+        objectName: "deleteDialog"
         anchors.fill: parent
         property var book: ({})
         // The book's records, and the kinds on the device ("ebook", "audiobook")

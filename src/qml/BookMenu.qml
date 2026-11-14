@@ -187,6 +187,7 @@ Item {
                     Math.min(bookMenu.rowRect.y, parent.height - Units.dp(11) - height))
 
         PopupMenuItem {
+            objectName: "bookInfo"
             icon: "info"
             text: "Book info"
             showSeparator: authorItem.visible || seriesItem.visible || deleteItem.visible || openWithItem.visible
@@ -197,6 +198,7 @@ Item {
         }
         PopupMenuItem {
             id: authorItem
+            objectName: "authorBooks"
             visible: bookMenu.authors.length > 0
             icon: "search"
             text: "All books of author"
@@ -208,6 +210,7 @@ Item {
         }
         PopupMenuItem {
             id: seriesItem
+            objectName: "seriesBooks"
             visible: bookMenu.series !== ""
             icon: "search"
             text: "All books of series"
@@ -219,6 +222,7 @@ Item {
         }
         PopupMenuItem {
             id: deleteItem
+            objectName: "deleteBook"
             visible: bookMenu.onDevice
             icon: "trash"
             text: "Delete"
@@ -230,6 +234,7 @@ Item {
         }
         PopupMenuItem {
             id: openWithItem
+            objectName: "openWith"
             visible: bookMenu.openWithTarget !== null
             icon: "e3_menu_open"
             text: "Open with"
@@ -242,6 +247,7 @@ Item {
             PopupMenuItem {
                 required property var modelData
                 required property int index
+                objectName: modelData.name
                 subItem: true
                 text: modelData.name
                 showSeparator: index < bookMenu.openWithTarget.apps.length - 1
