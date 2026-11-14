@@ -1,0 +1,29 @@
+{
+  "id": 1,
+  "title": "Dune",
+  "authors": [
+    "Frank Herbert"
+  ],
+  "seriesName": "Dune",
+  "seriesIndex": 1,
+  "hasCover": false,
+  "addedAt": "2026-01-03T10:00:00.000Z",
+  "publishedDate": "1965-08-01",
+  "pageCount": 412,
+  "language": "en",
+  "publisher": "Chilton Books",
+  "genres": [
+    "Science Fiction",
+    "Classics"
+  ],
+  "description": "<p>Set on the desert planet Arrakis.</p>",
+  "files": [
+    {
+      "id": 11,
+      "format": "epub",
+      "role": "primary",
+      "sizeBytes": 1950000,
+      "filename": "Dune - Frank Herbert.epub"
+    }
+  ]
+}

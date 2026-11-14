@@ -73,7 +73,8 @@ public:
     //   books: book entries saved in the database, as BookOrbit lists them. One with a
     //          file, e.g. "dune.epub", is downloaded: the file is made where downloads go,
     //          Books, or Audio Books for an audiobook. undeletable: true makes a folder
-    //          there instead, which deleting the book fails on.
+    //          there instead, which deleting the book fails on. details: the book's
+    //          details as GET /books/:id gave them, saved for offline.
     //   files: names of book files there that the app hasn't recorded, as though copied
     //          onto the device another way
     Q_INVOKABLE void reset(const QVariantMap &settings = {}, const QVariantMap &options = {})
@@ -124,7 +125,10 @@ private:
         const int id = entry.value("id").toInt();
         const QString file = entry.take("file").toString();
         const bool undeletable = entry.take("undeletable").toBool();
+        const QVariantMap details = entry.take("details").toMap();
         database->saveBook(id, entry);
+        if (!details.isEmpty())
+            database->saveBookDetails(id, details);
         if (!file.isEmpty())
             database->addBookFile(id, makeBookFile(file, undeletable));
     }

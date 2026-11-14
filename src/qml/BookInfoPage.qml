@@ -259,6 +259,8 @@ Rectangle {
                         ]
                         InfoField {
                             required property var modelData
+                            required property int index
+                            objectName: ["titleField", "authorField", "seriesField", "fileField"][index]
                             width: fields.width
                             label: modelData[0]
                             value: modelData[1]
@@ -272,6 +274,7 @@ Rectangle {
                 // if they reach further. The chosen half is black, like the footer's tabs.
                 Rectangle {
                     id: kindSwitch
+                    objectName: "kindSwitch"
                     visible: page.hasKinds
                     x: fields.x
                     y: Math.max(fields.height + Units.dp(10), cover.height - height)
@@ -288,6 +291,7 @@ Rectangle {
                             required property var modelData
                             required property int index
                             readonly property bool chosen: page.kind === modelData[1] || halfMouse.pressed
+                            objectName: modelData[1] + "Half"
                             x: index * kindSwitch.width / 2
                             width: kindSwitch.width / 2
                             height: kindSwitch.height
@@ -334,6 +338,7 @@ Rectangle {
 
             // ADDED, SIZE, FORMAT
             InfoCells {
+                objectName: "fileCells"
                 width: parent.width
                 cells: [
                     ["Added", page.record.addedAt ? Qt.formatDateTime(new Date(page.record.addedAt), "dd/MM/yy hh:mm") : ""],
@@ -344,6 +349,7 @@ Rectangle {
             }
             // From the book's details, once loaded
             InfoCells {
+                objectName: "detailCells"
                 width: parent.width
                 showTopLine: false
                 cells: [
@@ -362,16 +368,19 @@ Rectangle {
             Item { width: 1; height: Units.dp(16) }
 
             InfoField {
+                objectName: "publisherField"
                 width: parent.width
                 label: "Publisher"
                 value: page.details.publisher || ""
             }
             InfoField {
+                objectName: "genresField"
                 width: parent.width
                 label: "Genres"
                 value: (page.details.genres || []).join(", ")
             }
             InfoField {
+                objectName: "descriptionField"
                 width: parent.width
                 label: "Description"
                 value: page.details.description || ""
@@ -394,6 +403,7 @@ Rectangle {
     // CHOOSE ACTION, between the page buttons: rounded at the top, its bottom edge off the
     // screen
     Rectangle {
+        objectName: "chooseAction"
         visible: page.version !== null
         anchors.horizontalCenter: parent.horizontalCenter
         y: parent.height - pageButtons.height
@@ -430,6 +440,7 @@ Rectangle {
     // The menu, in the middle of the faded page. Tapping outside closes it.
     Item {
         id: actions
+        objectName: "actions"
         anchors.fill: parent
         visible: false
         // Whether Open with is expanded
@@ -457,6 +468,7 @@ Rectangle {
             // Only when there's no Open with, as for audiobooks: an ebook opens straight from
             // the list
             PopupMenuItem {
+                objectName: "openBook"
                 visible: page.versionOnDevice && page.openWithTarget === null
                 icon: "e3_menu_open"
                 text: "Open book"
@@ -466,6 +478,7 @@ Rectangle {
                 }
             }
             PopupMenuItem {
+                objectName: "download"
                 visible: !page.versionOnDevice
                 icon: "download_from_cloud"
                 text: "Download"
@@ -475,6 +488,7 @@ Rectangle {
                 }
             }
             PopupMenuItem {
+                objectName: "openWith"
                 visible: page.openWithTarget !== null
                 icon: "e3_menu_open"
                 text: "Open with"
@@ -487,18 +501,24 @@ Rectangle {
                 PopupMenuItem {
                     required property var modelData
                     required property int index
+                    objectName: modelData.name
                     subItem: true
                     text: modelData.name
                     showSeparator: index < page.openWithTarget.apps.length - 1 || deleteItem.visible
+                    // Closing empties this Repeater and destroys the item, so ids and
+                    // modelData are read first
                     onClicked: {
+                        const infoPage = page
                         const target = page.openWithTarget
+                        const app = modelData
                         actions.visible = false
-                        page.openWithChosen(target, modelData)
+                        infoPage.openWithChosen(target, app)
                     }
                 }
             }
             PopupMenuItem {
                 id: deleteItem
+                objectName: "deleteBook"
                 visible: page.versionOnDevice
                 icon: "trash"
                 text: "Delete"

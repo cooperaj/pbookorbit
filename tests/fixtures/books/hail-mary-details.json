@@ -1,0 +1,31 @@
+{
+  "id": 5,
+  "title": "Project Hail Mary",
+  "authors": [
+    "Andy Weir"
+  ],
+  "seriesName": null,
+  "seriesIndex": null,
+  "hasCover": false,
+  "addedAt": "2026-01-02T10:00:00.000Z",
+  "publishedYear": 2021,
+  "pageCount": 476,
+  "language": "en",
+  "audioMetadata": {
+    "durationSeconds": 58560
+  },
+  "files": [
+    {
+      "id": 51,
+      "format": "epub",
+      "role": "primary",
+      "sizeBytes": 2400000
+    },
+    {
+      "id": 52,
+      "format": "m4b",
+      "role": "content",
+      "sizeBytes": 1181116006
+    }
+  ]
+}

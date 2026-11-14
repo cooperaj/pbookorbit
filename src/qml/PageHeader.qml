@@ -14,6 +14,7 @@ Rectangle {
 
     IconButton {
         id: backButton
+        objectName: "backButton"
         // Same position as on the search page
         x: Units.dp(7)
         anchors.verticalCenter: parent.verticalCenter
