@@ -531,6 +531,7 @@ Window {
 
     GroupsPage {
         id: authorsPage
+        objectName: "authorsPage"
         visible: bookOrbit.signedIn && root.showingAuthors
         model: bookOrbit.authorsList
         jumpSections: bookOrbit.authorJumpSections
@@ -756,6 +757,7 @@ Window {
 
     AuthorInfoPage {
         id: authorInfoPage
+        objectName: "authorInfoPage"
         anchors.fill: parent
         visible: root.showingAuthor
         onBack: root.showingAuthor = false
