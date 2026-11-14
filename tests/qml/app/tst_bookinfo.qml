@@ -64,6 +64,20 @@ AppTestCase {
         return actions
     }
 
+    // The menu's items, top to bottom, each with "-" after it if it draws a line below:
+    // "download, openWith-, KOReader-, PB Reader"
+    function menuLines(actions) {
+        const column = find("deleteBook", actions).parent
+        waitForItemPolished(column)
+        const items = []
+        for (const item of column.children) {
+            if (item.visible && item.showSeparator !== undefined)
+                items.push(item)
+        }
+        items.sort((a, b) => a.y - b.y)
+        return items.map(item => item.objectName + (item.showSeparator ? "-" : "")).join(", ")
+    }
+
     function test_showsTheBooksFields() {
         openMenuLibrary()
 
@@ -239,6 +253,36 @@ AppTestCase {
         compare(inkview.openedTasks.length, 1, "one app started")
         compare(inkview.openedTasks[0].app, audiobookPlayer)
         verify(inkview.openedTasks[0].args[1].endsWith("/Audio Books/The Martian.m4b"))
+    }
+
+    // Lines go between items, never under the last
+    function test_menuLinesOnlyBetweenItems() {
+        openDownloadsLibrary({books: [onDevice(hailMary, "Project Hail Mary.epub")], apps: epubApps})
+        const info = openInfo("Project Hail Mary")
+        let actions = chooseAction(info)
+        compare(menuLines(actions), "openWith-, deleteBook", "the ebook on the device")
+        tap("openWith", actions)
+        compare(menuLines(actions), "openWith-, KOReader-, PB Reader-, deleteBook", "with its apps")
+        mouseClick(actions, 5, 5)
+
+        tap("audiobookHalf", info)
+        actions = chooseAction(info)
+        compare(menuLines(actions), "download", "the audiobook, not on the device and no app for it")
+        mouseClick(actions, 5, 5)
+
+        tap("ebookHalf", info)
+        tap("deleteBook", chooseAction(info))
+        tapButton("Yes", find("deleteDialog"))
+        actions = chooseAction(info)
+        compare(menuLines(actions), "download-, openWith", "the ebook, deleted")
+    }
+
+    function test_menuLinesWithOpenBook() {
+        openDownloadsLibrary({books: [onDevice({id: 4, title: "The Martian", authors: ["Andy Weir"],
+                                                formats: ["m4b"]}, "The Martian.m4b")]})
+        const info = openInfo("The Martian")
+
+        compare(menuLines(chooseAction(info)), "openBook-, deleteBook")
     }
 
     function test_openWithTheChosenApp() {

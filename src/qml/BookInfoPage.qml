@@ -472,6 +472,7 @@ Rectangle {
                 visible: page.versionOnDevice && page.openWithTarget === null
                 icon: "e3_menu_open"
                 text: "Open book"
+                showSeparator: openWithItem.visible || deleteItem.visible
                 onClicked: {
                     actions.visible = false
                     page.openChosen(page.version.bookId, page.hasKinds ? page.kind : "")
@@ -482,12 +483,14 @@ Rectangle {
                 visible: !page.versionOnDevice
                 icon: "download_from_cloud"
                 text: "Download"
+                showSeparator: openWithItem.visible || deleteItem.visible
                 onClicked: {
                     actions.visible = false
                     page.downloadChosen(page.version.book, [page.version])
                 }
             }
             PopupMenuItem {
+                id: openWithItem
                 objectName: "openWith"
                 visible: page.openWithTarget !== null
                 icon: "e3_menu_open"
