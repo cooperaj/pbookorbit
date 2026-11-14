@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QTcpSocket>
 #include <algorithm>
+#include <utility>
 
 FakeServer::FakeServer(QObject *parent) : QObject(parent)
 {
@@ -77,9 +78,29 @@ bool FakeServer::matches(const QJsonValue &body, const QJsonValue &match)
     return body == match;
 }
 
+void FakeServer::hold(const QString &method, const QString &path)
+{
+    m_held.insert(method + ' ' + path);
+}
+
+void FakeServer::release(const QString &method, const QString &path)
+{
+    const QString key = method + ' ' + path;
+    m_held.remove(key);
+    const QList<Waiting> waiting = std::exchange(m_waiting, {});
+    for (const Waiting &request : waiting) {
+        if (request.key != key)
+            m_waiting.append(request);
+        else if (request.socket)
+            answer(request.socket, request.key, request.body);
+    }
+}
+
 void FakeServer::reset()
 {
     m_responses.clear();
+    m_held.clear();
+    m_waiting.clear();
     m_requests.clear();
     emit requestsChanged();
     setReachable(true);
@@ -117,8 +138,17 @@ void FakeServer::readRequest(QTcpSocket *socket)
 
     const QJsonValue bodyValue = json.isObject() ? QJsonValue(json.object())
                                : json.isArray() ? QJsonValue(json.array()) : QJsonValue();
+    const QString key = method + ' ' + path;
+    if (m_held.contains(key))
+        m_waiting.append({socket, key, bodyValue});
+    else
+        answer(socket, key, bodyValue);
+}
+
+void FakeServer::answer(QTcpSocket *socket, const QString &key, const QJsonValue &bodyValue)
+{
     Response response{404, R"({"statusCode":404,"message":"Not found"})", {}};
-    const QList<Response> candidates = m_responses.value(method + ' ' + path);
+    const QList<Response> candidates = m_responses.value(key);
     const auto matched = std::find_if(candidates.rbegin(), candidates.rend(), [&](const Response &r) {
         return !r.match.isUndefined() && !r.match.isNull() && matches(bodyValue, r.match);
     });

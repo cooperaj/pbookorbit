@@ -192,8 +192,10 @@ and types, then waits for the result with `tryCompare` or `tryVerify`. With `mat
 reply is only for requests whose body has those fields, e.g. `{sort: [{field:
 "author"}]}`, so one path can answer each sort or filter with its own fixture; objects and
 arrays in it need only be part of the body's, and the latest reply that matches wins.
-`fakeServer.requests` lists what the client sent, and `fakeServer.reachable = false`
-refuses connections, as when the network is down.
+`fakeServer.requests` lists what the client sent, `fakeServer.reachable = false` refuses
+connections, as when the network is down, and `fakeServer.hold(method, path)` keeps those
+requests waiting until `fakeServer.release(method, path)`, for acting while a reply is on
+its way.
 
 To add a C++ test, copy a folder under `tests/unit/`, rename its `.pro` and `.cpp`, and
 add it to `SUBDIRS` and the `depends` lines in `tests/tests.pro`. To add a QML test, add a

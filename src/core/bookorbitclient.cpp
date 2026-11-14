@@ -2173,13 +2173,21 @@ void BookOrbitClient::refreshSession(std::function<void()> then)
         for (const auto &fn : queued)
             fn();
     };
-    // Returns NativeCredentials with a new refresh token, invalidating the old one
-    send("POST", "/auth/refresh", QJsonDocument(QJsonObject{{"refreshToken", m_refreshToken}}),
-        [this, finish](const QByteArray &data) {
-            applyCredentials(QJsonDocument::fromJson(data).object());
+    // Returns NativeCredentials with a new refresh token, invalidating the old one. A reply
+    // for a session that has since ended (signed out, or another sign-in) is dropped, so it
+    // can't sign the user back in.
+    const QString refreshToken = m_refreshToken;
+    send("POST", "/auth/refresh", QJsonDocument(QJsonObject{{"refreshToken", refreshToken}}),
+        [this, finish, refreshToken](const QByteArray &data) {
+            if (refreshToken == m_refreshToken)
+                applyCredentials(QJsonDocument::fromJson(data).object());
             finish();
         },
-        [this, finish](int status, const QString &message) {
+        [this, finish, refreshToken](int status, const QString &message) {
+            if (refreshToken != m_refreshToken) {
+                finish();
+                return;
+            }
             // 401: the session expired or was revoked. Other failures (offline, server
             // down) keep the session for next time.
             if (status == 401) {

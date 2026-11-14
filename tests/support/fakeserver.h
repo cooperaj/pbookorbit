@@ -3,7 +3,10 @@
 #include <QHash>
 #include <QJsonValue>
 #include <QObject>
+#include <QPointer>
+#include <QSet>
 #include <QTcpServer>
+#include <QTcpSocket>
 #include <QVariantList>
 
 // A stand-in BookOrbit server on 127.0.0.1. A test says what each request gets with
@@ -32,7 +35,12 @@ public:
     // and one without match answers the rest.
     Q_INVOKABLE void respond(const QString &method, const QString &path, int status,
                              const QString &fixture = QString(), const QVariant &match = QVariant());
-    // Forgets the responses and requests, and is reachable again
+    // Keeps requests to method and path waiting, unanswered, until release(), so a test can
+    // act while a reply is on its way
+    Q_INVOKABLE void hold(const QString &method, const QString &path);
+    // Answers the requests held for method and path, and stops holding them
+    Q_INVOKABLE void release(const QString &method, const QString &path);
+    // Forgets the responses, requests and holds, and is reachable again
     Q_INVOKABLE void reset();
 
 signals:
@@ -46,7 +54,14 @@ private:
         QJsonValue match;
     };
 
+    struct Waiting {
+        QPointer<QTcpSocket> socket;
+        QString key;
+        QJsonValue body;
+    };
+
     static bool matches(const QJsonValue &body, const QJsonValue &match);
+    void answer(QTcpSocket *socket, const QString &key, const QJsonValue &body);
 
     void readRequest(QTcpSocket *socket);
 
@@ -54,5 +69,7 @@ private:
     // Kept so the url stays the same while unreachable
     quint16 m_port = 0;
     QHash<QString, QList<Response>> m_responses;
+    QSet<QString> m_held;
+    QList<Waiting> m_waiting;
     QVariantList m_requests;
 };

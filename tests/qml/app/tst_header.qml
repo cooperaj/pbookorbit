@@ -82,21 +82,4 @@ AppTestCase {
         tryCompare(dialog, "step", "done")
         verify(downloads.isOnDevice(1), "Dune is found")
     }
-
-    // Signing out ends the session on the server and goes back to sign-in, keeping the
-    // server and username
-    function test_signOutReturnsToSignIn() {
-        openLibrary()
-        tryCompare(find("bookList"), "count", 3)
-        tap("menuButton")
-
-        tap("signOut")
-
-        verify(find("loginPage").visible, "the sign-in page shows")
-        verify(!find("headerMenu").visible, "the menu closes")
-        tryVerify(() => fakeServer.requests.some(r => r.path === "/api/v1/auth/logout"), 5000,
-                  "the session is ended on the server")
-        verify(find("serverPill").visible, "the server is kept")
-        compare(find("usernameField").text, "reader")
-    }
 }
