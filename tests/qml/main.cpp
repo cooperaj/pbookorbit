@@ -1,5 +1,6 @@
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -13,6 +14,7 @@
 #include "core/bookorbitclient.h"
 #include "core/database.h"
 #include "core/downloads.h"
+#include "core/formats.h"
 #include "fakeserver.h"
 #include "ui/covers.h"
 
@@ -74,9 +76,10 @@ public:
     // makes a saved session. options:
     //   offline: start with no network (see the offline property)
     //   books: book entries saved in the database, as BookOrbit lists them. One with a
-    //          file, e.g. "dune.epub", is downloaded: the file is made in the Books folder.
-    //   files: names of book files in the Books folder that the app hasn't recorded, as
-    //          though copied onto the device another way
+    //          file, e.g. "dune.epub", is downloaded: the file is made where downloads go,
+    //          Books, or Audio Books for an audiobook.
+    //   files: names of book files there that the app hasn't recorded, as though copied
+    //          onto the device another way
     Q_INVOKABLE void reset(const QVariantMap &settings = {}, const QVariantMap &options = {})
     {
         auto objects = std::make_unique<Objects>();
@@ -119,11 +122,12 @@ private:
             database->addBookFile(id, makeBookFile(file));
     }
 
-    // Makes a book file where Downloads puts ebooks, and returns its path. Relative on the
-    // PC build, so in the temporary folder.
+    // Makes a book file where Downloads puts it, and returns its path. Relative on the PC
+    // build, so in the temporary folder.
     static QString makeBookFile(const QString &name)
     {
-        const QString folder = QString::fromUtf8(FLASHDIR "/Books");
+        const QString folder = QString::fromUtf8(isAudioFormat(QFileInfo(name).suffix()) ? AUDIOBOOKS_DEFAULT_PATH
+                                                                                         : FLASHDIR "/Books");
         QDir().mkpath(folder);
         QFile book(folder + "/" + name);
         if (!book.open(QIODevice::WriteOnly) || book.write("test book") < 0)

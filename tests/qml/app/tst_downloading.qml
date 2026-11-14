@@ -123,7 +123,8 @@ AppTestCase {
         verify(!downloads.isOnDevice(1), "not recorded")
     }
 
-    // A book on the device opens straight away
+    // A book on the device opens straight away. Where it opens, the reader or the audiobook
+    // player, is the device's to do and can't be seen here.
     function test_downloadedBookOpensWithoutAsking() {
         openDownloadsLibrary({books: [{id: 1, title: "Dune", authors: ["Frank Herbert"], formats: ["epub"],
                                        file: "Dune.epub"}]})
@@ -131,5 +132,25 @@ AppTestCase {
         mouseClick(bookRow("Dune"))
 
         verify(!find("downloadDialog").visible, "no download dialog")
+    }
+
+    function test_downloadedAudiobookOpensWithoutAsking() {
+        openDownloadsLibrary({books: [{id: 4, title: "The Martian", authors: ["Andy Weir"], formats: ["m4b"],
+                                       file: "The Martian.m4b"}]})
+
+        mouseClick(bookRow("The Martian"))
+
+        verify(!find("downloadDialog").visible, "no download dialog")
+    }
+
+    // Having one version of a book is enough: it doesn't offer the other
+    function test_bookWithItsAudiobookDownloadedOpensWithoutAsking() {
+        openDownloadsLibrary({books: [{id: 5, title: "Project Hail Mary", authors: ["Andy Weir"],
+                                       formats: ["epub", "m4b"], file: "Project Hail Mary.m4b"}]})
+
+        mouseClick(bookRow("Project Hail Mary"))
+
+        verify(!find("downloadDialog").visible, "no download dialog")
+        compare(testApp.filesIn("Audio Books"), ["Project Hail Mary.m4b"], "set up in Audio Books")
     }
 }
