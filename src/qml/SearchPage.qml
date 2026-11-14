@@ -65,6 +65,7 @@ Rectangle {
 
         IconButton {
             id: backButton
+            objectName: "backButton"
             // Chevron with a little space either side; the search box starts after it
             x: Units.dp(7)
             anchors.verticalCenter: parent.verticalCenter
@@ -106,6 +107,7 @@ Rectangle {
             // come back, so clearing returns to them.
             IconButton {
                 id: clearButton
+                objectName: "clearButton"
                 visible: searchField.text !== ""
                 anchors.right: parent.right
                 anchors.rightMargin: searchBox.thickBorder
@@ -121,6 +123,7 @@ Rectangle {
             }
             TextField {
                 id: searchField
+                objectName: "searchField"
                 anchors.left: searchIcon.status === Image.Ready ? searchIcon.right : parent.left
                 anchors.right: clearButton.visible ? clearButton.left : parent.right
                 anchors.margins: searchBox.thickBorder
@@ -195,6 +198,7 @@ Rectangle {
     }
 
     ListView {
+        objectName: "recentSearches"
         visible: !page.showResults
         anchors.top: recentHeading.bottom
         anchors.bottom: parent.bottom
@@ -204,6 +208,8 @@ Rectangle {
         model: bookOrbit.recentSearches
 
         delegate: Item {
+            required property string modelData
+            objectName: "recent " + modelData
             width: ListView.view.width
             height: Units.dp(56)
 
@@ -251,6 +257,7 @@ Rectangle {
     // list.
     ListView {
         id: results
+        objectName: "searchResults"
         visible: page.showResults
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
@@ -330,6 +337,7 @@ Rectangle {
     }
     // When nothing matches
     EmptyState {
+        objectName: "noBooksFound"
         anchors.fill: results
         visible: page.showResults && results.count === 0 && bookOrbit.searchTotal === 0
         title: "No books found"
