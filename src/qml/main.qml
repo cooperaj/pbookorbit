@@ -366,14 +366,17 @@ Window {
         jumpSections: bookOrbit.jumpSections
         descending: libraryQuery.sortDescending
         // The spinner only until the first books arrive; later pages load on scroll. No
-        // downloaded books, or the library couldn't load, says so.
+        // books, or the library couldn't load, says so.
         loading: bookOrbit.busy
-        empty: bookOrbit.error !== "" || (!bookOrbit.busy && libraryQuery.downloadedOnly)
+        empty: bookOrbit.error !== "" || bookOrbit.totalBooks === 0
         emptyTitle: bookOrbit.error !== "" ? "Something went wrong"
-                    : ["No downloaded books", "No downloaded ebooks", "No downloaded audiobooks"][libraryQuery.filterIndex]
+                    : libraryQuery.downloadedOnly
+                    ? ["No downloaded books", "No downloaded ebooks", "No downloaded audiobooks"][libraryQuery.filterIndex]
+                    : ["No books", "No ebooks", "No audiobooks"][libraryQuery.filterIndex]
         emptyText: bookOrbit.error !== "" ? bookOrbit.error
                    : !bookOrbit.online ? libraryPage.offlineText
-                   : "Books you download show here, and can be read offline."
+                   : libraryQuery.downloadedOnly ? "Books you download show here, and can be read offline."
+                   : "Books in your BookOrbit library show here."
         onRowsWanted: (first, last) => bookOrbit.loadBooks(first, last)
         onBookClicked: (book) => root.openBook(book)
         onBookHeld: (row) => bookMenu.open(row)

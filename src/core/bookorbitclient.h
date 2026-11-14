@@ -47,6 +47,7 @@ class BookOrbitClient : public QObject
     Q_PROPERTY(bool networkConnected READ networkConnected NOTIFY onlineChanged)
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
     Q_PROPERTY(BookListModel *books READ books CONSTANT)
+    // Number of books, or -1 until known
     Q_PROPERTY(int totalBooks READ totalBooks NOTIFY booksChanged)
     // Jump rail sections for the A-Z sorts, e.g. [{label: "A", index: 2}, ...]. Empty for
     // date sorts.
@@ -118,7 +119,7 @@ public:
     bool networkConnected() const;
     QString error() const { return m_error; }
     BookListModel *books() { return &m_list.model; }
-    int totalBooks() const { return m_list.total; }
+    int totalBooks() const;
     QVariantList jumpSections() const { return m_list.jumpSections; }
     BookListModel *searchResults() { return &m_search.model; }
     int searchTotal() const;

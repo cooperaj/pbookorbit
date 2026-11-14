@@ -46,4 +46,32 @@ AppTestCase {
         tryVerify(() => rail.visible, 5000, "the rail shows")
         compare(rail.sections.map(s => s.label + s.index).join(" "), "A0 B2 M5 T8")
     }
+
+    // An empty library says so, once the server has answered
+    function test_noBooksSaysSo() {
+        fakeServer.hold("POST", "/api/v1/libraries/1/books")
+        openLibrary("libraries/search-none.json", "libraries/jump-buckets.json")
+        const empty = find("libraryEmptyState")
+        tryVerify(() => fakeServer.requests.some(r => r.path === "/api/v1/libraries/1/books"), 5000)
+        verify(!empty.visible, "not while the server answers")
+
+        fakeServer.release("POST", "/api/v1/libraries/1/books")
+
+        tryVerify(() => empty.visible, 5000, "No books")
+        compare(empty.title, "No books")
+        compare(empty.text, "Books in your BookOrbit library show here.")
+    }
+
+    function test_noBooksOfTheTypeSaysSo() {
+        fakeServer.respond("POST", "/api/v1/libraries/1/books", 200, "libraries/search-none.json",
+                           {filter: {rules: [{field: "format"}]}})
+        openLibrary30()
+
+        tap("filterButton", find("bookList"))
+        tap("Ebooks", find("filterMenu"))
+
+        const empty = find("libraryEmptyState")
+        tryVerify(() => empty.visible, 5000, "No ebooks")
+        compare(empty.title, "No ebooks")
+    }
 }

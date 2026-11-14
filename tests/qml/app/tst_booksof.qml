@@ -151,6 +151,22 @@ AppTestCase {
         compare(empty.text, "Internal server error (HTTP 500)")
     }
 
+    // An error over the books already shown, as in the library
+    function test_errorOverItsBooks() {
+        openMenuLibrary()
+        const page = openBooksOf("authorBooks")
+        tryVerify(() => titles(page) === "Dune, Dune Messiah", 5000)
+        fakeServer.respond("POST", books, 500, "server-error.json", {sort: [{field: "author"}]})
+
+        tap("sortButton", page)
+        tap("Author", find("sortMenu"))
+
+        const error = find("errorLine", page)
+        tryVerify(() => error.visible, 5000, "the error shows")
+        compare(error.text, "Internal server error (HTTP 500)")
+        compare(titles(page), "Dune, Dune Messiah", "over the books")
+    }
+
     // Offline, the downloaded ones, without asking the server
     function test_offlineListsTheDownloadedBooks() {
         open(savedSession, {offline: true, books: [

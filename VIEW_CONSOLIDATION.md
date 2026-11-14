@@ -46,8 +46,7 @@ wired separately.
 ## Open questions
 
 BookListPage and GroupsPage take their spinner and empty-state rules as inputs, so each
-view still decides them as before. Side by side, each to be decided as deliberate or
-drift:
+view decides them. Side by side, as of step 3:
 
 | Rule | Library | Books-of | Search | Group lists |
 |---|---|---|---|---|
@@ -56,6 +55,15 @@ drift:
 | Online, no books, no error | blank | "No books found" | "No books found" | "No …" text |
 | Error line over rows | yes | no | no sub-toolbar | yes |
 | Error, no rows | "Something went wrong" | "Something went wrong" | untested | "Something went wrong" |
+
+Decided:
+
+- **Online, no books**: drift. The library now says "No books" ("No ebooks", "No
+  audiobooks" with a filter), once the server has answered.
+- **Error line over rows**: drift. Books-of now shows it, as the library does.
+- **Search, error with no rows**: to check later (TODO.md).
+- **Spinner**: deliberate. Search's is in the search box, and the library and books-of
+  read "still loading" from different client signals that mean the same.
 
 One rule changed in step 3: a books-of page's rail now starts below the sub-toolbar, as
 the library's does, rather than over it. It lines up with the library's rail as before

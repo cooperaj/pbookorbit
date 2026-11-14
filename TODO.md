@@ -71,3 +71,5 @@
   `libinkview` and `libhwconfig` are marked executable-stack (`readelf -lW`, GNU_STACK
   RWE), so the firmware's may be too. If the app fails to start there, give it a small
   shell launcher that sets that variable and then runs the binary, as KOReader's does.
+- Search: test what a failed search shows. If it hides the error (it likely says "No books
+  found"), make it say "Something went wrong" like the other lists.

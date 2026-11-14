@@ -56,8 +56,6 @@ Rectangle {
         filterOpen: page.filterOpen
         sortOpen: page.sortOpen
         tabOverhang: page.tabOverhang
-        // No error over books already shown
-        showErrorLine: false
         onFilterClicked: page.filterClicked()
         onSortClicked: page.sortClicked()
         onSortIconClicked: page.sortIconClicked()

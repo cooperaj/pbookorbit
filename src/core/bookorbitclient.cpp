@@ -387,6 +387,11 @@ QVariantList BookOrbitClient::localBooksOf() const
     return books;
 }
 
+int BookOrbitClient::totalBooks() const
+{
+    return m_list.listGeneration == m_list.queryGeneration ? m_list.total : -1;
+}
+
 int BookOrbitClient::booksOfTotal() const
 {
     return m_booksOf.listGeneration == m_booksOf.queryGeneration ? m_booksOf.total : -1;
