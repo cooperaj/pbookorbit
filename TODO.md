@@ -73,3 +73,7 @@
   shell launcher that sets that variable and then runs the binary, as KOReader's does.
 - Search: test what a failed search shows. If it hides the error (it likely says "No books
   found"), make it say "Something went wrong" like the other lists.
+- Server errors: revisit the messages and how they show. The line above a list (library,
+  books-of, the tabs) is messy and incomplete: raw text such as "Internal server error
+  (HTTP 500)" squeezed between the sub-toolbar and the rows. Consider an icon in the
+  header's title instead, like the offline one, that opens the details.
