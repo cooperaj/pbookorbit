@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QTcpSocket>
 #include <QUrl>
+#include <QUrlQuery>
 #include <algorithm>
 #include <utility>
 
@@ -137,12 +138,17 @@ void FakeServer::readRequest(QTcpSocket *socket)
 
     const QList<QByteArray> requestLine = lines.first().trimmed().split(' ');
     const QString method = QString::fromLatin1(requestLine.value(0));
-    const QString path = QString::fromLatin1(requestLine.value(1)).section('?', 0, 0);
+    const QString target = QString::fromLatin1(requestLine.value(1));
+    const QString path = target.section('?', 0, 0);
+    QVariantMap query;
+    for (const auto &[name, value] : QUrlQuery(target.section('?', 1)).queryItems(QUrl::FullyDecoded))
+        query.insert(name, value);
     const QByteArray body = data.mid(headerEnd + 4, length);
     const QJsonDocument json = QJsonDocument::fromJson(body);
     m_requests.append(QVariantMap{
         {"method", method},
         {"path", path},
+        {"query", query},
         {"body", json.toVariant()},
     });
     emit requestsChanged();

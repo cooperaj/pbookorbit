@@ -779,6 +779,7 @@ Window {
     // back button, e.g. "SERIES / ADRIAN TCHAIKOVSKY"
     Rectangle {
         id: authorSeriesView
+        objectName: "authorSeriesView"
         property string name
         anchors.fill: parent
         visible: root.showingAuthorSeries
@@ -795,6 +796,7 @@ Window {
         }
         GroupsPage {
             id: authorSeriesPage
+            objectName: "authorSeriesPage"
             anchors.top: authorSeriesHeader.bottom
             anchors.bottom: parent.bottom
             anchors.left: parent.left

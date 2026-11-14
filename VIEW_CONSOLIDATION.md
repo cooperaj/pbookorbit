@@ -69,8 +69,8 @@ survive the refactor.
 1. Done: GroupsPage takes `error` and `online` (defaulting to the client's) and has a
    component test. The Collections, Series and Authors files keep only their own
    behaviour, with the shared client behaviour in Series.
-2. An author's series: its own behaviour only (straight to the books for a single
-   series, exact author matching, reloading per author).
+2. Done: an author's series, its own behaviour only (straight to the books for a single
+   series, exact author matching, reloading per author, the sort kept between authors).
 3. BookListPage for the library, books-of and search, with a component test. Then their
    feature files are trimmed to what's particular to each.
 4. Steps 1, 3 and 4 of the target, with every test passing after each.

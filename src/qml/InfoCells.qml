@@ -28,6 +28,7 @@ Item {
                 required property var modelData
                 required property int index
                 readonly property bool tappable: modelData.length > 2 && modelData[2] === true
+                objectName: modelData[0] + "Cell"
                 width: cellRow.width / 3
                 height: cellRow.height
 

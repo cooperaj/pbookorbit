@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Dune",
+      "bookCount": 2,
+      "readCount": 0,
+      "authors": [
+        "Frank Herbert"
+      ],
+      "coverBookIds": [],
+      "lastAddedAt": "2026-01-05 10:00:00+00"
+    },
+    {
+      "id": 6,
+      "name": "Pandora Sequence",
+      "bookCount": 1,
+      "readCount": 0,
+      "authors": [
+        "Frank Herbert",
+        "Bill Ransom"
+      ],
+      "coverBookIds": [],
+      "lastAddedAt": "2026-01-01 10:00:00+00"
+    }
+  ],
+  "total": 2
+}

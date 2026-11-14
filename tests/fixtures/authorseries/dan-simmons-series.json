@@ -1,0 +1,49 @@
+{
+  "items": [
+    {
+      "id": 2,
+      "name": "Hyperion Cantos",
+      "bookCount": 2,
+      "readCount": 0,
+      "authors": [
+        "Dan Simmons"
+      ],
+      "coverBookIds": [],
+      "lastAddedAt": "2026-01-02 10:00:00+00"
+    },
+    {
+      "id": 3,
+      "name": "Ilium",
+      "bookCount": 1,
+      "readCount": 0,
+      "authors": [
+        "Dan Simmons"
+      ],
+      "coverBookIds": [],
+      "lastAddedAt": "2026-01-04 10:00:00+00"
+    },
+    {
+      "id": 4,
+      "name": "Endymion",
+      "bookCount": 2,
+      "readCount": 0,
+      "authors": [
+        "Dan Simmons"
+      ],
+      "coverBookIds": [],
+      "lastAddedAt": "2026-01-03 10:00:00+00"
+    },
+    {
+      "id": 5,
+      "name": "Simmonsen Stories",
+      "bookCount": 3,
+      "readCount": 0,
+      "authors": [
+        "Dan Simmonsen"
+      ],
+      "coverBookIds": [],
+      "lastAddedAt": "2026-01-01 10:00:00+00"
+    }
+  ],
+  "total": 4
+}

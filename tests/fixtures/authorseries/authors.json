@@ -1,0 +1,29 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Frank Herbert",
+      "sortName": "Herbert, Frank",
+      "bookCount": 3,
+      "lastAddedAt": "2026-01-05 10:00:00+00",
+      "imageUrl": null
+    },
+    {
+      "id": 2,
+      "name": "Dan Simmons",
+      "sortName": "Simmons, Dan",
+      "bookCount": 5,
+      "lastAddedAt": "2026-01-02 10:00:00+00",
+      "imageUrl": null
+    },
+    {
+      "id": 3,
+      "name": "Ann Leckie",
+      "sortName": "Leckie, Ann",
+      "bookCount": 1,
+      "lastAddedAt": "2026-01-06 10:00:00+00",
+      "imageUrl": null
+    }
+  ],
+  "total": 3
+}

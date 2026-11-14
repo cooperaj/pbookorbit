@@ -10,7 +10,8 @@
 #include <QVariantList>
 
 // A stand-in BookOrbit server on 127.0.0.1. A test says what each request gets with
-// respond(), points the client at url, and can check what was sent in requests. Anything
+// respond(), points the client at url, and can check what was sent in requests ({method,
+// path, query, body}, query being the URL's parameters by name). Anything
 // without a response gets 404. With reachable false, connections are refused, as when the
 // server or the network is down.
 class FakeServer : public QObject
