@@ -1,0 +1,131 @@
+{
+  "buckets": [
+    {
+      "key": "a",
+      "label": "A",
+      "index": 0
+    },
+    {
+      "key": "b",
+      "label": "B",
+      "index": 4
+    },
+    {
+      "key": "c",
+      "label": "C",
+      "index": 8
+    },
+    {
+      "key": "d",
+      "label": "D",
+      "index": 12
+    },
+    {
+      "key": "e",
+      "label": "E",
+      "index": 16
+    },
+    {
+      "key": "f",
+      "label": "F",
+      "index": 20
+    },
+    {
+      "key": "g",
+      "label": "G",
+      "index": 24
+    },
+    {
+      "key": "h",
+      "label": "H",
+      "index": 28
+    },
+    {
+      "key": "i",
+      "label": "I",
+      "index": 32
+    },
+    {
+      "key": "j",
+      "label": "J",
+      "index": 36
+    },
+    {
+      "key": "k",
+      "label": "K",
+      "index": 40
+    },
+    {
+      "key": "l",
+      "label": "L",
+      "index": 44
+    },
+    {
+      "key": "m",
+      "label": "M",
+      "index": 48
+    },
+    {
+      "key": "n",
+      "label": "N",
+      "index": 52
+    },
+    {
+      "key": "o",
+      "label": "O",
+      "index": 56
+    },
+    {
+      "key": "p",
+      "label": "P",
+      "index": 60
+    },
+    {
+      "key": "q",
+      "label": "Q",
+      "index": 64
+    },
+    {
+      "key": "r",
+      "label": "R",
+      "index": 68
+    },
+    {
+      "key": "s",
+      "label": "S",
+      "index": 72
+    },
+    {
+      "key": "t",
+      "label": "T",
+      "index": 76
+    },
+    {
+      "key": "u",
+      "label": "U",
+      "index": 80
+    },
+    {
+      "key": "v",
+      "label": "V",
+      "index": 84
+    },
+    {
+      "key": "w",
+      "label": "W",
+      "index": 88
+    },
+    {
+      "key": "x",
+      "label": "X",
+      "index": 92
+    },
+    {
+      "key": "y",
+      "label": "Y",
+      "index": 96
+    }
+  ],
+  "total": 100,
+  "kind": "letter"
+}

@@ -1,0 +1,427 @@
+{
+  "items": [
+    {
+      "id": 1080,
+      "title": "U Book 1",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10800,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1081,
+      "title": "U Book 2",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10810,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1082,
+      "title": "U Book 3",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10820,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1083,
+      "title": "U Book 4",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10830,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1084,
+      "title": "V Book 1",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10840,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1085,
+      "title": "V Book 2",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10850,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1086,
+      "title": "V Book 3",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10860,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1087,
+      "title": "V Book 4",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10870,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1088,
+      "title": "W Book 1",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10880,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1089,
+      "title": "W Book 2",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10890,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1090,
+      "title": "W Book 3",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10900,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1091,
+      "title": "W Book 4",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10910,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1092,
+      "title": "X Book 1",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10920,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1093,
+      "title": "X Book 2",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10930,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1094,
+      "title": "X Book 3",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10940,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1095,
+      "title": "X Book 4",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10950,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1096,
+      "title": "Y Book 1",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10960,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1097,
+      "title": "Y Book 2",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10970,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1098,
+      "title": "Y Book 3",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10980,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    },
+    {
+      "id": 1099,
+      "title": "Y Book 4",
+      "authors": [
+        "Paging Author"
+      ],
+      "seriesName": null,
+      "seriesIndex": null,
+      "hasCover": false,
+      "readingProgress": null,
+      "readStatus": null,
+      "addedAt": "2026-01-03T10:00:00.000Z",
+      "files": [
+        {
+          "id": 10990,
+          "format": "epub",
+          "role": "primary",
+          "sizeBytes": 1000000
+        }
+      ]
+    }
+  ],
+  "total": 100,
+  "page": 2,
+  "size": 40
+}

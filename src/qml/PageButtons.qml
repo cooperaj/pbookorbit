@@ -74,11 +74,13 @@ Item {
     }
 
     PageButton {
+        objectName: "pageUp"
         anchors.left: parent.left
         icon: "image://theme/arrow_page_prev"
         onClicked: buttons.page(-1)
     }
     PageButton {
+        objectName: "pageDown"
         anchors.right: parent.right
         innerLeft: true
         icon: "image://theme/arrow_page_next"
