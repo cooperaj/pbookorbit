@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="990" height="520" viewBox="0 0 990 520" role="img" aria-label="Each list page in main.qml takes its own ListQuery. frontPage is the first visible page, checking the pages opened over the views first, then the footer views. Its pageButtons drive the page keys, its list is the active list, and its query, or else libraryQuery, labels the shared sort and filter menus.">
+  <style>
+    svg { font-family: "IBM Plex Mono", ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+    text { font-size: 12px; }
+    .name { font-size: 13px; font-weight: 500; }
+    .muted { font-size: 11px; }
+    .box, .hollow, .line { stroke-width: 1.2; }
+    .chip { stroke-width: 1; }
+    .frame, .line { fill: none; }
+    .frame, .key { stroke-width: 1.8; }
+    .dash { stroke-dasharray: 5 4; }
+    svg { color: #1b1d1c; }
+    .bg { fill: #ffffff; }
+    text { fill: #1b1d1c; }
+    .muted { fill: #5d625f; }
+    .accent-text { fill: #00796b; }
+    .box { fill: #ffffff; stroke: #1b1d1c; }
+    .chip { fill: #f1f3f0; stroke: #c9cec9; }
+    .frame { stroke: #00796b; }
+    .key { fill: #ffffff; stroke: #00796b; }
+    .band { fill: #f1f3f0; }
+    .line { stroke: #1b1d1c; }
+    .head { fill: #1b1d1c; }
+    .hollow { fill: #ffffff; stroke: #1b1d1c; }
+    @media (prefers-color-scheme: dark) {
+      svg { color: #e6e8e5; }
+      .bg { fill: #1f2221; }
+      text { fill: #e6e8e5; }
+      .muted { fill: #a3a9a5; }
+      .accent-text { fill: #4db6a6; }
+      .box { fill: #1f2221; stroke: #e6e8e5; }
+      .chip { fill: #161817; stroke: #3d423f; }
+      .frame { stroke: #4db6a6; }
+      .key { fill: #1f2221; stroke: #4db6a6; }
+      .band { fill: #161817; }
+      .line { stroke: #e6e8e5; }
+      .head { fill: #e6e8e5; }
+      .hollow { fill: #1f2221; stroke: #e6e8e5; }
+    }
+  </style>
+  <rect class="bg" width="990" height="520"/>
+  <defs>
+    <marker id="u-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path class="head" d="M0,0 L9,4.5 L0,9 z"/>
+    </marker>
+  </defs>
+
+  <!-- Column headings -->
+  <text class="muted" x="20" y="34">ListQuery it takes</text>
+  <text class="muted" x="250" y="34">page, in the order frontPage checks</text>
+  <text class="muted" x="650" y="34" text-anchor="middle">frontPage</text>
+  <text class="muted" x="810" y="34">what uses it</text>
+
+  <!-- Bands: pages over the views, then the footer views -->
+  <rect class="band" x="236" y="52" width="318" height="226" rx="4"/>
+  <text class="muted" transform="rotate(90 547 165)" x="547" y="165" text-anchor="middle">over the views</text>
+  <rect class="band" x="236" y="316" width="318" height="184" rx="4"/>
+  <text class="muted" transform="rotate(90 547 408)" x="547" y="408" text-anchor="middle">footer views</text>
+
+  <!-- 1 bookInfoPage -->
+  <rect class="box" x="250" y="60" width="290" height="34" rx="4"/>
+  <text x="262" y="81"><tspan class="name">bookInfoPage</tspan><tspan class="muted" dx="10">BookInfoPage</tspan></text>
+  <!-- 2 booksOfPage -->
+  <rect class="box" x="20" y="104" width="180" height="34" rx="4"/>
+  <text x="32" y="125">booksOfQuery*</text>
+  <line class="line" x1="200" y1="121" x2="248" y2="121" marker-end="url(#u-arrow)"/>
+  <rect class="box" x="250" y="104" width="290" height="34" rx="4"/>
+  <text x="262" y="125"><tspan class="name">booksOfPage</tspan><tspan class="muted" dx="10">BooksOfPage</tspan></text>
+  <!-- 3 authorSeriesPage -->
+  <rect class="box" x="20" y="148" width="180" height="34" rx="4"/>
+  <text x="32" y="169">authorSeriesQuery</text>
+  <line class="line" x1="200" y1="165" x2="248" y2="165" marker-end="url(#u-arrow)"/>
+  <rect class="box" x="250" y="148" width="290" height="34" rx="4"/>
+  <text x="262" y="169"><tspan class="name">authorSeriesPage</tspan><tspan class="muted" dx="10">GroupListPage</tspan></text>
+  <!-- 4 authorInfoPage -->
+  <rect class="box" x="250" y="192" width="290" height="34" rx="4"/>
+  <text x="262" y="213"><tspan class="name">authorInfoPage</tspan><tspan class="muted" dx="10">AuthorInfoPage</tspan></text>
+  <!-- 5 searchPage -->
+  <rect class="box" x="250" y="236" width="290" height="34" rx="4"/>
+  <text x="262" y="257"><tspan class="name">searchPage</tspan><tspan class="muted" dx="10">SearchPage</tspan></text>
+
+  <text class="muted" x="262" y="301">signed out: no front page</text>
+
+  <!-- 6-9 footer views -->
+  <rect class="box" x="20" y="324" width="180" height="34" rx="4"/>
+  <text x="32" y="345">collectionsQuery</text>
+  <line class="line" x1="200" y1="341" x2="248" y2="341" marker-end="url(#u-arrow)"/>
+  <rect class="box" x="250" y="324" width="290" height="34" rx="4"/>
+  <text x="262" y="345"><tspan class="name">collectionsPage</tspan><tspan class="muted" dx="10">GroupListPage</tspan></text>
+
+  <rect class="box" x="20" y="368" width="180" height="34" rx="4"/>
+  <text x="32" y="389">seriesQuery</text>
+  <line class="line" x1="200" y1="385" x2="248" y2="385" marker-end="url(#u-arrow)"/>
+  <rect class="box" x="250" y="368" width="290" height="34" rx="4"/>
+  <text x="262" y="389"><tspan class="name">seriesPage</tspan><tspan class="muted" dx="10">GroupListPage</tspan></text>
+
+  <rect class="box" x="20" y="412" width="180" height="34" rx="4"/>
+  <text x="32" y="433">authorsQuery</text>
+  <line class="line" x1="200" y1="429" x2="248" y2="429" marker-end="url(#u-arrow)"/>
+  <rect class="box" x="250" y="412" width="290" height="34" rx="4"/>
+  <text x="262" y="433"><tspan class="name">authorsPage</tspan><tspan class="muted" dx="10">GroupListPage</tspan></text>
+
+  <rect class="box" x="20" y="456" width="180" height="34" rx="4"/>
+  <text x="32" y="477">libraryQuery</text>
+  <line class="line" x1="200" y1="473" x2="248" y2="473" marker-end="url(#u-arrow)"/>
+  <rect class="box" x="250" y="456" width="290" height="34" rx="4"/>
+  <text x="262" y="477"><tspan class="name">libraryPage</tspan><tspan class="muted" dx="10">BookListPage</tspan></text>
+
+  <!-- frontPage: the first visible, top down -->
+  <path class="line" d="M558,60 L572,60 L572,490 L558,490"/>
+  <line class="line" x1="572" y1="275" x2="588" y2="275" marker-end="url(#u-arrow)"/>
+  <rect class="key" x="590" y="255" width="120" height="40" rx="4"/>
+  <text class="name accent-text" x="650" y="280" text-anchor="middle">frontPage</text>
+  <text class="muted" x="650" y="314" text-anchor="middle">first visible,</text>
+  <text class="muted" x="650" y="329" text-anchor="middle">top down</text>
+
+  <!-- What uses it -->
+  <line class="line" x1="710" y1="268" x2="808" y2="174" marker-end="url(#u-arrow)"/>
+  <text class="muted" x="742" y="208">.pageButtons</text>
+  <rect class="box" x="810" y="150" width="170" height="44" rx="4"/>
+  <text x="822" y="168">Page Up / Down</text>
+  <text class="muted" x="822" y="185">keys page it</text>
+
+  <line class="line" x1="710" y1="275" x2="808" y2="275" marker-end="url(#u-arrow)"/>
+  <text class="muted" x="760" y="268" text-anchor="middle">.list</text>
+  <rect class="box" x="810" y="253" width="170" height="44" rx="4"/>
+  <text x="822" y="271">activeList</text>
+  <text class="muted" x="822" y="288">menu, title tap</text>
+
+  <line class="line" x1="710" y1="282" x2="808" y2="376" marker-end="url(#u-arrow)"/>
+  <text class="muted" x="742" y="348">.query</text>
+  <rect class="box" x="810" y="356" width="170" height="44" rx="4"/>
+  <text x="822" y="374">activeQuery</text>
+  <text class="muted" x="822" y="391">else libraryQuery</text>
+
+  <line class="line" x1="895" y1="400" x2="895" y2="438" marker-end="url(#u-arrow)"/>
+  <text class="muted" x="903" y="423">labels</text>
+  <rect class="box" x="810" y="440" width="170" height="50" rx="4"/>
+  <text x="822" y="461">openTab, filterMenu,</text>
+  <text x="822" y="479">sortMenu</text>
+</svg>

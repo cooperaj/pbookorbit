@@ -10,7 +10,7 @@ import "../helpers"
 // authors have the library's filter, and tapping one opens their info page. Offline, the
 // authors are the downloaded books'.
 //
-// The page itself is tested in components/tst_groupspage.qml, and what every group list
+// The page itself is tested in components/tst_grouplistpage.qml, and what every group list
 // shares in tst_series.qml.
 AppTestCase {
     name: "Authors"

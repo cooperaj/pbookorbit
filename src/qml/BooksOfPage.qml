@@ -64,7 +64,6 @@ Rectangle {
         jumpRailTop: page.jumpRailTop - y
         jumpRailPitch: page.jumpRailPitch
         alphabetical: !page.seriesOrder
-        descending: page.query ? page.query.sortDescending : false
         // Short series are quick enough to scroll without one
         minSections: page.seriesOrder ? 16 : 1
         // Until the first page says how many there are. No books, or they failed to load,

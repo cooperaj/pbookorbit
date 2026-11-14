@@ -13,6 +13,7 @@ Rectangle {
     id: page
     // For the page-turn keys, which main.qml forwards to the front page
     readonly property alias pageButtons: results.pageButtons
+    readonly property alias list: results.list
     color: "white"
 
     // Same height as the main toolbar, so the page below doesn't jump

@@ -7,7 +7,7 @@ import "../helpers"
 // ebook and audiobook counting once. Unlike collections, series load the first time the
 // tab opens only. Offline, the series are the downloaded books'.
 //
-// The page itself (spinner, errors, rail) is tested in components/tst_groupspage.qml. The
+// The page itself (spinner, errors, rail) is tested in components/tst_grouplistpage.qml. The
 // sorting, sections and errors the client gives every group list are tested here, once.
 AppTestCase {
     name: "Series"

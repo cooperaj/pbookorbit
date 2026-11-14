@@ -45,7 +45,7 @@ wired separately.
 
 ## Open questions
 
-BookListPage and GroupsPage take their spinner and empty-state rules as inputs, so each
+BookListPage and GroupListPage take their spinner and empty-state rules as inputs, so each
 view decides them. Side by side, as of step 3:
 
 | Rule | Library | Books-of | Search | Group lists |
@@ -86,11 +86,17 @@ survive the refactor.
 
 ## Order
 
-1. Done: GroupsPage takes `error` and `online` (defaulting to the client's) and has a
-   component test. The Collections, Series and Authors files keep only their own
+1. Done: GroupsPage (now GroupListPage) takes `error` and `online` (defaulting to the
+   client's) and has a component test. The Collections, Series and Authors files keep only their own
    behaviour, with the shared client behaviour in Series.
 2. Done: an author's series, its own behaviour only (straight to the books for a single
    series, exact author matching, reloading per author, the sort kept between authors).
 3. Done: BookListPage for the library, books-of and search, with a component test. Their
    feature files drop what it covers, and books-of has its own feature file.
-4. Steps 1, 3 and 4 of the target, with every test passing after each.
+4. Done: ListPage is the frame under BookListPage and GroupListPage (GroupsPage renamed),
+   both taking a ListQuery. main.qml has one `frontPage`; `frontPageButtons`, `activeList`
+   and `activeQuery` come from it. Component tests: ListPage for the frame, BookListPage
+   and GroupListPage only for what each adds.
+
+Target step 5 (one list object per list in C++) is left until the QML wiring shows a
+need for it.

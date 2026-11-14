@@ -7,7 +7,7 @@ import "../helpers"
 // collection's books, a book with an ebook and audiobook counting once. The list reloads
 // each time the tab opens, and offline shows the collections with downloaded books.
 //
-// The page itself is tested in components/tst_groupspage.qml, and what every group list
+// The page itself is tested in components/tst_grouplistpage.qml, and what every group list
 // shares in tst_series.qml.
 AppTestCase {
     name: "Collections"

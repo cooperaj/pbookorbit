@@ -8,7 +8,7 @@ import "../helpers"
 // author's series load as they're opened, the last author's never showing meanwhile, and
 // they keep the sort chosen for the last author. They aren't saved for the next start.
 //
-// The page itself is tested in components/tst_groupspage.qml, and what every group list
+// The page itself is tested in components/tst_grouplistpage.qml, and what every group list
 // shares in tst_series.qml.
 AppTestCase {
     name: "AuthorSeries"

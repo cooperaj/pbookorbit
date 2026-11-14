@@ -69,19 +69,27 @@ Window {
     function backToTop() {
         menu.visible = false
         closeDropdowns()
-        activeList.positionViewAtBeginning()
+        if (activeList)
+            activeList.positionViewAtBeginning()
     }
 
     // Footer views: Library, Collections, Series or Authors
     readonly property bool showingCollections: footer.currentIndex === 1
     readonly property bool showingSeries: footer.currentIndex === 2
     readonly property bool showingAuthors: footer.currentIndex === 3
-    // The list whose sub-toolbar menus are in use
-    readonly property ListView activeList: showingBooksOf ? booksOfPage.list
-                                           : showingAuthorSeries ? authorSeriesPage.list
-                                           : showingCollections ? collectionsPage.list
-                                           : showingSeries ? seriesPage.list
-                                           : showingAuthors ? authorsPage.list : libraryPage.list
+    // The page in front: the topmost of the pages opened over the views, else the view.
+    // Each has pageButtons; list pages also have their list and query.
+    readonly property Item frontPage: showingInfo ? bookInfoPage
+                                      : showingBooksOf ? booksOfPage
+                                      : showingAuthorSeries ? authorSeriesPage
+                                      : showingAuthor ? authorInfoPage
+                                      : searching ? searchPage
+                                      : !bookOrbit.signedIn ? null
+                                      : showingCollections ? collectionsPage
+                                      : showingSeries ? seriesPage
+                                      : showingAuthors ? authorsPage : libraryPage
+    // Its list, if it has one, whose sub-toolbar menus are in use
+    readonly property ListView activeList: frontPage?.list ?? null
 
     AppHeader {
         id: header
@@ -285,26 +293,14 @@ Window {
     }
 
     // The sort and filter shown by the menus, for whichever page is in front
-    readonly property ListQuery activeQuery: showingBooksOf ? booksOfQuery
-                                             : showingAuthorSeries ? authorSeriesQuery
-                                             : showingCollections ? collectionsQuery
-                                             : showingSeries ? seriesQuery
-                                             : showingAuthors ? authorsQuery : libraryQuery
+    // The front page's, or the library's for a page without one, which has no menus
+    readonly property ListQuery activeQuery: frontPage?.query ?? libraryQuery
     readonly property bool dropdownOpen: filterMenu.visible || sortMenu.visible
 
     // The page-turn keys (sent as Page Up/Page Down) page the front list or info page, like
     // its page buttons. Not on the sign-in page, and not while a menu or dialog is open,
     // since a tap would only close it.
-    readonly property PageButtons frontPageButtons: showingInfo ? bookInfoPage.pageButtons
-                                                    : showingBooksOf ? booksOfPage.pageButtons
-                                                    : showingAuthorSeries ? authorSeriesPage.pageButtons
-                                                    : showingAuthor ? authorInfoPage.pageButtons
-                                                    : searching ? searchPage.pageButtons
-                                                    : !bookOrbit.signedIn ? null
-                                                    : showingCollections ? collectionsPage.pageButtons
-                                                    : showingSeries ? seriesPage.pageButtons
-                                                    : showingAuthors ? authorsPage.pageButtons
-                                                    : libraryPage.pageButtons
+    readonly property PageButtons frontPageButtons: frontPage?.pageButtons ?? null
     readonly property bool overlayOpen: dropdownOpen || menu.visible || bookMenu.visible
                                         || deleteDialog.visible || downloadDialog.visible
                                         || findBooksDialog.visible || bookInfoPage.menuOpen
@@ -364,7 +360,6 @@ Window {
         onSortIconClicked: libraryQuery.reverseSort()
         // For A-Z sorts
         jumpSections: bookOrbit.jumpSections
-        descending: libraryQuery.sortDescending
         // The spinner only until the first books arrive; later pages load on scroll. No
         // books, or the library couldn't load, says so.
         loading: bookOrbit.busy
@@ -382,23 +377,21 @@ Window {
         onBookHeld: (row) => bookMenu.open(row)
     }
 
-    GroupsPage {
+    GroupListPage {
         id: collectionsPage
         objectName: "collectionsPage"
         visible: bookOrbit.signedIn && root.showingCollections
         model: bookOrbit.collections
         jumpSections: bookOrbit.collectionJumpSections
         loaded: bookOrbit.collectionsLoaded
-        emptyTitle: "No collections"
-        emptyText: bookOrbit.online ? "Collections you make in BookOrbit show here."
+        noneTitle: "No collections"
+        noneText: bookOrbit.online ? "Collections you make in BookOrbit show here."
                                     : "You're currently offline, only collections containing downloaded books can be shown."
         anchors.top: header.bottom
         anchors.bottom: footer.top
         anchors.left: parent.left
         anchors.right: parent.right
-        sortText: "By " + collectionsQuery.sortOptions[collectionsQuery.sortIndex]
-        sortReversed: collectionsQuery.sortReversed
-        descending: collectionsQuery.sortDescending
+        query: collectionsQuery
         // Jump rail aligned and spaced like the library's
         jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
         jumpRailPitch: libraryPage.rail.pitch
@@ -412,23 +405,21 @@ Window {
                                                         [String(collection.id)])
     }
 
-    GroupsPage {
+    GroupListPage {
         id: seriesPage
         objectName: "seriesPage"
         visible: bookOrbit.signedIn && root.showingSeries
         model: bookOrbit.seriesList
         jumpSections: bookOrbit.seriesJumpSections
         loaded: bookOrbit.seriesLoaded
-        emptyTitle: "No series"
-        emptyText: bookOrbit.online ? "Series show here once books in the library belong to one."
+        noneTitle: "No series"
+        noneText: bookOrbit.online ? "Series show here once books in the library belong to one."
                                     : "You're currently offline, only series with downloaded books can be shown."
         anchors.top: header.bottom
         anchors.bottom: footer.top
         anchors.left: parent.left
         anchors.right: parent.right
-        sortText: "By " + seriesQuery.sortOptions[seriesQuery.sortIndex]
-        sortReversed: seriesQuery.sortReversed
-        descending: seriesQuery.sortDescending
+        query: seriesQuery
         // Jump rail aligned and spaced like the library's
         jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
         jumpRailPitch: libraryPage.rail.pitch
@@ -442,7 +433,7 @@ Window {
         onGroupClicked: (series) => root.openBooksOf("Series", series.name, "series", [series.name])
     }
 
-    GroupsPage {
+    GroupListPage {
         id: authorsPage
         objectName: "authorsPage"
         visible: bookOrbit.signedIn && root.showingAuthors
@@ -451,9 +442,9 @@ Window {
         // With a filter on, authors appear once their books have been looked up
         loaded: bookOrbit.authorsLoaded && (bookOrbit.authorBooksLoaded
                                             || (authorsQuery.filterIndex === 0 && !authorsQuery.downloadedOnly))
-        emptyTitle: authorsQuery.downloadedOnly || authorsQuery.filterIndex === 0 ? "No authors"
+        noneTitle: authorsQuery.downloadedOnly || authorsQuery.filterIndex === 0 ? "No authors"
                     : "No authors with " + root.filterOptions[authorsQuery.filterIndex].toLowerCase()
-        emptyText: !bookOrbit.online ? "You're currently offline, only authors of downloaded books can be shown."
+        noneText: !bookOrbit.online ? "You're currently offline, only authors of downloaded books can be shown."
                    : authorsQuery.downloadedOnly ? "Turn off Downloaded only to see every author."
                    : authorsQuery.filterIndex !== 0 ? "Choose All titles to see every author."
                    : "Authors show here once the library has books."
@@ -461,12 +452,8 @@ Window {
         anchors.bottom: footer.top
         anchors.left: parent.left
         anchors.right: parent.right
-        hasFilter: true
-        filterText: root.filterOptions[authorsQuery.filterIndex]
         filterOpen: filterMenu.visible
-        sortText: "By " + authorsQuery.sortOptions[authorsQuery.sortIndex]
-        sortReversed: authorsQuery.sortReversed
-        descending: authorsQuery.sortDescending
+        query: authorsQuery
         // Jump rail aligned and spaced like the library's
         jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
         jumpRailPitch: libraryPage.rail.pitch
@@ -499,7 +486,8 @@ Window {
         onTabClicked: (index) => {
             // Tapping the current tab again scrolls its list to the top
             if (index === currentIndex) {
-                root.activeList.positionViewAtBeginning()
+                if (root.activeList)
+                    root.activeList.positionViewAtBeginning()
             } else {
                 root.closeDropdowns()
                 currentIndex = index
@@ -707,7 +695,7 @@ Window {
                 root.showingAuthorSeries = false
             }
         }
-        GroupsPage {
+        GroupListPage {
             id: authorSeriesPage
             objectName: "authorSeriesPage"
             anchors.top: authorSeriesHeader.bottom
@@ -717,12 +705,10 @@ Window {
             model: bookOrbit.authorSeriesList
             jumpSections: bookOrbit.authorSeriesJumpSections
             loaded: bookOrbit.authorSeriesLoaded
-            emptyTitle: "No series"
-            emptyText: bookOrbit.online ? "None of their books are in a series."
+            noneTitle: "No series"
+            noneText: bookOrbit.online ? "None of their books are in a series."
                                         : "You're currently offline, only series with downloaded books can be shown."
-            sortText: "By " + authorSeriesQuery.sortOptions[authorSeriesQuery.sortIndex]
-            sortReversed: authorSeriesQuery.sortReversed
-            descending: authorSeriesQuery.sortDescending
+            query: authorSeriesQuery
             // Jump rail aligned and spaced like the library's
             jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
             jumpRailPitch: libraryPage.rail.pitch

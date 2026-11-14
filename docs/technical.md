@@ -148,6 +148,41 @@ Every frame on e-ink is a slow screen update, so `frames` should be 0 when the a
 idle. Anything that animates (a blinking cursor, `BusyIndicator`, transitions, Flickable
 momentum) keeps the display busy and makes the whole device feel frozen.
 
+## List pages
+
+Every list in the app shares one frame, `ListPage` (`src/qml/ListPage.qml`): a ListView
+whose header is the sub-toolbar (when the page has a `ListQuery`) and an error line, then
+a scrollbar, jump rail, page buttons, spinner and empty state. It asks for rows as they
+come into view with `rowsWanted(first, last)`, and takes its sort and filter labels, and
+the rail's direction, from its query. Two components extend it with their row:
+
+- `BookListPage` has a `BookRow` per book and reports taps and holds. The library, a
+  books-of page (an author's, series' or collection's books) and the search results use
+  it.
+- `GroupListPage` has a `GroupRow` per group and reports taps. The Collections, Series and
+  Authors tabs and an author's series use it.
+
+![ListPage, the two lists that extend it, and the pages that contain a BookListPage](images/list-pages-components.svg)
+
+The page that owns a list decides when its spinner and empty state show and what the
+empty state says (`loading`, `empty`, `emptyTitle`, `emptyText`); `GroupListPage` decides
+these for every group list from `loaded` and its `noneTitle` and `noneText`. `BooksOfPage`
+puts a page header over a `BookListPage`, and `SearchPage` uses one for its results, with
+no query and so no sub-toolbar or rail.
+
+In `main.qml`, each list page has a `ListQuery` of its own, and `frontPage` is the first
+visible page, checking the pages opened over the views before the footer views. The
+page-turn keys page its `pageButtons`, the sort and filter menus are positioned by its
+`list`, and they show its `query`, or the library's for a page without one. One set of
+menus, the faded overlay and the book menu serve every list page.
+
+![Each page in main.qml with its ListQuery, and what frontPage feeds](images/list-pages-in-main.svg)
+
+The frame's behaviour is tested once, in `tests/qml/components/tst_listpage.qml`, and
+what each list adds in `tst_booklistpage.qml` and `tst_grouplistpage.qml`. A view's
+feature file tests only what it wires itself: what it loads, its sorts and texts, and what
+a tap opens.
+
 ## Tests
 
 `make test` builds the app and the tests for PC, then runs the tests headless in the kit's
