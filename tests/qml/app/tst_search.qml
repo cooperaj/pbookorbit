@@ -96,6 +96,51 @@ AppTestCase {
         compare(searches(), ["dune"], "one search, once typing pauses")
     }
 
+    // Until the results arrive the recent searches stay, and a spinner replaces the clear
+    // button, from the third character, before typing has paused
+    function test_spinnerUntilTheResultsArrive() {
+        openSearchLibrary({recentSearches: '["hyperion"]'})
+        fakeServer.respond("POST", "/api/v1/libraries/1/books", 200, "libraries/search-dune.json", {q: "dun"})
+        fakeServer.hold("POST", "/api/v1/libraries/1/books")
+        openSearch()
+        const spinner = find("searchSpinner")
+        const clear = find("clearButton")
+
+        searchFor("dun")
+        verify(spinner.visible, "the spinner, before the search is sent")
+        verify(!clear.visible, "in place of the clear button")
+        verify(find("recentSearches").visible, "the recent searches stay")
+        verify(!find("noBooksFound").visible, "not No books found")
+        tryVerify(() => searches().length === 1, 5000, "searched")
+        verify(spinner.visible, "the spinner, while the server answers")
+        verify(find("recentSearches").visible)
+
+        fakeServer.release("POST", "/api/v1/libraries/1/books")
+        tryVerify(() => results() === "Dune, Dune Messiah", 5000, "the results replace the recent searches")
+        verify(!find("recentSearches").visible)
+        verify(!spinner.visible, "the spinner goes")
+        verify(clear.visible, "the clear button is back")
+    }
+
+    // A refined search keeps the last results until its own arrive
+    function test_refiningKeepsTheResultsUntilTheNewOnes() {
+        openSearchLibrary()
+        fakeServer.respond("POST", "/api/v1/libraries/1/books", 200, "libraries/search-none.json", {q: "dunez"})
+        openSearch()
+        searchFor("dune")
+        tryVerify(() => results() === "Dune, Dune Messiah", 5000)
+        fakeServer.hold("POST", "/api/v1/libraries/1/books")
+
+        keyClick("z")
+        tryVerify(() => searches().length === 2, 5000, "searched again")
+        verify(find("searchSpinner").visible)
+        compare(results(), "Dune, Dune Messiah", "the last results stay")
+
+        fakeServer.release("POST", "/api/v1/libraries/1/books")
+        tryVerify(() => find("noBooksFound").visible, 5000, "then No books found")
+        verify(!find("searchSpinner").visible)
+    }
+
     function test_underThreeCharactersDoesntSearch() {
         openSearchLibrary()
         openSearch()

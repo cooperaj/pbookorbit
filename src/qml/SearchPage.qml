@@ -4,7 +4,8 @@ import "units.js" as Units
 
 // Full-window search page, modelled on the Era Color library's search: the toolbar turns
 // into a back button and search box, with recent searches below. From three characters,
-// matching books replace the recent searches.
+// matching books replace the recent searches once they arrive, with a spinner in the search
+// box meanwhile.
 //
 // A search is saved to recent searches when the keyboard closes for it (Enter, scrolling
 // the results, tapping a book, or the keyboard's close key). Going back doesn't save it.
@@ -20,6 +21,12 @@ Rectangle {
     readonly property bool typing: searchField.activeFocus
     // Long enough to search (bookOrbit.search() ignores shorter text)
     readonly property bool showResults: searchField.text.trim().length >= 3
+    // Waiting for typing to pause, or for the results. The spinner replaces the clear
+    // button meanwhile.
+    readonly property bool searching: showResults && (searchTimer.running || bookOrbit.searchTotal === -1)
+    // The recent searches stay until there are results, or there are none. A refined
+    // search keeps the last results until its own arrive.
+    readonly property bool showingResults: showResults && (results.count > 0 || !searching)
 
     signal back()
     signal bookClicked(var book)
@@ -108,7 +115,7 @@ Rectangle {
             IconButton {
                 id: clearButton
                 objectName: "clearButton"
-                visible: searchField.text !== ""
+                visible: searchField.text !== "" && !page.searching
                 anchors.right: parent.right
                 anchors.rightMargin: searchBox.thickBorder
                 anchors.verticalCenter: parent.verticalCenter
@@ -121,11 +128,18 @@ Rectangle {
                 fallbackText: "×"
                 onClicked: searchField.text = ""
             }
+            // In the clear button's place while searching
+            SpinnerImage {
+                objectName: "searchSpinner"
+                visible: page.searching
+                anchors.centerIn: clearButton
+                frames: "progress_indicator_"
+            }
             TextField {
                 id: searchField
                 objectName: "searchField"
                 anchors.left: searchIcon.status === Image.Ready ? searchIcon.right : parent.left
-                anchors.right: clearButton.visible ? clearButton.left : parent.right
+                anchors.right: searchField.text !== "" ? clearButton.left : parent.right
                 anchors.margins: searchBox.thickBorder
                 anchors.verticalCenter: parent.verticalCenter
                 leftPadding: Units.dp(3)
@@ -177,7 +191,7 @@ Rectangle {
     // "RECENT SEARCHES" heading over a full-width line
     Item {
         id: recentHeading
-        visible: !page.showResults
+        visible: !page.showingResults
         anchors.top: header.bottom
         width: parent.width
         height: Units.dp(56)
@@ -199,7 +213,7 @@ Rectangle {
 
     ListView {
         objectName: "recentSearches"
-        visible: !page.showResults
+        visible: !page.showingResults
         anchors.top: recentHeading.bottom
         anchors.bottom: parent.bottom
         width: parent.width
@@ -258,7 +272,7 @@ Rectangle {
     ListView {
         id: results
         objectName: "searchResults"
-        visible: page.showResults
+        visible: page.showingResults
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
         width: parent.width
@@ -330,16 +344,11 @@ Rectangle {
         anchors.bottom: results.bottom
     }
 
-    // While the first results load
-    Spinner {
-        list: results
-        visible: page.showResults && results.count === 0 && bookOrbit.searchTotal !== 0
-    }
     // When nothing matches
     EmptyState {
         objectName: "noBooksFound"
         anchors.fill: results
-        visible: page.showResults && results.count === 0 && bookOrbit.searchTotal === 0
+        visible: page.showingResults && results.count === 0
         title: "No books found"
         text: bookOrbit.online ? "Try a different title, author or series."
                                : "You're currently offline, only downloaded books can be searched."
