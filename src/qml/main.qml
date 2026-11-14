@@ -930,6 +930,7 @@ Window {
         }
 
         Text {
+            objectName: "deleteMessage"
             width: parent.width
             text: deleteDialog.failed
                   ? "Couldn't delete " + (deleteDialog.book.title || "") + " from your device."

@@ -72,7 +72,8 @@ public:
     //   nightMode: start with the system in night mode
     //   books: book entries saved in the database, as BookOrbit lists them. One with a
     //          file, e.g. "dune.epub", is downloaded: the file is made where downloads go,
-    //          Books, or Audio Books for an audiobook.
+    //          Books, or Audio Books for an audiobook. undeletable: true makes a folder
+    //          there instead, which deleting the book fails on.
     //   files: names of book files there that the app hasn't recorded, as though copied
     //          onto the device another way
     Q_INVOKABLE void reset(const QVariantMap &settings = {}, const QVariantMap &options = {})
@@ -122,18 +123,24 @@ private:
     {
         const int id = entry.value("id").toInt();
         const QString file = entry.take("file").toString();
+        const bool undeletable = entry.take("undeletable").toBool();
         database->saveBook(id, entry);
         if (!file.isEmpty())
-            database->addBookFile(id, makeBookFile(file));
+            database->addBookFile(id, makeBookFile(file, undeletable));
     }
 
     // Makes a book file where Downloads puts it, and returns its path. Relative on the PC
-    // build, so in the temporary folder.
-    static QString makeBookFile(const QString &name)
+    // build, so in the temporary folder. asFolder makes a folder by that name, which
+    // QFile::remove() can't delete.
+    static QString makeBookFile(const QString &name, bool asFolder = false)
     {
         const QString folder = QString::fromUtf8(isAudioFormat(QFileInfo(name).suffix()) ? AUDIOBOOKS_DEFAULT_PATH
                                                                                          : FLASHDIR "/Books");
         QDir().mkpath(folder);
+        if (asFolder) {
+            QDir().mkpath(folder + "/" + name);
+            return folder + "/" + name;
+        }
         QFile book(folder + "/" + name);
         if (!book.open(QIODevice::WriteOnly) || book.write("test book") < 0)
             qFatal("TestApp: can't write %s", qPrintable(book.fileName()));
