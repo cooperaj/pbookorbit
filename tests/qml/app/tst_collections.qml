@@ -6,6 +6,9 @@ import "../helpers"
 // collection, which isn't shown. Each row's authors, formats and book count come from the
 // collection's books, a book with an ebook and audiobook counting once. The list reloads
 // each time the tab opens, and offline shows the collections with downloaded books.
+//
+// The page itself is tested in components/tst_groupspage.qml, and what every group list
+// shares in tst_series.qml.
 AppTestCase {
     name: "Collections"
 
@@ -77,52 +80,6 @@ AppTestCase {
         compare(classics.group.formats, ["epub", "m4b"])
     }
 
-    function test_sortByBookCount() {
-        openCollections()
-        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000)
-
-        tap("sortButton", find("collectionsPage"))
-        tap("Book count", find("sortMenu"))
-        compare(rows(), "Classics (2), Space Opera (1), Empty Shelf (0)", "most books first")
-
-        tap("iconButton", find("sortButton", find("collectionsPage")))
-        compare(rows(), "Empty Shelf (0), Space Opera (1), Classics (2)", "reversed")
-    }
-
-    function test_sortIconReverses() {
-        openCollections()
-        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000)
-
-        tap("iconButton", find("sortButton", find("collectionsPage")))
-
-        compare(rows(), "Space Opera (1), Empty Shelf (0), Classics (2)", "Z to A")
-    }
-
-    // A-Z sections for the name sort only
-    function test_jumpRailSectionsByName() {
-        const page = openCollections()
-        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000)
-        const rail = find("jumpRail", page)
-        compare(rail.sections.map(s => s.label).join(""), "CES")
-
-        tap("sortButton", page)
-        tap("Book count", find("sortMenu"))
-
-        compare(rail.sections.length, 0, "none by book count")
-    }
-
-    function test_spinnerUntilTheCollectionsArrive() {
-        fakeServer.hold("GET", collections)
-        const page = openCollections()
-
-        verify(find("spinner", page).visible, "the spinner")
-        verify(!find("emptyState", page).visible)
-
-        fakeServer.release("GET", collections)
-        tryVerify(() => rows() !== "", 5000)
-        verify(!find("spinner", page).visible, "the spinner goes")
-    }
-
     function test_tappingACollectionListsItsBooks() {
         openCollections()
 
@@ -139,20 +96,6 @@ AppTestCase {
                "asked for by title")
     }
 
-    function test_backFromACollectionReturnsToTheTab() {
-        const page = openCollections()
-        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000)
-        mouseClick(row("Classics"))
-        const books = find("booksOfPage")
-        verify(books.visible)
-
-        tap("backButton", books)
-
-        verify(!books.visible, "the collection closes")
-        verify(page.visible, "the Collections view is back")
-        compare(rows(), "Classics (2), Empty Shelf (0), Space Opera (1)")
-    }
-
     function test_noCollectionsSaysSo() {
         fakeServer.respond("GET", collections, 200, "collections/none.json")
         openLibrary()
@@ -164,18 +107,6 @@ AppTestCase {
         tryVerify(() => empty.visible, 5000, "No collections")
         compare(empty.title, "No collections")
         compare(empty.text, "Collections you make in BookOrbit show here.")
-    }
-
-    function test_serverErrorSaysSomethingWentWrong() {
-        fakeServer.respond("GET", collections, 500, "server-error.json")
-        openLibrary()
-        bookRow("Dune")
-
-        tap("CollectionsTab")
-
-        const empty = find("emptyState", find("collectionsPage"))
-        tryVerify(() => empty.visible, 5000, "an error")
-        compare(empty.title, "Something went wrong")
     }
 
     function test_reloadedEachTimeTheTabOpens() {
@@ -201,23 +132,6 @@ AppTestCase {
         tryVerify(() => rows() === "Classics (1)", 5000, "Classics, with Dune: " + rows())
         compare(row("Classics").group.formats, ["epub"])
         compare(collectionRequests(), 1, "the server isn't asked again")
-    }
-
-    // An error loading the collections shows over the saved rows
-    function test_errorOverSavedRows() {
-        openCollections()
-        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000)
-        fakeServer.respond("GET", collections, 500, "server-error.json")
-
-        reopen()
-        const page = find("collectionsPage")
-        tap("CollectionsTab")
-
-        const error = find("errorLine", page)
-        tryVerify(() => error.visible, 5000, "the error shows")
-        compare(error.text, "Internal server error (HTTP 500)")
-        compare(rows(), "Classics (2), Empty Shelf (0), Space Opera (1)", "over the saved rows")
-        verify(!find("emptyState", page).visible)
     }
 
     // Back online, the server's collections replace the offline ones

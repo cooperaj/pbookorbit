@@ -49,11 +49,28 @@ The spinner and empty-state rules differ between the library (busy, downloaded o
 group lists (`loaded`), books-of (total) and search. Each difference gets listed and
 decided when ListPage takes them over: deliberate, or drift.
 
+## Testing
+
+Shared behaviour is tested once:
+
+- **A shared QML component** gets a component test (`tests/qml/components/`), with its
+  inputs set directly rather than through the client.
+- **Shared client code** (sorting, sections, errors every list gets) is tested once,
+  through one view's feature file.
+- **A feature file** keeps what's built or wired for that view alone: which loader runs,
+  its sort options, its empty and offline texts, what a tap opens, its reload rule, its
+  offline builder, its reconnect rule, and its call to restore cached rows.
+
+Feature files find things by objectNames and `list`, never by component type, so they
+survive the refactor.
+
 ## Order
 
-1. Feature tests for Collections, then Series, through the app, finding things by
-   objectNames that survive the refactor. These are the safety net.
-2. Steps 1 to 4 above, one at a time, with every feature test passing after each.
-3. Component tests for ListPage, BookListPage and GroupListPage. Behaviour they cover is
-   then dropped from the per-view feature files, which keep only what's particular to a
-   view: its query, empty text, what a tap opens and what loads on open.
+1. Done: GroupsPage takes `error` and `online` (defaulting to the client's) and has a
+   component test. The Collections, Series and Authors files keep only their own
+   behaviour, with the shared client behaviour in Series.
+2. An author's series: its own behaviour only (straight to the books for a single
+   series, exact author matching, reloading per author).
+3. BookListPage for the library, books-of and search, with a component test. Then their
+   feature files are trimmed to what's particular to each.
+4. Steps 1, 3 and 4 of the target, with every test passing after each.

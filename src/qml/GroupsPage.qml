@@ -29,6 +29,9 @@ Item {
     property string emptyTitle
     property string emptyText
     readonly property alias list: groupList
+    // The client's, unless set
+    property string error: bookOrbit.error
+    property bool online: bookOrbit.online
 
     signal filterClicked()
     signal sortClicked()
@@ -70,9 +73,9 @@ Item {
                 objectName: "errorLine"
                 x: Units.dp(26)
                 width: parent.width - 2 * x
-                visible: bookOrbit.error !== "" && groupList.count > 0
+                visible: page.error !== "" && groupList.count > 0
                 topPadding: Units.dp(8)
-                text: bookOrbit.error
+                text: page.error
                 font.pointSize: 8
                 wrapMode: Text.Wrap
             }
@@ -97,9 +100,9 @@ Item {
         objectName: "emptyState"
         anchors.fill: groupList
         anchors.topMargin: groupList.headerItem ? groupList.headerItem.height : 0
-        visible: groupList.count === 0 && (bookOrbit.error !== "" || page.loaded)
-        title: bookOrbit.error !== "" ? "Something went wrong" : page.emptyTitle
-        text: bookOrbit.error !== "" ? bookOrbit.error : page.emptyText
+        visible: groupList.count === 0 && (page.error !== "" || page.loaded)
+        title: page.error !== "" ? "Something went wrong" : page.emptyTitle
+        text: page.error !== "" ? page.error : page.emptyText
     }
 
     ListScrollbar {
@@ -109,7 +112,7 @@ Item {
     Spinner {
         objectName: "spinner"
         list: groupList
-        visible: bookOrbit.error === "" && groupList.count === 0 && !page.loaded && bookOrbit.online
+        visible: page.error === "" && groupList.count === 0 && !page.loaded && page.online
     }
     JumpRail {
         objectName: "jumpRail"
