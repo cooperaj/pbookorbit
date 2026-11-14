@@ -501,6 +501,7 @@ Window {
 
     GroupsPage {
         id: seriesPage
+        objectName: "seriesPage"
         visible: bookOrbit.signedIn && root.showingSeries
         model: bookOrbit.seriesList
         jumpSections: bookOrbit.seriesJumpSections

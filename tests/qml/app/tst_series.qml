@@ -1,0 +1,218 @@
+import QtQuick
+import "../helpers"
+
+// The Series tab. The server has Dune (four records: Dune, Dune Messiah, and Children of
+// Dune as an ebook and a separate audiobook), Hyperion Cantos and The Expanse. The list
+// comes first, then each series' books, which set its formats and count, a book with an
+// ebook and audiobook counting once. Unlike collections, series load the first time the
+// tab opens only. Offline, the series are the downloaded books'.
+AppTestCase {
+    name: "Series"
+
+    readonly property string series: "/api/v1/series"
+    readonly property string books: "/api/v1/libraries/1/books"
+
+    function serveSeries() {
+        fakeServer.respond("GET", series, 200, "series/list.json")
+        // Each series' books, found by series name
+        fakeServer.respond("POST", books, 200, "series/books.json", {filter: {rules: [{field: "series"}]}})
+        // A series' books in series order, for its books-of page
+        fakeServer.respond("POST", books, 200, "series/dune-books.json", {sort: [{field: "seriesIndex"}]})
+    }
+
+    function openSeries(options) {
+        openLibrary(undefined, undefined, options)
+        serveSeries()
+        bookRow("Dune")
+        tap("SeriesTab")
+        const page = find("seriesPage")
+        verify(page.visible, "the Series view shows")
+        return page
+    }
+
+    // The rows top to bottom, "name (count)"
+    function rows() {
+        const list = find("seriesPage").list
+        const shown = []
+        for (let i = 0; i < list.count; i++) {
+            const row = list.itemAtIndex(i)
+            if (row && row.visible)
+                shown.push(row.group.name + " (" + row.group.bookCount + ")")
+        }
+        return shown.join(", ")
+    }
+
+    function row(name) {
+        const list = find("seriesPage").list
+        let found = null
+        tryVerify(() => {
+            for (let i = 0; i < list.count; i++) {
+                const item = list.itemAtIndex(i)
+                if (item && item.visible && item.group.name === name)
+                    found = item
+            }
+            return found !== null
+        }, 5000, "a row for " + name)
+        return found
+    }
+
+    function seriesRequests() {
+        return fakeServer.requests.filter(r => r.method === "GET" && r.path === series).length
+    }
+
+    function sortBy(option) {
+        tap("sortButton", find("seriesPage"))
+        tap(option, find("sortMenu"))
+    }
+
+    // Counts settle once each series' books are in
+    function openLoadedSeries() {
+        openSeries()
+        tryVerify(() => rows() === "Dune (3), Hyperion Cantos (1), The Expanse (2)", 5000,
+                  "A-Z, with counts from their books")
+    }
+
+    function test_listsTheSeriesByName() {
+        openLoadedSeries()
+    }
+
+    // Children of Dune's ebook and audiobook are separate records but one book
+    function test_rowShowsItsAuthorsAndFormats() {
+        openLoadedSeries()
+
+        const dune = row("Dune")
+        compare(dune.group.bookCount, 3)
+        compare(dune.group.authors, ["Frank Herbert"])
+        compare(dune.group.formats, ["epub", "m4b"])
+        compare(row("The Expanse").group.formats, ["epub", "m4b"])
+        compare(row("Hyperion Cantos").group.formats, ["epub"])
+    }
+
+    function test_sortByBookCount() {
+        openLoadedSeries()
+
+        sortBy("Book count")
+
+        compare(rows(), "Dune (3), The Expanse (2), Hyperion Cantos (1)", "most first")
+    }
+
+    function test_sortByRecentlyAdded() {
+        openLoadedSeries()
+
+        sortBy("Recently added")
+
+        compare(rows(), "The Expanse (2), Dune (3), Hyperion Cantos (1)", "latest first")
+    }
+
+    // The share read, not how many: all of Hyperion Cantos's one book before two of Dune's
+    // four
+    function test_sortByReadProgress() {
+        openLoadedSeries()
+
+        sortBy("Read progress")
+
+        compare(rows(), "Hyperion Cantos (1), Dune (3), The Expanse (2)", "most read first")
+    }
+
+    function test_sortIconReverses() {
+        openLoadedSeries()
+
+        tap("iconButton", find("sortButton", find("seriesPage")))
+
+        compare(rows(), "The Expanse (2), Hyperion Cantos (1), Dune (3)", "Z to A")
+    }
+
+    function test_tappingASeriesListsItsBooksInOrder() {
+        openLoadedSeries()
+
+        mouseClick(row("Dune"))
+
+        const page = find("booksOfPage")
+        verify(page.visible, "the series' books show")
+        compare(page.kind, "Series")
+        compare(page.name, "Dune")
+        tryVerify(() => page.list.count > 0 && page.list.itemAtIndex(0)
+                        && page.list.itemAtIndex(0).book.title === "Dune", 5000, "Dune first")
+        verify(fakeServer.requests.some(r => r.path === books && r.body.sort && r.body.sort[0].field === "seriesIndex"
+                                             && JSON.stringify(r.body.filter).indexOf("\"Dune\"") >= 0),
+               "asked for in series order")
+    }
+
+    function test_loadedOnlyTheFirstTime() {
+        openLoadedSeries()
+        compare(seriesRequests(), 1)
+
+        tap("LibraryTab")
+        tap("SeriesTab")
+        wait(500)
+
+        compare(seriesRequests(), 1, "not asked for again")
+        compare(rows(), "Dune (3), Hyperion Cantos (1), The Expanse (2)")
+    }
+
+    function test_noSeriesSaysSo() {
+        openLibrary()
+        fakeServer.respond("GET", series, 200, "series/none.json")
+        bookRow("Dune")
+
+        tap("SeriesTab")
+
+        const empty = find("emptyState", find("seriesPage"))
+        tryVerify(() => empty.visible, 5000, "No series")
+        compare(empty.title, "No series")
+        compare(empty.text, "Series show here once books in the library belong to one.")
+    }
+
+    function test_serverErrorSaysSomethingWentWrong() {
+        openLibrary()
+        fakeServer.respond("GET", series, 500, "server-error.json")
+        bookRow("Dune")
+
+        tap("SeriesTab")
+
+        const empty = find("emptyState", find("seriesPage"))
+        tryVerify(() => empty.visible, 5000, "an error")
+        compare(empty.title, "Something went wrong")
+    }
+
+    // Offline, the downloaded books' series, counting only those
+    function test_offlineListsTheDownloadedBooksSeries() {
+        open(savedSession, {offline: true, books: [
+            {id: 1, title: "Dune", authors: ["Frank Herbert"], seriesName: "Dune", seriesIndex: 1,
+             formats: ["epub"], file: "Dune.epub"},
+            {id: 10, title: "Leviathan Wakes", authors: ["James S. A. Corey"], seriesName: "The Expanse",
+             seriesIndex: 1, formats: ["m4b"], file: "Leviathan Wakes.m4b"},
+            {id: 2, title: "Hyperion", authors: ["Dan Simmons"], formats: ["epub"], file: "Hyperion.epub"}]})
+        bookRow("Dune")
+
+        tap("SeriesTab")
+
+        tryVerify(() => rows() === "Dune (1), The Expanse (1)", 5000, "only series of downloaded books: " + rows())
+        compare(row("The Expanse").group.formats, ["m4b"])
+        compare(fakeServer.requests.length, 0, "the server isn't asked")
+    }
+
+    function test_offlineWithoutDownloadsSaysSo() {
+        open(savedSession, {offline: true})
+
+        tap("SeriesTab")
+
+        const empty = find("emptyState", find("seriesPage"))
+        tryVerify(() => empty.visible, 5000, "No series")
+        compare(empty.text, "You're currently offline, only series with downloaded books can be shown.")
+    }
+
+    // The last series show at the next start while the server answers
+    function test_startShowsTheLastSeries() {
+        openLoadedSeries()
+        fakeServer.hold("GET", series)
+
+        reopen()
+        tap("SeriesTab")
+
+        tryVerify(() => rows() === "Dune (3), Hyperion Cantos (1), The Expanse (2)", 5000,
+                  "the saved rows: " + rows())
+        verify(!find("spinner", find("seriesPage")).visible, "no spinner over them")
+        fakeServer.release("GET", series)
+    }
+}

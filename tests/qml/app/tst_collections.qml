@@ -70,8 +70,9 @@ AppTestCase {
     function test_rowShowsItsBooksAuthorsAndFormats() {
         openCollections()
 
+        // Counted once its books are in, which replaces the row's data
+        tryVerify(() => row("Classics").group.bookCount === 2, 5000, "two books")
         const classics = row("Classics")
-        tryCompare(classics.group, "bookCount", 2)
         compare(classics.group.authors.slice().sort(), ["Andy Weir", "Frank Herbert"])
         compare(classics.group.formats, ["epub", "m4b"])
     }
