@@ -85,6 +85,7 @@ Window {
 
     AppHeader {
         id: header
+        objectName: "appHeader"
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
@@ -690,6 +691,7 @@ Window {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
+        objectName: "headerMenuFade"
         visible: menu.visible
         color: Qt.rgba(1, 1, 1, 0.6)
         MouseArea {
@@ -699,6 +701,7 @@ Window {
     }
     PopupMenu {
         id: menu
+        objectName: "headerMenu"
         visible: false
         anchors.top: header.bottom
         anchors.topMargin: Units.dp(1)
@@ -717,6 +720,7 @@ Window {
         }
         // Needs the server's library
         PopupMenuItem {
+            objectName: "findBooks"
             visible: bookOrbit.signedIn && bookOrbit.online
             text: "Find books on this device"
             onClicked: {
@@ -725,6 +729,7 @@ Window {
             }
         }
         PopupMenuItem {
+            objectName: "signOut"
             visible: bookOrbit.signedIn
             text: "Sign out"
             showSeparator: false
@@ -738,6 +743,7 @@ Window {
 
     SearchPage {
         id: searchPage
+        objectName: "searchPage"
         anchors.fill: parent
         visible: root.searching
         headerHeight: header.height

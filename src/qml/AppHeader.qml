@@ -26,6 +26,7 @@ Rectangle {
 
     IconButton {
         id: homeButton
+        objectName: "homeButton"
         anchors.left: parent.left
         anchors.leftMargin: header.margin
         anchors.verticalCenter: parent.verticalCenter
@@ -38,6 +39,7 @@ Rectangle {
 
     Text {
         id: titleText
+        objectName: "appTitle"
         anchors.centerIn: parent
         anchors.verticalCenterOffset: -separator.height / 2
         // Centred, so reserve the wider side's button width on both sides
@@ -100,6 +102,7 @@ Rectangle {
         anchors.verticalCenterOffset: -separator.height / 2
 
         IconButton {
+            objectName: "searchButton"
             visible: header.showSearch
             icon: "search"
             pressedIcon: "search_inv"
