@@ -30,6 +30,23 @@ UiTestCase {
         open(savedSession, options)
     }
 
+    // The library's row for a title, once it has loaded
+    function bookRow(title) {
+        const list = find("bookList")
+        let row = null
+        tryVerify(() => {
+            for (let i = 0; i < list.count; i++) {
+                const item = list.itemAtIndex(i)
+                if (item && item.visible && item.book.title === title) {
+                    row = item
+                    return true
+                }
+            }
+            return false
+        }, 5000, "a row for " + title)
+        return row
+    }
+
     // Opens the app on a new database holding the given settings, with options for how it
     // starts (see TestApp::reset() in main.cpp), e.g. {offline: true, books: [...]}
     function open(settings, options) {

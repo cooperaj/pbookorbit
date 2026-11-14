@@ -35,6 +35,9 @@ public:
     // and one without match answers the rest.
     Q_INVOKABLE void respond(const QString &method, const QString &path, int status,
                              const QString &fixture = QString(), const QVariant &match = QVariant());
+    // A file download for GET path: the bytes of tests/fixtures/<fixture>, named fileName
+    // the way BookOrbit names them, in a Content-Disposition header
+    Q_INVOKABLE void respondFile(const QString &path, const QString &fixture, const QString &fileName);
     // Keeps requests to method and path waiting, unanswered, until release(), so a test can
     // act while a reply is on its way
     Q_INVOKABLE void hold(const QString &method, const QString &path);
@@ -52,7 +55,10 @@ private:
         int status;
         QByteArray body;
         QJsonValue match;
+        QByteArray headers = "Content-Type: application/json\r\n";
     };
+
+    static QByteArray fixtureBytes(const QString &fixture);
 
     struct Waiting {
         QPointer<QTcpSocket> socket;

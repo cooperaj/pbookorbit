@@ -20,18 +20,6 @@ AppTestCase {
         tryVerify(() => !find("loginPage").visible, 5000, "signed in")
     }
 
-    // The row in the library for a title, once the list has loaded
-    function rowFor(title) {
-        const list = find("bookList")
-        tryCompare(list, "count", 3)
-        for (let i = 0; i < list.count; i++) {
-            const row = list.itemAtIndex(i)
-            if (row && row.book.title === title)
-                return row
-        }
-        fail("no row for " + title)
-    }
-
     function test_booksOnDeviceOfferToFindThem() {
         open({}, {files: bookOnDevice})
 
@@ -62,8 +50,8 @@ AppTestCase {
         compare(dialog.message, "Found 1 book from your BookOrbit library, now listed as downloaded.")
         verify(downloads.isOnDevice(1), "Dune is recorded as downloaded")
         verify(!downloads.isOnDevice(2), "Hyperion isn't")
-        tryVerify(() => find("onDevicePill", rowFor("Dune")).visible, 5000, "Dune is marked on the device")
-        verify(!find("onDevicePill", rowFor("Hyperion")).visible, "Hyperion isn't marked")
-        verify(!find("onDevicePill", rowFor("Neuromancer")).visible, "Neuromancer isn't marked")
+        tryVerify(() => find("onDevicePill", bookRow("Dune")).visible, 5000, "Dune is marked on the device")
+        verify(!find("onDevicePill", bookRow("Hyperion")).visible, "Hyperion isn't marked")
+        verify(!find("onDevicePill", bookRow("Neuromancer")).visible, "Neuromancer isn't marked")
     }
 }

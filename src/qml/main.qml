@@ -942,6 +942,7 @@ Window {
     // Above everything, including the search page
     DownloadDialog {
         id: downloadDialog
+        objectName: "downloadDialog"
         anchors.fill: parent
         onOpened: (bookId, format, app) => app ? downloads.openWith(bookId, format, app.app) : downloads.open(bookId)
     }

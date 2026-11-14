@@ -54,6 +54,12 @@ public:
     }
 
     bool offline() const { return qEnvironmentVariableIsSet("PBOOKORBIT_OFFLINE"); }
+
+    // The files in a folder of the device's storage, e.g. "Books", hidden ones too, by name
+    Q_INVOKABLE QStringList filesIn(const QString &folder) const
+    {
+        return QDir(QString::fromUtf8(FLASHDIR "/") + folder).entryList(QDir::Files | QDir::Hidden, QDir::Name);
+    }
     void setOffline(bool offline)
     {
         if (offline)

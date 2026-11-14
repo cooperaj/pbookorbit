@@ -6,6 +6,7 @@
 #include <QJSValue>
 #include <QJsonObject>
 #include <QTcpSocket>
+#include <QUrl>
 #include <algorithm>
 #include <utility>
 
@@ -41,17 +42,27 @@ void FakeServer::setReachable(bool reachable)
 void FakeServer::respond(const QString &method, const QString &path, int status, const QString &fixture,
                          const QVariant &match)
 {
-    QByteArray body;
-    if (!fixture.isEmpty()) {
-        QFile file(QStringLiteral(FIXTURES_DIR "/") + fixture);
-        if (!file.open(QIODevice::ReadOnly))
-            qFatal("FakeServer: no fixture %s", qPrintable(file.fileName()));
-        body = file.readAll();
-    }
+    const QByteArray body = fixture.isEmpty() ? QByteArray() : fixtureBytes(fixture);
     // A JavaScript object arrives wrapped, and QJsonValue only reads plain maps and lists
     const QVariant plain = match.metaType() == QMetaType::fromType<QJSValue>() ? match.value<QJSValue>().toVariant()
                                                                               : match;
     m_responses[method + ' ' + path].append({status, body, QJsonValue::fromVariant(plain)});
+}
+
+void FakeServer::respondFile(const QString &path, const QString &fixture, const QString &fileName)
+{
+    Response response{200, fixtureBytes(fixture), {}};
+    response.headers = "Content-Type: application/octet-stream\r\nContent-Disposition: attachment; filename*=UTF-8''"
+                       + QUrl::toPercentEncoding(fileName) + "\r\n";
+    m_responses["GET " + path].append(response);
+}
+
+QByteArray FakeServer::fixtureBytes(const QString &fixture)
+{
+    QFile file(QStringLiteral(FIXTURES_DIR "/") + fixture);
+    if (!file.open(QIODevice::ReadOnly))
+        qFatal("FakeServer: no fixture %s", qPrintable(file.fileName()));
+    return file.readAll();
 }
 
 // Whether body has everything in match: each of its fields, and each of its array items
@@ -159,9 +170,8 @@ void FakeServer::answer(QTcpSocket *socket, const QString &key, const QJsonValue
         response = *matched;
     else if (general != candidates.rend())
         response = *general;
-    socket->write(QString("HTTP/1.1 %1 Fake\r\nContent-Type: application/json\r\n"
-                          "Content-Length: %2\r\nConnection: close\r\n\r\n")
-                      .arg(response.status).arg(response.body.size()).toLatin1());
+    socket->write(QString("HTTP/1.1 %1 Fake\r\n").arg(response.status).toLatin1() + response.headers
+                  + QString("Content-Length: %1\r\nConnection: close\r\n\r\n").arg(response.body.size()).toLatin1());
     socket->write(response.body);
     socket->disconnectFromHost();
 }

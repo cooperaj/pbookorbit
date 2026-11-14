@@ -23,6 +23,32 @@ TestCase {
         mouseClick(find(name, under))
     }
 
+    // A dialog's button by its label, e.g. "Download"
+    function findButton(label, under) {
+        const walk = (item) => {
+            if (item.objectName && item.objectName.endsWith("Button") && item.modelData
+                    && item.modelData[0] === label)
+                return item
+            for (const child of item.children) {
+                const found = walk(child)
+                if (found)
+                    return found
+            }
+            return null
+        }
+        const button = walk(under || root)
+        verify(button, "no button " + label)
+        return button
+    }
+
+    // Waits for the buttons to be laid out first: a dialog that has just opened, or just
+    // changed its buttons, has them all at the same place until the next frame
+    function tapButton(label, under) {
+        const button = findButton(label, under)
+        waitForItemPolished(button.parent)
+        mouseClick(button)
+    }
+
     // Taps the field and types into it, a key at a time
     function type(name, text) {
         tap(name)

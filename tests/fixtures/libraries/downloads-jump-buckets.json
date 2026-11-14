@@ -1,0 +1,21 @@
+{
+  "buckets": [
+    {
+      "key": "d",
+      "label": "D",
+      "index": 0
+    },
+    {
+      "key": "p",
+      "label": "P",
+      "index": 1
+    },
+    {
+      "key": "t",
+      "label": "T",
+      "index": 2
+    }
+  ],
+  "total": 3,
+  "kind": "letter"
+}
