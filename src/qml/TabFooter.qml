@@ -33,6 +33,7 @@ Rectangle {
                 required property var modelData
                 required property int index
                 readonly property bool current: index === footer.currentIndex
+                objectName: modelData.label + "Tab"
 
                 width: tabRow.width / Math.max(1, footer.tabs.length)
                 height: column.height

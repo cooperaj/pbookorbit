@@ -471,6 +471,7 @@ Window {
 
     GroupsPage {
         id: collectionsPage
+        objectName: "collectionsPage"
         visible: bookOrbit.signedIn && root.showingCollections
         model: bookOrbit.collections
         jumpSections: bookOrbit.collectionJumpSections

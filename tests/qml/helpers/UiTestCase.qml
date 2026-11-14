@@ -12,11 +12,25 @@ TestCase {
     // Where find() looks
     property var root
 
-    // The item with this objectName under root, or under another item
+    // The item with this objectName under root, or under another item. findChild() follows
+    // object parents, which miss some delegates (a Repeater's in a Row), so visual children
+    // are searched too.
     function find(name, under) {
-        const item = findChild(under || root, name)
+        const item = findChild(under || root, name) || findVisual(under || root, name)
         verify(item, "no item named " + name)
         return item
+    }
+
+    function findVisual(item, name) {
+        // A Window's items are under its contentItem
+        for (const child of item.contentItem ? [item.contentItem] : item.children || []) {
+            if (child.objectName === name)
+                return child
+            const found = findVisual(child, name)
+            if (found)
+                return found
+        }
+        return null
     }
 
     // Waits for the item's row or column to be laid out first. Something that has just

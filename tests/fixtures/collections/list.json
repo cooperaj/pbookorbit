@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "mediaType": "books",
+    "name": "Space Opera",
+    "icon": null,
+    "displayOrder": 0,
+    "bookCount": 1
+  },
+  {
+    "id": 2,
+    "mediaType": "books",
+    "name": "Classics",
+    "icon": null,
+    "displayOrder": 1,
+    "bookCount": 3
+  },
+  {
+    "id": 3,
+    "mediaType": "podcasts",
+    "name": "Podcasts",
+    "icon": null,
+    "displayOrder": 2,
+    "bookCount": 4
+  },
+  {
+    "id": 4,
+    "mediaType": "books",
+    "name": "Empty Shelf",
+    "icon": null,
+    "displayOrder": 3,
+    "bookCount": 0
+  }
+]

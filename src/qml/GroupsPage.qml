@@ -93,6 +93,7 @@ Item {
     }
 
     EmptyState {
+        objectName: "emptyState"
         anchors.fill: groupList
         anchors.topMargin: groupList.headerItem ? groupList.headerItem.height : 0
         visible: groupList.count === 0 && (bookOrbit.error !== "" || page.loaded)
@@ -105,6 +106,7 @@ Item {
         bottomInset: pageButtons.height
     }
     Spinner {
+        objectName: "spinner"
         list: groupList
         visible: bookOrbit.error === "" && groupList.count === 0 && !page.loaded && bookOrbit.online
     }
