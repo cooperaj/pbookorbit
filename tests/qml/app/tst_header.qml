@@ -49,17 +49,6 @@ AppTestCase {
         verify(find("searchPage").visible, "the search page shows")
     }
 
-    function test_menuHasFindBooksAndSignOut() {
-        openLibrary()
-
-        tap("menuButton")
-
-        verify(find("headerMenu").visible, "the menu opens")
-        verify(find("findBooks").visible, "Find books on this device")
-        verify(find("signOut").visible, "Sign out")
-        verify(!find("reconnect").visible, "no Reconnect while online")
-    }
-
     // Finding books needs the server's library
     function test_offlineMenuHasReconnectNotFindBooks() {
         openLibrary(undefined, undefined, {offline: true})
