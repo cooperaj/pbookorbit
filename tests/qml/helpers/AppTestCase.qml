@@ -47,10 +47,25 @@ UiTestCase {
         return row
     }
 
+    // Closes the app and opens it again on the same database, as when the device starts it
+    // again. options as for open(), which only apply to how it starts, e.g. {offline: true}.
+    function reopen(options) {
+        root.destroy()
+        root = null
+        wait(0)
+        testApp.restart(options || {})
+        load()
+    }
+
     // Opens the app on a new database holding the given settings, with options for how it
     // starts (see TestApp::reset() in main.cpp), e.g. {offline: true, books: [...]}
     function open(settings, options) {
         testApp.reset(settings || {}, options || {})
+        load()
+    }
+
+    // Loads main.qml and starts it, as main.cpp does
+    function load() {
         const component = Qt.createComponent(Qt.resolvedUrl("../../../src/qml/main.qml"))
         compare(component.status, Component.Ready, component.errorString())
         root = createTemporaryObject(component, test)

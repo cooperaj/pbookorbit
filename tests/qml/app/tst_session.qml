@@ -11,8 +11,10 @@ AppTestCase {
     readonly property string books: "/api/v1/libraries/1/books"
     readonly property string refresh: "/api/v1/auth/refresh"
 
+    // Not counting the lookups for a page's other versions (an ebook's audiobook), which
+    // follow a page of books and filter by title
     function requestsTo(path) {
-        return fakeServer.requests.filter(r => r.path === path).length
+        return fakeServer.requests.filter(r => r.path === path && !(r.body && r.body.filter)).length
     }
 
     function verifySessionExpired() {

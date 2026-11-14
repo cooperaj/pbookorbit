@@ -82,9 +82,23 @@ public:
     //          onto the device another way
     Q_INVOKABLE void reset(const QVariantMap &settings = {}, const QVariantMap &options = {})
     {
+        start(std::make_shared<QTemporaryDir>(), settings, options);
+    }
+
+    // New objects on the same database and files, as when the app is started again. options
+    // as for reset().
+    Q_INVOKABLE void restart(const QVariantMap &options = {})
+    {
+        start(m_objects->dir, {}, options);
+    }
+
+private:
+    void start(std::shared_ptr<QTemporaryDir> dir, const QVariantMap &settings, const QVariantMap &options)
+    {
         auto objects = std::make_unique<Objects>();
-        QDir::setCurrent(objects->dir.path());
-        objects->database = std::make_unique<Database>(objects->dir.filePath("pbookorbit.db"));
+        objects->dir = std::move(dir);
+        QDir::setCurrent(objects->dir->path());
+        objects->database = std::make_unique<Database>(objects->dir->filePath("pbookorbit.db"));
         for (auto it = settings.begin(); it != settings.end(); ++it)
             objects->database->setText(it.key(), it.value().toString());
         for (const QVariant &value : options.value("books").toList())
@@ -95,7 +109,7 @@ public:
         m_inkview->reset(options.value("apps").toMap(), options.value("nightMode").toBool());
         objects->log = std::make_unique<diagnostics::Log>(objects->database.get());
         objects->client = std::make_unique<BookOrbitClient>(objects->database.get());
-        objects->covers = std::make_unique<Covers>(objects->client.get(), objects->dir.filePath("covers"));
+        objects->covers = std::make_unique<Covers>(objects->client.get(), objects->dir->filePath("covers"));
         objects->downloads = std::make_unique<Downloads>(objects->client.get(), objects->database.get());
         objects->bookFinder = std::make_unique<BookFinder>(objects->client.get(), objects->downloads.get(),
                                                            objects->database.get());
@@ -122,7 +136,6 @@ public:
         m_objects = std::move(objects);
     }
 
-private:
     static void saveBook(Database *database, QVariantMap entry)
     {
         const int id = entry.value("id").toInt();
@@ -155,9 +168,9 @@ private:
     }
 
     // Members are destroyed in reverse order, so each goes before what it uses, and the
-    // folder last
+    // folder last, once no restart shares it
     struct Objects {
-        QTemporaryDir dir;
+        std::shared_ptr<QTemporaryDir> dir;
         std::unique_ptr<Database> database;
         std::unique_ptr<diagnostics::Log> log;
         std::unique_ptr<BookOrbitClient> client;
