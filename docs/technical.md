@@ -167,8 +167,9 @@ the rail's direction, from its query. Two components extend it with their row:
 The page that owns a list decides when its spinner and empty state show and what the
 empty state says (`loading`, `empty`, `emptyTitle`, `emptyText`); `GroupListPage` decides
 these for every group list from `loaded` and its `noneTitle` and `noneText`. `BooksOfPage`
-puts a page header over a `BookListPage`, and `SearchPage` uses one for its results, with
-no query and so no sub-toolbar or rail.
+puts a page header over a `BookListPage`, and `AuthorSeriesPage` one over a
+`GroupListPage`. `SearchPage` uses a `BookListPage` for its results, with no query and so
+no sub-toolbar or rail.
 
 In `main.qml`, each list page has a `ListQuery` of its own, and `frontPage` is the first
 visible page, checking the pages opened over the views before the footer views. The

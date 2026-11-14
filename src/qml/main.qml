@@ -200,7 +200,7 @@ Window {
         }
     }
     function openAuthorSeries(name) {
-        authorSeriesView.name = name
+        authorSeriesPage.name = name
         bookOrbit.showAuthorSeries(name)
         authorSeriesPage.list.positionViewAtBeginning()
         showingAuthorSeries = true
@@ -277,7 +277,7 @@ Window {
             if (showingSeries && (!bookOrbit.seriesLoaded || !bookOrbit.online))
                 bookOrbit.loadSeries()
             if (showingAuthorSeries)
-                bookOrbit.showAuthorSeries(authorSeriesView.name)
+                bookOrbit.showAuthorSeries(authorSeriesPage.name)
             if (showingAuthors && !bookOrbit.authorsLoaded)
                 bookOrbit.loadAuthors()
             if (showingCollections)
@@ -676,48 +676,25 @@ Window {
         }
     }
 
-    // An author's series, opened from their info page: Series rows under a toolbar with a
-    // back button, e.g. "SERIES / ADRIAN TCHAIKOVSKY"
-    Rectangle {
-        id: authorSeriesView
-        objectName: "authorSeriesView"
-        property string name
+    // An author's series, opened from their info page
+    AuthorSeriesPage {
+        id: authorSeriesPage
+        objectName: "authorSeriesPage"
         anchors.fill: parent
         visible: root.showingAuthorSeries
-        color: "white"
-
-        PageHeader {
-            id: authorSeriesHeader
-            width: parent.width
-            title: "Series / " + authorSeriesView.name
-            onBack: {
-                root.closeDropdowns()
-                root.showingAuthorSeries = false
-            }
+        query: authorSeriesQuery
+        // Jump rail aligned and spaced like the library's
+        jumpRailTop: libraryPage.y + libraryPage.rail.entriesY
+        jumpRailPitch: libraryPage.rail.pitch
+        sortOpen: sortMenu.visible
+        tabOverhang: sortMenu.border.width - 1
+        onBack: {
+            root.closeDropdowns()
+            root.showingAuthorSeries = false
         }
-        GroupListPage {
-            id: authorSeriesPage
-            objectName: "authorSeriesPage"
-            anchors.top: authorSeriesHeader.bottom
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            model: bookOrbit.authorSeriesList
-            jumpSections: bookOrbit.authorSeriesJumpSections
-            loaded: bookOrbit.authorSeriesLoaded
-            noneTitle: "No series"
-            noneText: bookOrbit.online ? "None of their books are in a series."
-                                        : "You're currently offline, only series with downloaded books can be shown."
-            query: authorSeriesQuery
-            // Jump rail aligned and spaced like the library's
-            jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
-            jumpRailPitch: libraryPage.rail.pitch
-            sortOpen: sortMenu.visible
-            tabOverhang: sortMenu.border.width - 1
-            onSortClicked: root.toggleDropdown(sortMenu)
-            onSortIconClicked: authorSeriesQuery.reverseSort()
-            onGroupClicked: (series) => root.openBooksOf("Series", series.name, "series", [series.name])
-        }
+        onSortClicked: root.toggleDropdown(sortMenu)
+        onSortIconClicked: authorSeriesQuery.reverseSort()
+        onGroupClicked: (series) => root.openBooksOf("Series", series.name, "series", [series.name])
     }
 
     BooksOfPage {

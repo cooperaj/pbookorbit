@@ -71,7 +71,7 @@
   <text x="32" y="169">authorSeriesQuery</text>
   <line class="line" x1="200" y1="165" x2="248" y2="165" marker-end="url(#u-arrow)"/>
   <rect class="box" x="250" y="148" width="290" height="34" rx="4"/>
-  <text x="262" y="169"><tspan class="name">authorSeriesPage</tspan><tspan class="muted" dx="10">GroupListPage</tspan></text>
+  <text x="262" y="169"><tspan class="name">authorSeriesPage</tspan><tspan class="muted" dx="10">AuthorSeriesPage</tspan></text>
   <!-- 4 authorInfoPage -->
   <rect class="box" x="250" y="192" width="290" height="34" rx="4"/>
   <text x="262" y="213"><tspan class="name">authorInfoPage</tspan><tspan class="muted" dx="10">AuthorInfoPage</tspan></text>

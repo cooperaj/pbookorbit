@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-label="ListPage is the frame, containing a ListView, scrollbar, jump rail, page buttons, spinner and empty state, and reading its labels from a ListQuery. BookListPage and GroupListPage extend it with BookRow and GroupRow. BooksOfPage and SearchPage each contain a BookListPage.">
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-label="ListPage is the frame, containing a ListView, scrollbar, jump rail, page buttons, spinner and empty state, and reading its labels from a ListQuery. BookListPage and GroupListPage extend it with BookRow and GroupRow. BooksOfPage and SearchPage each contain a BookListPage, and AuthorSeriesPage a GroupListPage.">
   <style>
     svg { font-family: "IBM Plex Mono", ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace; }
     text { font-size: 12px; }
@@ -104,26 +104,37 @@
   <rect class="box" x="830" y="300" width="110" height="36" rx="4"/>
   <text x="885" y="322" text-anchor="middle">GroupRow</text>
 
-  <!-- Pages that contain a BookListPage -->
-  <rect class="box" x="120" y="420" width="330" height="160" rx="4"/>
-  <text class="name" x="136" y="444">BooksOfPage</text>
-  <rect class="chip" x="136" y="458" width="298" height="30" rx="3"/>
-  <text x="146" y="477">PageHeader: back, "Author / name"</text>
-  <rect class="chip" x="136" y="496" width="298" height="30" rx="3"/>
-  <text class="accent-text" x="146" y="515">BookListPage</text>
-  <text class="muted" x="136" y="556">an author's, series' or collection's books</text>
+  <!-- Pages that contain a list -->
+  <rect class="box" x="20" y="420" width="290" height="160" rx="4"/>
+  <text class="name" x="36" y="444">BooksOfPage</text>
+  <rect class="chip" x="36" y="458" width="258" height="30" rx="3"/>
+  <text x="46" y="477">PageHeader: "Author / name"</text>
+  <rect class="chip" x="36" y="496" width="258" height="30" rx="3"/>
+  <text class="accent-text" x="46" y="515">BookListPage</text>
+  <text class="muted" x="36" y="556">an author's, series' or</text>
+  <text class="muted" x="36" y="571">collection's books</text>
 
-  <rect class="box" x="510" y="420" width="330" height="160" rx="4"/>
-  <text class="name" x="526" y="444">SearchPage</text>
-  <rect class="chip" x="526" y="458" width="298" height="30" rx="3"/>
-  <text x="536" y="477">search box, spinner while searching</text>
-  <rect class="chip" x="526" y="496" width="298" height="30" rx="3"/>
-  <text x="536" y="515">recent searches: ListView</text>
-  <rect class="chip" x="526" y="534" width="298" height="30" rx="3"/>
-  <text x="536" y="553">results: <tspan class="accent-text">BookListPage</tspan></text>
+  <rect class="box" x="326" y="420" width="310" height="160" rx="4"/>
+  <text class="name" x="342" y="444">SearchPage</text>
+  <rect class="chip" x="342" y="458" width="278" height="30" rx="3"/>
+  <text x="352" y="477">search box, its spinner</text>
+  <rect class="chip" x="342" y="496" width="278" height="30" rx="3"/>
+  <text x="352" y="515">recent searches: ListView</text>
+  <rect class="chip" x="342" y="534" width="278" height="30" rx="3"/>
+  <text x="352" y="553">results: <tspan class="accent-text">BookListPage</tspan></text>
 
-  <line class="line dash" x1="285" y1="420" x2="285" y2="348" marker-end="url(#h-arrow)"/>
-  <text class="muted" x="295" y="392">contains one</text>
-  <line class="line dash" x1="560" y1="420" x2="440" y2="348" marker-end="url(#h-arrow)"/>
-  <text class="muted" x="512" y="392">contains one</text>
+  <rect class="box" x="652" y="420" width="290" height="160" rx="4"/>
+  <text class="name" x="668" y="444">AuthorSeriesPage</text>
+  <rect class="chip" x="668" y="458" width="258" height="30" rx="3"/>
+  <text x="678" y="477">PageHeader: "Series / name"</text>
+  <rect class="chip" x="668" y="496" width="258" height="30" rx="3"/>
+  <text class="accent-text" x="678" y="515">GroupListPage</text>
+  <text class="muted" x="668" y="556">an author's series</text>
+
+  <line class="line dash" x1="165" y1="420" x2="230" y2="348" marker-end="url(#h-arrow)"/>
+  <text class="muted" x="200" y="392">contains one</text>
+  <line class="line dash" x1="480" y1="420" x2="400" y2="348" marker-end="url(#h-arrow)"/>
+  <text class="muted" x="456" y="392">contains one</text>
+  <line class="line dash" x1="797" y1="420" x2="700" y2="348" marker-end="url(#h-arrow)"/>
+  <text class="muted" x="766" y="392">contains one</text>
 </svg>

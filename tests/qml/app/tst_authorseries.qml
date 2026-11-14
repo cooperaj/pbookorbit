@@ -94,7 +94,7 @@ AppTestCase {
 
         openTheirSeries("Dan Simmons", "authorseries/dan-simmons-series.json")
 
-        const view = find("authorSeriesView")
+        const view = find("authorSeriesPage")
         verify(view.visible, "their series show")
         compare(view.name, "Dan Simmons")
         tryVerify(() => rows() === danSimmonsSeries, 5000, "theirs, A-Z: " + rows())
@@ -110,7 +110,7 @@ AppTestCase {
         verify(books.visible, "the series' books")
         compare(books.kind, "Series")
         compare(books.name, "Imperial Radch")
-        verify(!find("authorSeriesView").visible, "not the list")
+        verify(!find("authorSeriesPage").visible, "not the list")
         compare(seriesAskedFor(), [], "nor asked for")
     }
 
@@ -129,7 +129,7 @@ AppTestCase {
     function test_backReturnsToTheAuthor() {
         openAuthors()
         openTheirSeries("Dan Simmons", "authorseries/dan-simmons-series.json")
-        const view = find("authorSeriesView")
+        const view = find("authorSeriesPage")
         tryVerify(() => rows() === danSimmonsSeries, 5000)
 
         back(view)
@@ -144,7 +144,7 @@ AppTestCase {
         openAuthors()
         openTheirSeries("Dan Simmons", "authorseries/dan-simmons-series.json")
         tryVerify(() => rows() === danSimmonsSeries, 5000)
-        back(find("authorSeriesView"))
+        back(find("authorSeriesPage"))
         back(find("authorInfoPage"))
         fakeServer.hold("GET", series)
 
@@ -165,7 +165,7 @@ AppTestCase {
         tap("sortButton", find("authorSeriesPage"))
         tap("Recently added", find("sortMenu"))
         compare(rows(), "Ilium (1), Endymion (2), Hyperion Cantos (2)", "latest first")
-        back(find("authorSeriesView"))
+        back(find("authorSeriesPage"))
         back(find("authorInfoPage"))
 
         openTheirSeries("Frank Herbert", "authorseries/frank-herbert-series.json")
