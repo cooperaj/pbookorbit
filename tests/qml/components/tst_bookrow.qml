@@ -28,8 +28,6 @@ UiTestCase {
                 required property var modelData
                 book: modelData
             }
-            // Called by the app's lists after a jump; rows don't need it
-            function loadVisibleBooks() {}
         }
     }
 

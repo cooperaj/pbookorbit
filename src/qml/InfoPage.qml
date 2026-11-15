@@ -39,13 +39,7 @@ Rectangle {
         // Room at the end to scroll the last line clear of the page buttons
         contentHeight: column.height + Units.dp(26) + pageButtons.height
 
-        // Fast black-and-white updates while scrolling, as in the lists
-        onMovementStarted: {
-            const pos = mapToGlobal(0, 0)
-            eink.enterA2ForFlick(pos.x, pos.y, width, height)
-        }
-        onMovementEnded: eink.leaveA2Soon()
-        onVisibleChanged: if (!visible) eink.leaveA2()
+        A2Scrolling { target: flickable }
 
         Column {
             id: column

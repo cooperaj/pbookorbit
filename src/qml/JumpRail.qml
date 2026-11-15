@@ -154,7 +154,7 @@ Item {
                 jumpRail.list.positionViewAtBeginning()
             else
                 jumpRail.list.positionViewAtIndex(entry.index, ListView.Beginning)
-            jumpRail.list.loadVisibleBooks()
+            jumpRail.list.loadVisibleRows()
         }
     }
 }

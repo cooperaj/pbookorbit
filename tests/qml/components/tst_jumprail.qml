@@ -25,7 +25,7 @@ UiTestCase {
                 model: parent.rows
                 delegate: Item { width: 1; height: 20 }
                 // Called by the rail after a jump, as the app's lists load the rows they show
-                function loadVisibleBooks() {}
+                function loadVisibleRows() {}
             }
             JumpRail {
                 id: rail

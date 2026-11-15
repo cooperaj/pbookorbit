@@ -498,15 +498,11 @@ Window {
 
     // While a filter or sort menu is open the window fades, as in Libby. Tapping elsewhere
     // closes it.
-    Rectangle {
+    Fade {
         anchors.fill: parent
         z: 1
         visible: root.dropdownOpen
-        color: Qt.rgba(1, 1, 1, 0.6)
-        MouseArea {
-            anchors.fill: parent
-            onClicked: root.closeDropdowns()
-        }
+        onTapped: root.closeDropdowns()
     }
     // The open tab, drawn over the fade at the sub-toolbar's position
     SubToolbar {
@@ -590,18 +586,14 @@ Window {
 
     // Header menu, dropping from the menu button. As in the system apps, the page below the
     // header fades and tapping it closes the menu.
-    Rectangle {
+    Fade {
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         objectName: "headerMenuFade"
         visible: menu.visible
-        color: Qt.rgba(1, 1, 1, 0.6)
-        MouseArea {
-            anchors.fill: parent
-            onClicked: menu.visible = false
-        }
+        onTapped: menu.visible = false
     }
     PopupMenu {
         id: menu
@@ -793,20 +785,12 @@ Window {
             }
             visible = false
         }
-
-        Text {
-            objectName: "deleteMessage"
-            width: parent.width
-            text: deleteDialog.failed
-                  ? "Couldn't delete " + (deleteDialog.book.title || "") + " from your device."
-                  : deleteDialog.kinds.length > 1
-                  ? "Delete the " + deleteDialog.kinds.join(" or the ") + " of " + (deleteDialog.book.title || "")
-                    + " from your device?"
-                  : "Are you sure you want to delete " + (deleteDialog.onlyKind !== "" ? "the " + deleteDialog.onlyKind + " of " : "")
-                    + (deleteDialog.book.title || "") + " from your device?"
-            font.pointSize: 7.25
-            wrapMode: Text.Wrap
-        }
+        message: failed
+                 ? "Couldn't delete " + (book.title || "") + " from your device."
+                 : kinds.length > 1
+                 ? "Delete the " + kinds.join(" or the ") + " of " + (book.title || "") + " from your device?"
+                 : "Are you sure you want to delete " + (onlyKind !== "" ? "the " + onlyKind + " of " : "")
+                   + (book.title || "") + " from your device?"
     }
 
     // Above everything, including the search page
@@ -828,22 +812,10 @@ Window {
         icon: "icon_information"
         buttons: [["Close", "close"]]
         onPressed: visible = false
-
-        Text {
-            width: parent.width
-            text: diagnostics.enabled ? "Diagnostics logging is on" : "Diagnostics logging is off"
-            font.pointSize: 7.25
-            font.bold: true
-            wrapMode: Text.Wrap
-        }
-        Text {
-            width: parent.width
-            text: diagnostics.enabled
-                  ? "Details for bug reports are written to pbookorbit.log on your device's storage."
-                  : "Only startup details and errors are written to pbookorbit.log."
-            font.pointSize: 7.25
-            wrapMode: Text.Wrap
-        }
+        heading: diagnostics.enabled ? "Diagnostics logging is on" : "Diagnostics logging is off"
+        message: diagnostics.enabled
+                 ? "Details for bug reports are written to pbookorbit.log on your device's storage."
+                 : "Only startup details and errors are written to pbookorbit.log."
     }
     // On first run, the app adds its tile to the applications screen. It only appears after
     // a restart.
@@ -870,22 +842,11 @@ Window {
             onTriggered: launcherTile.restartDevice()
         }
 
-        Text {
-            width: parent.width
-            text: launcherTileDialog.restarting ? "Restarting…" : "Added to your applications"
-            font.pointSize: 7.25
-            font.bold: true
-            wrapMode: Text.Wrap
-        }
-        Text {
-            width: parent.width
-            text: launcherTileDialog.restarting
-                  ? "Your device is restarting. This can take a minute."
-                  : "PBookOrbit now has its own name and icon in your applications."
-                    + " Restart your device to see them."
-            font.pointSize: 7.25
-            wrapMode: Text.Wrap
-        }
+        heading: restarting ? "Restarting…" : "Added to your applications"
+        message: restarting
+                 ? "Your device is restarting. This can take a minute."
+                 : "PBookOrbit now has its own name and icon in your applications."
+                   + " Restart your device to see them."
     }
     // After the first sign-in, offer to find books already on the device, if there are any.
     // Only once; after that it's in the menu.

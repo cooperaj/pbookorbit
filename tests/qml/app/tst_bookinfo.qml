@@ -233,7 +233,7 @@ AppTestCase {
 
         const dialog = find("deleteDialog")
         verify(dialog.visible, "the delete dialog shows")
-        compare(find("deleteMessage", dialog).text,
+        compare(find("message", dialog).text,
                 "Are you sure you want to delete the audiobook of Project Hail Mary from your device?")
         tapButton("Yes", dialog)
         compare(testApp.filesIn("Audio Books"), [], "the audiobook is gone")

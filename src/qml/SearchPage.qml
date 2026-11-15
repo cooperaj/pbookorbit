@@ -254,10 +254,10 @@ Rectangle {
                 height: 1
                 color: "#7f7f7f"
             }
-            MouseArea {
+            TapArea {
                 id: rowMouse
                 anchors.fill: parent
-                onClicked: {
+                onTapped: {
                     // Searched again, so it moves to the top. Grab the text first, since
                     // the list changes under the tap.
                     const search = modelData

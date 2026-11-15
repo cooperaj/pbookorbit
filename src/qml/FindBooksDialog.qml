@@ -1,5 +1,4 @@
 import QtQuick
-import "units.js" as Units
 
 // Finds books on the device that are in the BookOrbit library (see BookFinder) and marks
 // them as downloaded, then says how many. Unsure matches aren't offered yet (they need a
@@ -35,12 +34,12 @@ SystemDialog {
         return count === 1 ? "1 book" : count + " books"
     }
 
-    readonly property string heading: step === "offer" ? "Find your books?"
-                                      : step === "searching" ? "Finding your books"
-                                      : step === "failed" ? "Couldn't find your books"
-                                      : "Your books"
+    heading: step === "offer" ? "Find your books?"
+             : step === "searching" ? "Finding your books"
+             : step === "failed" ? "Couldn't find your books"
+             : "Your books"
 
-    readonly property string message: {
+    message: {
         if (step === "offer")
             return "There " + (fileCount === 1 ? "is 1 book" : "are " + fileCount + " books")
                    + " on this device already. Find the ones in your BookOrbit library, so they"
@@ -71,19 +70,5 @@ SystemDialog {
             search()
         else
             close()
-    }
-
-    Text {
-        width: parent.width
-        text: dialog.heading
-        font.pointSize: 7.25
-        font.bold: true
-        wrapMode: Text.Wrap
-    }
-    Text {
-        width: parent.width
-        text: dialog.message
-        font.pointSize: 7.25
-        wrapMode: Text.Wrap
     }
 }

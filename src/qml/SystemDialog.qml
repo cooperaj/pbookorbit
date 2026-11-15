@@ -6,28 +6,35 @@ import "units.js" as Units
 // the message beside it, and buttons along the bottom split by thin grey lines. The window
 // fades behind it, and only its buttons close it.
 //
-// Children form the message, laid out in a column.
+// Beside the icon: a bold heading, any children, then the message. DialogText is their
+// text style, for children.
 Item {
     id: dialog
+    property string heading
+    property string message
+    // Extra space above the message
+    property int messageGap: 0
     // Theme icon: icon_question, icon_error, icon_info...
     property string icon: "icon_question"
     // Buttons left to right, as [label, action]. Leave empty for a status-only dialog.
     property var buttons: []
     // Progress 0-100 for a bar under the message, or -1 for none
     property int percent: -1
-    default property alias content: message.data
+    default property alias content: extra.data
 
     signal pressed(var action)
 
+    component DialogText: Text {
+        width: parent ? parent.width : 0
+        font.pointSize: 7.25
+        wrapMode: Text.Wrap
+    }
+
     visible: false
 
-    // The faded window
-    Rectangle {
+    // Taps on the faded window do nothing
+    Fade {
         anchors.fill: parent
-        color: Qt.rgba(1, 1, 1, 0.6)
-        MouseArea {
-            anchors.fill: parent
-        }
     }
 
     Rectangle {
@@ -65,19 +72,34 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Units.dp(6)
 
+                DialogText {
+                    objectName: "heading"
+                    visible: text !== ""
+                    text: dialog.heading
+                    font.bold: true
+                }
                 Column {
-                    id: message
+                    id: extra
+                    visible: childrenRect.height > 0
                     width: parent.width
                     spacing: Units.dp(6)
                 }
+                DialogText {
+                    objectName: "message"
+                    visible: text !== ""
+                    topPadding: dialog.messageGap
+                    text: dialog.message
+                }
                 // Progress: a black bar filling a 1px outline
                 Rectangle {
+                    objectName: "progress"
                     width: parent.width
                     height: Units.dp(8)
                     visible: dialog.percent >= 0
                     border.width: 1
                     border.color: "black"
                     Rectangle {
+                        objectName: "progressFill"
                         width: parent.width * Math.max(0, dialog.percent) / 100
                         height: parent.height
                         color: "black"

@@ -21,7 +21,7 @@ AppTestCase {
     }
 
     function message(dialog) {
-        return find("deleteMessage", dialog).text
+        return find("message", dialog).text
     }
 
     // Chooses Delete in the book's menu, and returns the dialog it opens

@@ -7,7 +7,6 @@
         <file>qml/night.js</file>
         <file>qml/LoginPage.qml</file>
         <file>qml/PillButton.qml</file>
-        <file>qml/SectionHeading.qml</file>
         <file>qml/PopupMenu.qml</file>
         <file>qml/PopupMenuItem.qml</file>
         <file>qml/SearchPage.qml</file>
@@ -43,6 +42,8 @@
         <file>qml/ListRow.qml</file>
         <file>qml/InfoPage.qml</file>
         <file>qml/format.js</file>
+        <file>qml/A2Scrolling.qml</file>
+        <file>qml/Fade.qml</file>
         <file>qml/AuthorInfoPage.qml</file>
         <file>qml/AuthorSeriesPage.qml</file>
         <file>qml/AuthorPortrait.qml</file>

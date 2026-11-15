@@ -67,7 +67,8 @@ SystemDialog {
         return downloads.fileToDownload(option.book, option.fileId).folder
     }
 
-    readonly property string message: {
+    heading: book.title || ""
+    message: {
         if (error !== "")
             return error
         if (!hasFile)
@@ -115,25 +116,11 @@ SystemDialog {
         }
     }
 
-    Text {
-        width: parent.width
-        text: dialog.book.title || ""
-        font.pointSize: 7.25
-        font.bold: true
-        wrapMode: Text.Wrap
-    }
-    Text {
-        width: parent.width
+    messageGap: Units.dp(6)
+
+    // Under the title
+    SystemDialog.DialogText {
         visible: text !== ""
         text: (dialog.book.authors || []).join(", ")
-        font.pointSize: 7.25
-        wrapMode: Text.Wrap
-    }
-    Text {
-        width: parent.width
-        topPadding: Units.dp(6)
-        text: dialog.message
-        font.pointSize: 7.25
-        wrapMode: Text.Wrap
     }
 }

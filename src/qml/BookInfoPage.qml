@@ -382,13 +382,9 @@ InfoPage {
                 eink.requireHqUpdate()
             }
 
-            Rectangle {
+            Fade {
                 anchors.fill: parent
-                color: Qt.rgba(1, 1, 1, 0.6)
-            }
-            MouseArea {
-                anchors.fill: parent
-                onClicked: actions.visible = false
+                onTapped: actions.visible = false
             }
 
             PopupMenu {

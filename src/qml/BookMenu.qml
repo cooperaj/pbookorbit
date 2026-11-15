@@ -144,35 +144,31 @@ Item {
     property bool openWithOpen: false
 
     // The faded window, around the row where it shows in the list
-    readonly property color fade: Qt.rgba(1, 1, 1, 0.6)
     readonly property real gapTop: Math.max(rowRect.y, listRect.y)
     readonly property real gapBottom: Math.max(gapTop, Math.min(rowRect.y + rowRect.height,
                                                                 listRect.y + listRect.height))
-    Rectangle {
+    Fade {
         width: parent.width
         height: bookMenu.gapTop
-        color: bookMenu.fade
     }
-    Rectangle {
+    Fade {
         y: bookMenu.gapBottom
         width: parent.width
         height: parent.height - y
-        color: bookMenu.fade
     }
-    Rectangle {
+    Fade {
         y: bookMenu.gapTop
         width: bookMenu.rowRect.x
         height: bookMenu.gapBottom - y
-        color: bookMenu.fade
     }
-    Rectangle {
+    Fade {
         x: bookMenu.rowRect.x + bookMenu.rowRect.width
         y: bookMenu.gapTop
         width: parent.width - x
         height: bookMenu.gapBottom - y
-        color: bookMenu.fade
     }
-    // Tapping anywhere but the menu closes it, the row included
+    // Tapping anywhere but the menu closes it, the row included. Over the fades, which
+    // only fade.
     MouseArea {
         anchors.fill: parent
         onClicked: bookMenu.close()

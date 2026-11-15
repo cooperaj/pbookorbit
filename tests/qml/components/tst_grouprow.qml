@@ -20,7 +20,6 @@ UiTestCase {
                 required property var modelData
                 group: modelData
             }
-            function loadVisibleBooks() {}
         }
     }
 

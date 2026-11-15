@@ -18,23 +18,6 @@ UiTestCase {
         }
     }
 
-    // Fields in a page that scrolls, the first one tappable
-    Component {
-        id: scrolling
-        Flickable {
-            width: 400
-            height: 300
-            contentHeight: 2000
-            InfoField {
-                objectName: "first"
-                width: 400
-                label: "Author"
-                value: "Frank Herbert"
-                tappable: true
-            }
-        }
-    }
-
     SignalSpy { id: clicks; signalName: "clicked" }
     SignalSpy { id: links; signalName: "linkClicked" }
 
@@ -94,24 +77,5 @@ UiTestCase {
             make({value: value})
             compare(find("value").textFormat, format, value)
         }
-    }
-
-    // Lifting the finger off a scroll isn't a tap
-    function test_tapJustAfterScrollingIsIgnored() {
-        root = createTemporaryObject(scrolling, test)
-        waitForRendering(root)
-        const first = find("first")
-        clicks.target = first
-        clicks.clear()
-
-        root.flick(0, -1500)
-        tryVerify(() => !root.moving, 5000, "the page stops")
-        root.contentY = 0
-        mouseClick(first, first.width / 2, 10)
-        compare(clicks.count, 0, "ignored right after")
-
-        wait(400)
-        mouseClick(first, first.width / 2, 10)
-        compare(clicks.count, 1, "taken once it has settled")
     }
 }

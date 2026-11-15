@@ -82,7 +82,7 @@ Rectangle {
 
         // Once scrolling pauses, so a fast flick doesn't fetch every page it passes. The jump
         // rail calls it too.
-        function loadVisibleBooks() {
+        function loadVisibleRows() {
             if (count === 0)
                 return
             let first = indexAt(width / 2, contentY)
@@ -97,7 +97,7 @@ Rectangle {
         Timer {
             id: loadTimer
             interval: 150
-            onTriggered: rows.loadVisibleBooks()
+            onTriggered: rows.loadVisibleRows()
         }
         onContentYChanged: loadTimer.restart()
         onCountChanged: loadTimer.restart()
@@ -138,16 +138,8 @@ Rectangle {
             }
         }
 
-        // Fast black-and-white (A2) updates while it scrolls. A2 takes screen coordinates,
-        // hence mapToGlobal (as in the SDK's qml_test).
-        onMovementStarted: {
-            page.scrollStarted()
-            const pos = mapToGlobal(0, 0)
-            eink.enterA2ForFlick(pos.x, pos.y, width, height)
-        }
-        // Fires when momentum stops, not when the finger lifts
-        onMovementEnded: eink.leaveA2Soon()
-        onVisibleChanged: if (!visible) eink.leaveA2()
+        onMovementStarted: page.scrollStarted()
+        A2Scrolling { target: rows }
 
         delegate: page.delegate
     }

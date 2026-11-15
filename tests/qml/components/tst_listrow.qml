@@ -4,7 +4,8 @@ import "../helpers"
 import "../../../src/qml"
 
 // The row every list shares, with its fields set directly: its lines, formats, section
-// boxes, and which touches count as taps or holds. What a book or group puts in it is
+// boxes, and which touches count as taps or holds (TapArea's own rules are tested in
+// tst_taparea.qml). What a book or group puts in it is
 // tested with BookRow and GroupRow.
 UiTestCase {
     id: test
@@ -29,8 +30,6 @@ UiTestCase {
                 tappable: modelData.tappable !== false
                 holdable: modelData.holdable === true
             }
-            // Called by the app's lists after a jump; rows don't need it
-            function loadVisibleBooks() {}
         }
     }
 
@@ -136,34 +135,5 @@ UiTestCase {
 
         compare(clicks.count, 0)
         compare(holds.count, 0)
-    }
-
-    // Lifting the finger off a scroll can register as a tap, so one just after is ignored
-    function test_tapJustAfterScrollingIsIgnored() {
-        const rows = []
-        for (let i = 0; i < 30; i++)
-            rows.push({title: "Row " + i})
-        show(rows)
-
-        root.flick(0, -2000)
-        tryVerify(() => !root.moving, 5000, "the list stops")
-        const row = root.itemAtIndex(root.indexAt(10, root.contentY + 100))
-        clicks.target = row
-        mouseClick(row)
-        compare(clicks.count, 0, "ignored right after")
-
-        wait(400)
-        mouseClick(row)
-        compare(clicks.count, 1, "taken once the list has settled")
-    }
-
-    // A swipe can arrive as a press and a distant release when the screen sends few moves
-    function test_pressAndDistantReleaseIsntATap() {
-        const row = show([{}])
-
-        mousePress(row, 100, 20)
-        mouseRelease(row, 100, 70)
-
-        compare(clicks.count, 0)
     }
 }
