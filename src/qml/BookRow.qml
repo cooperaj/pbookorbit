@@ -1,5 +1,6 @@
 import QtQuick
 import "units.js" as Units
+import "books.js" as Books
 
 // One book in the list (see ListRow): cover, then title, authors, and a line with reading
 // status and series. Formats show at the right of the author line (all of them when an
@@ -14,16 +15,7 @@ ListRow {
     property var book
     // Formats of this book's downloads still on the device, e.g. ["epub"]. revision
     // re-checks when a download arrives.
-    formatsOnDevice: {
-        if (book.loaded !== true || downloads.revision < 0)
-            return []
-        let formats = downloads.formatsOnDevice(book.id)
-        for (const variant of book.variants || []) {
-            if (variant.bookId !== book.id)
-                formats = formats.concat(downloads.formatsOnDevice(variant.bookId))
-        }
-        return formats
-    }
+    formatsOnDevice: book.loaded !== true || downloads.revision < 0 ? [] : Books.formatsOnDevice(book, downloads)
     // Framed while about to open the book menu
     property bool focused: false
 

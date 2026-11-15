@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Window
 import "units.js" as Units
 import "night.js" as Night
+import "books.js" as Books
 
 Window {
     id: root
@@ -57,7 +58,7 @@ Window {
             downloadDialog.show(book, variants)
     }
 
-    // Opens target (as BookMenu's openWithTarget) in app, downloading it first if needed
+    // Opens target (see Books.openWithTarget) in app, downloading it first if needed
     function openWith(target, app) {
         if (target.option === undefined)
             downloads.openWith(target.bookId, target.format, app.app)
@@ -751,20 +752,8 @@ Window {
         function ask(newBook, newOnlyKind) {
             book = newBook
             onlyKind = newOnlyKind || ""
-            ids = [newBook.id]
-            for (const variant of newBook.variants || []) {
-                if (ids.indexOf(variant.bookId) < 0)
-                    ids.push(variant.bookId)
-            }
-            let onDevice = []
-            for (const id of ids) {
-                for (const kind of downloads.kindsOnDevice(id)) {
-                    if (onDevice.indexOf(kind) < 0)
-                        onDevice.push(kind)
-                }
-            }
-            // Ebook first, as DownloadDialog lists them
-            kinds = onlyKind !== "" ? [onlyKind] : ["ebook", "audiobook"].filter(k => onDevice.indexOf(k) >= 0)
+            ids = Books.recordIds(newBook)
+            kinds = onlyKind !== "" ? [onlyKind] : Books.kindsOnDevice(newBook, downloads)
             failed = false
             visible = true
         }

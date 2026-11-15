@@ -42,6 +42,7 @@
         <file>qml/ListRow.qml</file>
         <file>qml/InfoPage.qml</file>
         <file>qml/format.js</file>
+        <file>qml/books.js</file>
         <file>qml/A2Scrolling.qml</file>
         <file>qml/Fade.qml</file>
         <file>qml/AuthorInfoPage.qml</file>

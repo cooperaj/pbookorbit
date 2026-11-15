@@ -1,5 +1,6 @@
 import QtQuick
 import "units.js" as Units
+import "books.js" as Books
 
 // A book's menu, modelled on the system library's (screenshot 12). Holding a row for two
 // seconds frames it briefly (BookRow's focused), then everything but that row fades and the
@@ -99,47 +100,13 @@ Item {
         function onContentYChanged() { bookMenu.placeRow() }
     }
 
-    // The book's own record plus any separately stored version (e.g. an audiobook)
-    readonly property var bookIds: {
-        const ids = book.id === undefined ? [] : [book.id]
-        for (const variant of book.variants || []) {
-            if (ids.indexOf(variant.bookId) < 0)
-                ids.push(variant.bookId)
-        }
-        return ids
-    }
-    readonly property bool onDevice: downloads.revision >= 0 && bookIds.some(id => downloads.isOnDevice(id))
+    readonly property bool onDevice: downloads.revision >= 0
+                                     && Books.recordIds(book).some(id => downloads.isOnDevice(id))
     readonly property var authors: book.authors || []
     readonly property string series: book.seriesName || ""
 
-    // What Open with opens: {bookId, format, apps} for a file in a format the system has
-    // apps for, plus option (as DownloadDialog takes it) if it needs downloading first.
-    // Prefers a file already on the device. null if none.
-    readonly property var openWithTarget: {
-        if (book.id === undefined || downloads.revision < 0)
-            return null
-        for (const id of bookIds) {
-            for (const format of downloads.formatsOnDevice(id)) {
-                const apps = downloads.appsFor(format)
-                if (apps.length > 0)
-                    return { bookId: id, format: format, apps: apps }
-            }
-        }
-        // Files a download would fetch, as openBook() offers them
-        let options = book.variants || []
-        if (options.length === 0) {
-            const file = downloads.fileToDownload(book)
-            if (file.format !== undefined)
-                options = [{ bookId: book.id, fileId: file.id, format: file.format,
-                             sizeBytes: file.sizeBytes, kind: "", book: book }]
-        }
-        for (const option of options) {
-            const apps = downloads.appsFor(option.format)
-            if (apps.length > 0)
-                return { bookId: option.bookId, format: option.format, apps: apps, option: option }
-        }
-        return null
-    }
+    // What Open with opens (see Books.openWithTarget)
+    readonly property var openWithTarget: downloads.revision < 0 ? null : Books.openWithTarget(book, downloads)
     // Whether Open with is expanded
     property bool openWithOpen: false
 

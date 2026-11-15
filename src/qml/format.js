@@ -12,3 +12,10 @@ const htmlTag = /<\/(p|div|span|a|b|i|u|em|strong|ul|ol|li|h[1-6]|blockquote)\s*
 function isHtml(text) {
     return htmlTag.test(text || "")
 }
+
+// "1.9 MB", "820 KB" or "1.1 GB"
+function fileSize(bytes) {
+    return bytes >= 1024 * 1024 * 1024 ? (bytes / (1024 * 1024 * 1024)).toFixed(1) + " GB"
+         : bytes >= 1024 * 1024 ? (bytes / (1024 * 1024)).toFixed(1) + " MB"
+         : Math.max(1, Math.round(bytes / 1024)) + " KB"
+}

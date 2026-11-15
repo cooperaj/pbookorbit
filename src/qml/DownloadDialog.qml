@@ -1,5 +1,7 @@
 import QtQuick
 import "units.js" as Units
+import "books.js" as Books
+import "format.js" as Format
 
 // Offers to download a book that isn't on the device, shows progress, then opens it (in the
 // app picked from Open with, if that's where it came from). Asks which version for books
@@ -29,20 +31,13 @@ SystemDialog {
     percent: downloading ? downloads.percent : -1
     onPressed: (action) => press(action)
 
-    // variants from the book list; falls back to the primary file
-    function show(newBook, variants, newApp) {
+    // The versions to offer, or all the book's (see Books.versions)
+    function show(newBook, versions, newApp) {
         book = newBook
         app = newApp || null
-        let list = variants || []
-        if (list.length === 0) {
-            const file = downloads.fileToDownload(newBook)
-            if (file.format !== undefined)
-                list = [{ bookId: newBook.id, fileId: file.id, format: file.format,
-                          sizeBytes: file.sizeBytes, kind: "", book: newBook }]
-        }
         // Cleared first, so it never points past the end of the new list
         chosenIndex = -1
-        options = list
+        options = versions && versions.length > 0 ? versions : Books.versions(newBook, downloads)
         chosenIndex = options.length === 1 ? 0 : -1
         error = ""
         visible = true
@@ -56,11 +51,7 @@ SystemDialog {
 
     // "EPUB, 1.9 MB"
     function fileText(option) {
-        const bytes = option.sizeBytes || 0
-        const size = bytes >= 1024 * 1024 * 1024 ? (bytes / (1024 * 1024 * 1024)).toFixed(1) + " GB"
-                   : bytes >= 1024 * 1024 ? (bytes / (1024 * 1024)).toFixed(1) + " MB"
-                   : Math.max(1, Math.round(bytes / 1024)) + " KB"
-        return option.format.toUpperCase() + ", " + size
+        return option.format.toUpperCase() + ", " + Format.fileSize(option.sizeBytes || 0)
     }
 
     function folderOf(option) {

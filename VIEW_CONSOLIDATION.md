@@ -215,10 +215,18 @@ feature files drop what it covers.
     TapArea (the tap rules, moved from ListRow's and InfoField's tests, and finding its
     Flickable), SystemDialog (with Fade), EmptyState and PopupMenu. The emulator's menus,
     fades and dialogs match before and after.
-12. **Book logic in one place**. A JS library (or `downloads`) for record ids, Open
-    with's target (with the info page's chosen version as an option), the download option
-    and file sizes, used by BookMenu, BookInfoPage, DownloadDialog, the delete dialog,
-    BookRow and `openBook`.
+12. Done: **book logic in one place**. `books.js` has a book's `recordIds`, its
+    `versions` (the variants, else the file a download would pick), `formatsOnDevice`,
+    `kindsOnDevice` (the ebook first) and `openWithTarget`, with an optional kind for the
+    info page's chosen version. It takes `downloads` as an argument; bindings using it
+    still read `downloads.revision`. BookMenu, BookInfoPage, BookRow, DownloadDialog and
+    the delete dialog use it, and `Format.fileSize()` gives the info page's and the
+    download dialog's sizes. The two Open with rules are now one: a file on the device in
+    a format with an app, else a version to download that isn't on the device already
+    (the book menu used to offer downloading a version that was). `openBook` keeps its
+    own order, the versions before the book's own record. `tst_books` tests the library;
+    the emulator's book menu with Open with, the delete dialog and the info page's menu
+    match before and after.
 
 Steps 9 to 12 are independent of each other; 6, 7 and 8 go in that order.
 

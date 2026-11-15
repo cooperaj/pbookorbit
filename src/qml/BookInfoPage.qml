@@ -1,5 +1,7 @@
 import QtQuick
 import "units.js" as Units
+import "books.js" as Books
+import "format.js" as Format
 
 // A book's details, laid out like the system library's Book info page (screenshot 11):
 // cover on the left with title, author, series and file path beside it, then ADDED, SIZE
@@ -48,10 +50,7 @@ InfoPage {
         eink.requireHqUpdate()
         scrollToTop()
         // The version on the device, if just one is
-        let onDevice = []
-        for (const version of book.variants || [])
-            onDevice = onDevice.concat(downloads.kindsOnDevice(version.bookId))
-        kind = onDevice.indexOf("ebook") < 0 && onDevice.indexOf("audiobook") >= 0 ? "audiobook" : "ebook"
+        kind = Books.kindsOnDevice(book, downloads).join() === "audiobook" ? "audiobook" : "ebook"
         loadDetails()
     }
 
@@ -75,13 +74,6 @@ InfoPage {
             loaded[bookId] = newDetails
             page.detailsById = loaded
         }
-    }
-
-    // "1.9 MB"
-    function sizeText(bytes) {
-        return bytes >= 1024 * 1024 * 1024 ? (bytes / (1024 * 1024 * 1024)).toFixed(1) + " GB"
-             : bytes >= 1024 * 1024 ? (bytes / (1024 * 1024)).toFixed(1) + " MB"
-             : Math.max(1, Math.round(bytes / 1024)) + " KB"
     }
 
     // "13 h 56 min", "45 min", or "" if unknown
@@ -121,22 +113,9 @@ InfoPage {
     }
     readonly property bool versionOnDevice: downloads.revision >= 0 && version !== null
                                             && downloads.kindsOnDevice(version.bookId).indexOf(version.kind) >= 0
-    // What Open with opens, as in BookMenu: the file on the device, or the version to
-    // download first. null if no app takes its format.
-    readonly property var openWithTarget: {
-        if (version === null || downloads.revision < 0)
-            return null
-        if (versionOnDevice) {
-            for (const format of downloads.formatsOnDevice(version.bookId)) {
-                const apps = downloads.kindOf(format) === version.kind ? downloads.appsFor(format) : []
-                if (apps.length > 0)
-                    return { bookId: version.bookId, format: format, apps: apps }
-            }
-            return null
-        }
-        const apps = downloads.appsFor(version.format)
-        return apps.length > 0 ? { bookId: version.bookId, format: version.format, apps: apps, option: version } : null
-    }
+    // What Open with opens (see Books.openWithTarget), for the chosen version
+    readonly property var openWithTarget: version === null || downloads.revision < 0 ? null
+                                          : Books.openWithTarget(book, downloads, hasKinds ? kind : "")
     // One file per format, in the row's order: [{format, sizeBytes}]. Only the chosen
     // version's when there's a choice.
     readonly property var files: {
@@ -285,7 +264,7 @@ InfoPage {
         cells: [
             ["Added", page.record.addedAt ? Qt.formatDateTime(new Date(page.record.addedAt), "dd/MM/yy hh:mm") : ""],
             // Size per format, in the same order
-            ["Size", page.files.map(f => page.sizeText(f.sizeBytes)).join(", ")],
+            ["Size", page.files.map(f => Format.fileSize(f.sizeBytes)).join(", ")],
             ["Format", page.files.map(f => f.format.toUpperCase()).join(", ")],
         ]
     }
