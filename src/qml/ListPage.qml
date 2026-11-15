@@ -21,14 +21,13 @@ Item {
     // The list's own error (bookOrbit.booksError and the rest)
     property string error
 
-    // The rail's sections, as JumpRail takes them, and where its first entry and spacing
-    // line up with (page coordinates), if not its own
+    // The rail's sections, as JumpRail takes them, and where its entries go (see
+    // RailLayout), if not centred on its own
     property var jumpSections: []
     property bool alphabetical: true
     property bool descending: query ? query.sortDescending : false
     property int minSections: 1
-    property real jumpRailTop: NaN
-    property real jumpRailPitch: NaN
+    property RailLayout railLayout: null
 
     // While there are no rows: whether they're on their way (the spinner), or there are
     // none to show (the empty state, saying these)
@@ -150,8 +149,7 @@ Item {
         minSections: page.minSections
         topInset: rows.headerItem ? rows.headerItem.height : 0
         bottomInset: pageButtons.height
-        alignTop: page.jumpRailTop
-        alignPitch: page.jumpRailPitch
+        layout: page.railLayout
     }
     PageButtons {
         id: pageButtons

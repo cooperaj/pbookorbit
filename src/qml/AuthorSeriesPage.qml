@@ -14,9 +14,8 @@ Rectangle {
     property string name
     // Its sort, for the sub-toolbar
     property ListQuery query: null
-    // Y of the jump rail's first entry, in page coordinates, and its entry spacing
-    property real jumpRailTop: NaN
-    property real jumpRailPitch: NaN
+    // Where the jump rail's entries go (see RailLayout)
+    property RailLayout railLayout: null
     // The menu its sub-toolbar opens
     property ListMenus menus: null
 
@@ -43,9 +42,7 @@ Rectangle {
         noneText: bookOrbit.online ? "None of their books are in a series."
                                    : "You're currently offline, only series with downloaded books can be shown."
         query: page.query
-        // In the list's coordinates, below the header
-        jumpRailTop: page.jumpRailTop - y
-        jumpRailPitch: page.jumpRailPitch
+        railLayout: page.railLayout
         menus: page.menus
         onGroupClicked: (group) => page.groupClicked(group)
     }

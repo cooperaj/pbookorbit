@@ -38,6 +38,7 @@
         <file>qml/ListPage.qml</file>
         <file>qml/ListQuery.qml</file>
         <file>qml/ListMenus.qml</file>
+        <file>qml/RailLayout.qml</file>
         <file>qml/AuthorInfoPage.qml</file>
         <file>qml/AuthorSeriesPage.qml</file>
         <file>qml/AuthorPortrait.qml</file>

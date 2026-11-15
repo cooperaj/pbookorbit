@@ -16,10 +16,8 @@ Rectangle {
     // "Author", "Series" or "Collection", and the name
     property string kind
     property string name
-    // Y of the jump rail's first entry, in page coordinates
-    property real jumpRailTop: NaN
-    // And its entry spacing
-    property real jumpRailPitch: NaN
+    // Where the jump rail's entries go (see RailLayout)
+    property RailLayout railLayout: null
     // Its sort and filter, for the sub-toolbar
     property ListQuery query: null
     // In series order: each book under its number, with a number rail
@@ -51,9 +49,7 @@ Rectangle {
         menus: page.menus
         jumpSections: bookOrbit.booksOfJumpSections
         error: bookOrbit.booksOfError
-        // In the list's coordinates, below the header
-        jumpRailTop: page.jumpRailTop - y
-        jumpRailPitch: page.jumpRailPitch
+        railLayout: page.railLayout
         alphabetical: !page.seriesOrder
         // Short series are quick enough to scroll without one
         minSections: page.seriesOrder ? 16 : 1

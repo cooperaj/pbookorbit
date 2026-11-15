@@ -324,6 +324,15 @@ Window {
         sortMenu.visible = false
     }
 
+    // Where every list's jump rail puts its letters, so they're at the same height on every
+    // page: centred in the library's rail space, between its sub-toolbar and page buttons
+    // (every list's are the same height)
+    RailLayout {
+        id: rails
+        top: header.height + openTab.height + inset
+        bottom: footer.y - libraryPage.pageButtons.height - inset
+    }
+
     // The shared menus, for the list pages' sub-toolbars
     ListMenus {
         id: listMenus
@@ -364,6 +373,7 @@ Window {
         menus: listMenus
         // For A-Z sorts
         jumpSections: bookOrbit.jumpSections
+        railLayout: rails
         error: bookOrbit.booksError
         // The spinner only until the first books arrive; later pages load on scroll. No
         // books, or the library couldn't load, says so.
@@ -398,9 +408,7 @@ Window {
         anchors.left: parent.left
         anchors.right: parent.right
         query: collectionsQuery
-        // Jump rail aligned and spaced like the library's
-        jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
-        jumpRailPitch: libraryPage.rail.pitch
+        railLayout: rails
         menus: listMenus
         // Reloaded every time the view opens. Offline, the saved collections' downloaded books.
         onVisibleChanged: if (visible) bookOrbit.loadCollections()
@@ -424,9 +432,7 @@ Window {
         anchors.left: parent.left
         anchors.right: parent.right
         query: seriesQuery
-        // Jump rail aligned and spaced like the library's
-        jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
-        jumpRailPitch: libraryPage.rail.pitch
+        railLayout: rails
         menus: listMenus
         // Loaded the first time the view opens: large libraries have many series, and their
         // formats take a request per few series. Offline, the downloaded books' each time.
@@ -455,9 +461,7 @@ Window {
         anchors.left: parent.left
         anchors.right: parent.right
         query: authorsQuery
-        // Jump rail aligned and spaced like the library's
-        jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
-        jumpRailPitch: libraryPage.rail.pitch
+        railLayout: rails
         menus: listMenus
         // Loaded the first time the view opens, like the series
         onVisibleChanged: if (visible && !bookOrbit.authorsLoaded) bookOrbit.loadAuthors()
@@ -679,9 +683,7 @@ Window {
         anchors.fill: parent
         visible: root.showingAuthorSeries
         query: authorSeriesQuery
-        // Jump rail aligned and spaced like the library's
-        jumpRailTop: libraryPage.y + libraryPage.rail.entriesY
-        jumpRailPitch: libraryPage.rail.pitch
+        railLayout: rails
         menus: listMenus
         onBack: {
             root.closeDropdowns()
@@ -693,9 +695,7 @@ Window {
     BooksOfPage {
         id: booksOfPage
         objectName: "booksOfPage"
-        // Jump rail aligned and spaced like the library's
-        jumpRailTop: libraryPage.y + libraryPage.rail.entriesY
-        jumpRailPitch: libraryPage.rail.pitch
+        railLayout: rails
         // Sub-toolbar, using the shared menus
         query: root.booksOfQuery
         seriesOrder: root.booksOfQuery.sortFields[root.booksOfQuery.sortIndex] === "seriesIndex"

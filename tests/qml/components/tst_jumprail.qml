@@ -34,6 +34,11 @@ UiTestCase {
         }
     }
 
+    Component {
+        id: railLayout
+        RailLayout {}
+    }
+
     function make(properties) {
         root = createTemporaryObject(listWithRail, test, properties || {})
         verify(root)
@@ -160,5 +165,32 @@ UiTestCase {
         tapEntry(rail, "A")
 
         tryCompare(root.list, "contentY", 0)
+    }
+
+    // On its own, the alphabet is centred on the rail
+    function test_centredWithoutALayout() {
+        const rail = make()
+
+        verify(rail.pitch > 0 && rail.pitch <= rail.height / 27)
+        fuzzyCompare(2 * rail.entriesTop + 27 * rail.pitch, rail.height, 1)
+    }
+
+    // A layout puts the entries at the same place in the window wherever the rail is, as on
+    // a page with a taller header or an error line over the rows, and as its page moves
+    function test_layoutPlacesTheEntriesInTheWindow() {
+        const rail = make()
+        const layout = createTemporaryObject(railLayout, test, {top: 100, bottom: 500})
+        rail.layout = layout
+
+        compare(rail.pitch, layout.pitch)
+        compare(rail.mapToItem(null, 0, rail.entriesTop).y, layout.entriesTop)
+
+        rail.topInset = 40
+
+        compare(rail.mapToItem(null, 0, rail.entriesTop).y, layout.entriesTop, "still there")
+
+        root.y = 30
+
+        compare(rail.mapToItem(null, 0, rail.entriesTop).y, layout.entriesTop, "after its page moves")
     }
 }

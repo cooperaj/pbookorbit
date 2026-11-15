@@ -5,8 +5,8 @@ import "units.js" as Units
 // to its section. For A-Z it shows the whole alphabet; for a series, every number from 1 to
 // the last, or round steps with dots between if they don't fit ("1 • 5 • 10 • 15"). Entries
 // with books are bold, the rest grey. Numbers use the letters' spacing, as many as fit.
-// Starts where the alphabet's # would, or at alignTop. The system library has nothing like
-// it. Place it beside the list in the same parent; it only shows with at least minSections
+// Starts where the alphabet's # would, centred on the rail or where layout puts it. The
+// system library has nothing like it. Place it beside the list in the same parent; it only shows with at least minSections
 // sections and a list longer than one screen.
 Item {
     id: jumpRail
@@ -23,27 +23,29 @@ Item {
     // page buttons)
     property real topInset: 0
     property real bottomInset: 0
-    // Y of the first entry in parent coordinates, to align with another rail's entriesY. If
-    // unset, the alphabet is centred on the rail.
-    property real alignTop: NaN
-    // Y of the first entry, in parent coordinates
-    readonly property real entriesY: y + entriesTop
-    // Entry spacing, to match another rail's pitch. If unset, as tight as the alphabet
-    // needs, up to fullPitch.
-    property real alignPitch: NaN
+    // Where the entries go, in window coordinates (see RailLayout). If unset, the alphabet
+    // is centred on the rail.
+    property RailLayout layout: null
 
     readonly property var alphabet: ["#", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
                                      "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
-    // Spacing per entry; letters close up if the list is too short for the full alphabet
-    readonly property int fullPitch: Units.dp(20)
-    // Top of the alphabet when centred on the rail; numbers start here too
-    readonly property real centredTop:
-        Math.max(0, (height - alphabet.length * Math.min(fullPitch, Math.floor(height / alphabet.length))) / 2)
-    readonly property real entriesTop: isNaN(alignTop) ? centredTop : Math.max(0, alignTop - y)
+    RailLayout {
+        id: ownLayout
+        top: 0
+        bottom: jumpRail.height
+    }
+    // The rail's top in the window: its y and its parents', so it follows any of them moving
+    readonly property real windowTop: {
+        let top = 0
+        for (let item = jumpRail; item; item = item.parent)
+            top += item.y
+        return top
+    }
+    // Top of the entries, in the rail's coordinates; numbers start here too
+    readonly property real entriesTop: layout ? Math.max(0, layout.entriesTop - windowTop) : ownLayout.entriesTop
     // Height available for entries
-    readonly property real room: isNaN(alignTop) ? height : height - entriesTop
-    readonly property real pitch: isNaN(alignPitch) ? Math.min(fullPitch, Math.floor(room / alphabet.length))
-                                                    : alignPitch
+    readonly property real room: layout ? height - entriesTop : height
+    readonly property real pitch: layout ? layout.pitch : ownLayout.pitch
     // Entries in list order, [{label, index}], where index is the row to jump to, or
     // undefined if the section is empty
     readonly property var entries: alphabetical ? letterEntries() : descending ? numbers.slice().reverse() : numbers
@@ -112,8 +114,8 @@ Item {
     // The full gap between the row ends and the scrollbar, so centred letters sit midway
     x: parent.width - Units.dp(33)
     width: Units.dp(33) - Units.dp(8)
-    y: list.y + topInset + Units.dp(7)
-    height: list.height - topInset - bottomInset - 2 * Units.dp(7)
+    y: list.y + topInset + ownLayout.inset
+    height: list.height - topInset - bottomInset - 2 * ownLayout.inset
 
     Column {
         id: railEntries
