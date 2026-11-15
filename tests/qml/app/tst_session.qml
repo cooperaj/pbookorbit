@@ -137,5 +137,10 @@ AppTestCase {
         compare(requestsTo(refresh), 1, "refreshed once, not again for each waiting request")
         verify(!find("loginPage").visible, "not sent to sign-in")
         verify(bookOrbit.signedIn, "the session is kept")
+        // The requests that waited for it fail with its error
+        const empty = find("libraryEmptyState")
+        verify(empty.visible, "the library says so")
+        compare(empty.title, "Something went wrong")
+        compare(empty.text, "Internal server error (HTTP 500)")
     }
 }

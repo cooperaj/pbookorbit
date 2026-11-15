@@ -45,7 +45,18 @@ class BookOrbitClient : public QObject
     // the app when that changes, so it's looked at again whenever online changes. Offline
     // with it true means the server didn't reply.
     Q_PROPERTY(bool networkConnected READ networkConnected NOTIFY onlineChanged)
+    // Signing in's error, shown on the sign-in page. Each list has its own (booksError
+    // and the rest).
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
+    // Each list's error: set when a request for it fails, cleared when it loads again.
+    // Empty offline, which the header shows instead.
+    Q_PROPERTY(QString booksError READ booksError NOTIFY booksChanged)
+    Q_PROPERTY(QString searchError READ searchError NOTIFY searchChanged)
+    Q_PROPERTY(QString booksOfError READ booksOfError NOTIFY booksOfChanged)
+    Q_PROPERTY(QString collectionsError READ collectionsError NOTIFY collectionsChanged)
+    Q_PROPERTY(QString seriesError READ seriesError NOTIFY seriesListChanged)
+    Q_PROPERTY(QString authorsError READ authorsError NOTIFY authorsChanged)
+    Q_PROPERTY(QString authorSeriesError READ authorSeriesError NOTIFY authorSeriesChanged)
     Q_PROPERTY(BookListModel *books READ books CONSTANT)
     // Number of books, or -1 until known
     Q_PROPERTY(int totalBooks READ totalBooks NOTIFY booksChanged)
@@ -118,6 +129,13 @@ public:
     bool online() const { return m_online; }
     bool networkConnected() const;
     QString error() const { return m_error; }
+    QString booksError() const { return m_list.error; }
+    QString searchError() const { return m_search.error; }
+    QString booksOfError() const { return m_booksOf.error; }
+    QString collectionsError() const { return m_collections.error; }
+    QString seriesError() const { return m_series.error; }
+    QString authorsError() const { return m_authors.error; }
+    QString authorSeriesError() const { return m_authorSeries.error; }
     BookListModel *books() { return &m_list.model; }
     int totalBooks() const;
     QVariantList jumpSections() const { return m_list.jumpSections; }
@@ -308,6 +326,8 @@ private:
         // letter.
         QVariantList jumpSections;
         QHash<int, QString> sectionStarts;
+        // See booksError
+        QString error;
     };
 
     // Collections, series or authors: one row each, sorted locally
@@ -336,6 +356,8 @@ private:
         bool cacheRead = false;
         // Collections whose books are still loading
         int loadingBooks = 0;
+        // See collectionsError
+        QString error;
     };
 
     // The rows on screen: the cached ones, until loaded
@@ -344,6 +366,12 @@ private:
         return groups.cached.isEmpty() ? groups.rows : groups.cached;
     }
 
+    // Emits the list's change signal (booksChanged, searchChanged, ...)
+    void emitChanged(const PagedBooks &list);
+    void emitChanged(const Groups &groups);
+    // Sets the list's error, emitting its change signal if that changes it
+    void setListError(PagedBooks &list, const QString &error);
+    void setListError(Groups &groups, const QString &error);
     // Endpoint for library book queries
     QString libraryBooksPath() const { return QString("/libraries/%1/books").arg(m_libraryId); }
     // Loads a collection's books from page onwards into its row
@@ -408,14 +436,15 @@ private:
     void call(const QByteArray &method, const QString &path, const QJsonDocument &body,
               DataHandler onSuccess, ErrorHandler onError, bool quiet = false,
               bool retried = false);
-    // call() for JSON replies. Errors set the error property, then call onFailed.
+    // call() for JSON replies. A failure calls onFailed with its message, or an empty one
+    // when offline (the header shows that).
+    using FailedHandler = std::function<void(const QString &error)>;
     void callJson(const QByteArray &method, const QString &path, const QJsonDocument &body,
-                  std::function<void(const QJsonDocument &)> onSuccess,
-                  std::function<void()> onFailed = nullptr);
+                  std::function<void(const QJsonDocument &)> onSuccess, FailedHandler onFailed);
     // Reads the accent colour from the user's synced theme, if any
     void loadAccent();
-    // Fetches the library id, then calls then
-    void loadLibrary(std::function<void()> then);
+    // Fetches the library id, then calls then, or onFailed as callJson() does
+    void loadLibrary(std::function<void()> then, FailedHandler onFailed);
     // Builds the BookOrbit query for a list's sort and filter
     static QJsonObject bookQuery(const PagedBooks &list);
     // Reloads from page one, or lists the local books
@@ -474,8 +503,9 @@ private:
     int m_pending = 0;
     QString m_error;
     int m_libraryId = -1;
-    // Waiting for loadLibrary()'s request; not empty while it's in flight
-    QList<std::function<void()>> m_afterLibrary;
+    // Waiting for loadLibrary()'s request, and what each does if it fails; not empty
+    // while it's in flight
+    QList<std::pair<std::function<void()>, FailedHandler>> m_afterLibrary;
     // Main library list
     PagedBooks m_list;
     // Saves the library's list cache once a refresh settles
@@ -498,4 +528,8 @@ private:
     QString m_accent;   // BookOrbit accent name, e.g. "teal"; empty for the default
     bool m_refreshing = false;
     QList<std::function<void()>> m_afterRefresh;
+    // Why the last refresh failed, if the server answered with an error, for the requests
+    // that waited for it
+    int m_refreshStatus = 0;
+    QString m_refreshError;
 };

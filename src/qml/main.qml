@@ -360,15 +360,16 @@ Window {
         onSortIconClicked: libraryQuery.reverseSort()
         // For A-Z sorts
         jumpSections: bookOrbit.jumpSections
+        error: bookOrbit.booksError
         // The spinner only until the first books arrive; later pages load on scroll. No
         // books, or the library couldn't load, says so.
         loading: bookOrbit.busy
-        empty: bookOrbit.error !== "" || bookOrbit.totalBooks === 0
-        emptyTitle: bookOrbit.error !== "" ? "Something went wrong"
+        empty: error !== "" || bookOrbit.totalBooks === 0
+        emptyTitle: error !== "" ? "Something went wrong"
                     : libraryQuery.downloadedOnly
                     ? ["No downloaded books", "No downloaded ebooks", "No downloaded audiobooks"][libraryQuery.filterIndex]
                     : ["No books", "No ebooks", "No audiobooks"][libraryQuery.filterIndex]
-        emptyText: bookOrbit.error !== "" ? bookOrbit.error
+        emptyText: error !== "" ? error
                    : !bookOrbit.online ? libraryPage.offlineText
                    : libraryQuery.downloadedOnly ? "Books you download show here, and can be read offline."
                    : "Books in your BookOrbit library show here."
@@ -383,6 +384,7 @@ Window {
         visible: bookOrbit.signedIn && root.showingCollections
         model: bookOrbit.collections
         jumpSections: bookOrbit.collectionJumpSections
+        error: bookOrbit.collectionsError
         loaded: bookOrbit.collectionsLoaded
         noneTitle: "No collections"
         noneText: bookOrbit.online ? "Collections you make in BookOrbit show here."
@@ -411,6 +413,7 @@ Window {
         visible: bookOrbit.signedIn && root.showingSeries
         model: bookOrbit.seriesList
         jumpSections: bookOrbit.seriesJumpSections
+        error: bookOrbit.seriesError
         loaded: bookOrbit.seriesLoaded
         noneTitle: "No series"
         noneText: bookOrbit.online ? "Series show here once books in the library belong to one."
@@ -439,6 +442,7 @@ Window {
         visible: bookOrbit.signedIn && root.showingAuthors
         model: bookOrbit.authorsList
         jumpSections: bookOrbit.authorJumpSections
+        error: bookOrbit.authorsError
         // With a filter on, authors appear once their books have been looked up
         loaded: bookOrbit.authorsLoaded && (bookOrbit.authorBooksLoaded
                                             || (authorsQuery.filterIndex === 0 && !authorsQuery.downloadedOnly))

@@ -281,6 +281,9 @@ void BookOrbitClient::refreshList(PagedBooks &list)
             clearJumpSections(*refreshed);
             loadPage(*refreshed, 0);
         }
+    }, [this, refreshed, generation](const QString &error) {
+        if (generation == refreshed->queryGeneration)
+            setListError(*refreshed, error);
     });
 }
 
@@ -312,6 +315,9 @@ void BookOrbitClient::search(const QString &text)
             {"sort", QJsonArray{QJsonObject{{"field", "title"}, {"dir", "asc"}}}},
         };
         loadPage(m_search, 0);
+    }, [this, generation](const QString &error) {
+        if (generation == m_search.queryGeneration)
+            setListError(m_search, error);
     });
 }
 
@@ -471,29 +477,32 @@ void BookOrbitClient::setOnline(bool online)
     emit onlineChanged();
 }
 
-void BookOrbitClient::loadLibrary(std::function<void()> then)
+void BookOrbitClient::loadLibrary(std::function<void()> then, FailedHandler onFailed)
 {
     if (m_libraryId >= 0) {
         then();
         return;
     }
     // Calls made while it's being fetched wait for the same request
-    m_afterLibrary.append(then);
+    m_afterLibrary.append({then, onFailed});
     if (m_afterLibrary.size() > 1)
         return;
+    const auto fail = [this](const QString &error) {
+        for (const auto &queued : std::exchange(m_afterLibrary, {}))
+            queued.second(error);
+    };
     // [{id, name, bookCount, ...}] in the user's order. TODO: let the user choose when
     // there are several; this uses the first.
-    callJson("GET", "/libraries", QJsonDocument(), [this](const QJsonDocument &doc) {
-        const auto queued = std::exchange(m_afterLibrary, {});
+    callJson("GET", "/libraries", QJsonDocument(), [this, fail](const QJsonDocument &doc) {
         const QJsonArray libraries = doc.array();
         if (libraries.isEmpty()) {
-            setError("No libraries on this server");
+            fail("No libraries on this server");
             return;
         }
         m_libraryId = libraries.first().toObject().value("id").toInt();
-        for (const auto &fn : queued)
-            fn();
-    }, [this]() { m_afterLibrary.clear(); });
+        for (const auto &queued : std::exchange(m_afterLibrary, {}))
+            queued.first();
+    }, fail);
 }
 
 // Lower-case letters and digits only, so "Carl’s" matches "Carl's" and "S.A." matches "S.
@@ -736,12 +745,7 @@ void BookOrbitClient::showListedBooks(PagedBooks &list)
     list.model.setBooks(0, rows);
     updateSectionStarts(list, 0, rows.size() - 1);
     emit jumpSectionsChanged();
-    if (&list == &m_list)
-        emit booksChanged();
-    else if (&list == &m_search)
-        emit searchChanged();
-    else
-        emit booksOfChanged();
+    emitChanged(list);
 }
 
 void BookOrbitClient::loadJumpSections(PagedBooks &list, std::function<void()> then)
@@ -771,6 +775,10 @@ void BookOrbitClient::loadJumpSections(PagedBooks &list, std::function<void()> t
             }
             emit jumpSectionsChanged();
             then();
+        },
+        [this, sectioned, generation](const QString &error) {
+            if (generation == sectioned->queryGeneration)
+                setListError(*sectioned, error);
         });
 }
 
@@ -802,6 +810,10 @@ void BookOrbitClient::loadSeriesSections(PagedBooks &list, int page)
                 loadSeriesSections(*sectioned, page + 1);
             else
                 emit jumpSectionsChanged();
+        },
+        [this, sectioned, generation](const QString &error) {
+            if (generation == sectioned->queryGeneration)
+                setListError(*sectioned, error);
         });
 }
 
@@ -824,6 +836,7 @@ void BookOrbitClient::restartPages(PagedBooks &list)
     list.loadingPages.clear();
     list.cached = false;
     list.wantedLast = -1;
+    setListError(list, QString());
 }
 
 void BookOrbitClient::loadPages(PagedBooks &list, int first, int last)
@@ -895,18 +908,15 @@ void BookOrbitClient::loadPage(PagedBooks &list, int page)
                     // Include the next row, whose section start depends on this page's
                     // last. Hidden rows pass their section boxes on to the next row.
                     updateSectionStarts(*pages, first, first + int(rows.size()));
-                    if (pages == &m_list) {
-                        emit booksChanged();
-                    } else if (pages == &m_booksOf) {
-                        emit booksOfChanged();
-                    } else {
-                        emit searchChanged();
-                    }
+                    pages->error.clear();
+                    emitChanged(*pages);
                 });
         },
-        [pages, page, generation]() {
-            if (generation == pages->queryGeneration)
-                pages->loadingPages.remove(page);   // try again when it is next on screen
+        [this, pages, page, generation](const QString &error) {
+            if (generation != pages->queryGeneration)
+                return;
+            pages->loadingPages.remove(page);   // try again when it is next on screen
+            setListError(*pages, error);
         });
 }
 
@@ -982,7 +992,7 @@ void BookOrbitClient::lookUpCompanions(PagedBooks *list, const QVariantList &boo
             then(merged);
         },
         // Unmerged, rather than not at all
-        [list, rows, generation, then]() {
+        [list, rows, generation, then](const QString &) {
             if (generation == list->queryGeneration)
                 then(rows);
         });
@@ -1105,6 +1115,7 @@ static void sortAuthors(QStringList &authors)
 void BookOrbitClient::loadCollections()
 {
     const int generation = ++m_collections.generation;
+    setListError(m_collections, QString());
     if (!m_online) {
         showLocalCollections();
         return;
@@ -1142,6 +1153,9 @@ void BookOrbitClient::loadCollections()
         }
         if (m_collections.loadingBooks == 0)
             finishGroups(m_collections, true);
+    }, [this, generation](const QString &error) {
+        if (generation == m_collections.generation)
+            setListError(m_collections, error);
     });
 }
 
@@ -1240,6 +1254,7 @@ static const int MAX_RULE_VALUES = 20;
 void BookOrbitClient::loadSeries()
 {
     const int generation = ++m_series.generation;
+    setListError(m_series, QString());
     if (!m_online) {
         showLocalSeries(m_series);
         return;
@@ -1248,12 +1263,16 @@ void BookOrbitClient::loadSeries()
     loadLibrary([this, generation]() {
         if (generation == m_series.generation)
             loadSeriesPage(&m_series, 0, generation);
+    }, [this, generation](const QString &error) {
+        if (generation == m_series.generation)
+            setListError(m_series, error);
     });
 }
 
 void BookOrbitClient::showAuthorSeries(const QString &author)
 {
     const int generation = ++m_authorSeries.generation;
+    setListError(m_authorSeries, QString());
     // Don't show the previous author's series while loading
     if (author != m_authorSeriesName) {
         m_authorSeries.rows.clear();
@@ -1268,6 +1287,9 @@ void BookOrbitClient::showAuthorSeries(const QString &author)
     loadLibrary([this, generation]() {
         if (generation == m_authorSeries.generation)
             loadSeriesPage(&m_authorSeries, 0, generation);
+    }, [this, generation](const QString &error) {
+        if (generation == m_authorSeries.generation)
+            setListError(m_authorSeries, error);
     });
 }
 
@@ -1393,6 +1415,9 @@ void BookOrbitClient::loadSeriesPage(Groups *groups, int page, int generation)
             loadSeriesPage(groups, page + 1, generation);
         else
             loadGroupBooks(groups, 0, 0, generation);
+    }, [this, groups, generation](const QString &error) {
+        if (generation == groups->generation)
+            setListError(*groups, error);
     });
 }
 
@@ -1808,6 +1833,7 @@ void BookOrbitClient::setSeriesSort(const QString &field, bool descending)
 void BookOrbitClient::loadAuthors()
 {
     const int generation = ++m_authors.generation;
+    setListError(m_authors, QString());
     if (!m_online) {
         showLocalAuthors();
         return;
@@ -1816,6 +1842,9 @@ void BookOrbitClient::loadAuthors()
     loadLibrary([this, generation]() {
         if (generation == m_authors.generation)
             loadAuthorsPage(0, generation);
+    }, [this, generation](const QString &error) {
+        if (generation == m_authors.generation)
+            setListError(m_authors, error);
     });
 }
 
@@ -1866,6 +1895,9 @@ void BookOrbitClient::loadAuthorsPage(int page, int generation)
             loadAuthorsPage(page + 1, generation);
         else
             loadGroupBooks(&m_authors, 0, 0, generation);
+    }, [this, generation](const QString &error) {
+        if (generation == m_authors.generation)
+            setListError(m_authors, error);
     });
 }
 
@@ -1981,14 +2013,7 @@ void BookOrbitClient::showGroups(Groups &groups)
     if (groups.model.count() != list.size())
         groups.model.reset(list.size());
     groups.model.setBooks(0, list);
-    if (&groups == &m_collections)
-        emit collectionsChanged();
-    else if (&groups == &m_series)
-        emit seriesListChanged();
-    else if (&groups == &m_authorSeries)
-        emit authorSeriesChanged();
-    else
-        emit authorsChanged();
+    emitChanged(groups);
 }
 
 void BookOrbitClient::showLoadedGroups(Groups &groups)
@@ -2082,7 +2107,7 @@ void BookOrbitClient::withLibrary(std::function<void(int libraryId)> then, Error
         then(m_libraryId);
         return;
     }
-    // Like loadLibrary(), but leaves the error property alone
+    // Like loadLibrary(), for requests that belong to no list
     request("GET", "/libraries", QJsonDocument(),
         [this, then, onError](const QByteArray &data) {
             const QJsonArray libraries = QJsonDocument::fromJson(data).array();
@@ -2097,27 +2122,21 @@ void BookOrbitClient::withLibrary(std::function<void(int libraryId)> then, Error
 }
 
 void BookOrbitClient::callJson(const QByteArray &method, const QString &path, const QJsonDocument &body,
-                               std::function<void(const QJsonDocument &)> onSuccess,
-                               std::function<void()> onFailed)
+                               std::function<void(const QJsonDocument &)> onSuccess, FailedHandler onFailed)
 {
     call(method, path, body,
-        [this, onSuccess, onFailed](const QByteArray &data) {
+        [onSuccess, onFailed](const QByteArray &data) {
             QJsonParseError parseError;
             const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
             if (parseError.error != QJsonParseError::NoError) {
-                setError("Unexpected response from server: " + parseError.errorString());
-                if (onFailed)
-                    onFailed();
+                onFailed("Unexpected response from server: " + parseError.errorString());
                 return;
             }
             onSuccess(doc);
         },
-        [this, onFailed](int status, const QString &message) {
+        [onFailed](int status, const QString &message) {
             // Offline shows in the header instead
-            if (status != 0)
-                setError(message);
-            if (onFailed)
-                onFailed();
+            onFailed(status != 0 ? message : QString());
         });
 }
 
@@ -2133,6 +2152,8 @@ void BookOrbitClient::call(const QByteArray &method, const QString &path, const 
             call(method, path, body, onSuccess, onError, quiet, retried);
         else if (!m_online)
             onError(0, NO_CONNECTION);
+        else if (m_refreshStatus != 0)
+            onError(m_refreshStatus, m_refreshError);
     };
     if (m_refreshing) {
         m_afterRefresh.append(afterRefresh);
@@ -2171,6 +2192,8 @@ void BookOrbitClient::refreshSession(std::function<void()> then)
     if (m_refreshing)
         return;
     m_refreshing = true;
+    m_refreshStatus = 0;
+    m_refreshError.clear();
 
     const auto finish = [this]() {
         m_refreshing = false;
@@ -2199,7 +2222,8 @@ void BookOrbitClient::refreshSession(std::function<void()> then)
                 clearSession();
                 setError("Session expired, please sign in again");
             } else if (status != 0) {
-                setError(message);
+                m_refreshStatus = status;
+                m_refreshError = message;
             }
             finish();
         });
@@ -2293,7 +2317,8 @@ void BookOrbitClient::startStream(const QString &path, std::function<void(QNetwo
             return;
         }
         if (!m_signedIn || m_accessToken.isEmpty()) {
-            onError(0, m_error.isEmpty() ? QString("Not signed in") : m_error);
+            onError(0, !m_refreshError.isEmpty() ? m_refreshError
+                       : !m_error.isEmpty() ? m_error : QString("Not signed in"));
             return;
         }
         QNetworkRequest request(QUrl(m_serverUrl + "/api/v1" + path));
@@ -2406,6 +2431,7 @@ void BookOrbitClient::clearSession()
         groups->loaded = false;
         groups->model.reset(0);
         groups->jumpSections.clear();
+        groups->error.clear();
     }
     emit collectionsChanged();
     emit seriesListChanged();
@@ -2440,4 +2466,42 @@ void BookOrbitClient::setError(const QString &error)
         return;
     m_error = error;
     emit errorChanged();
+}
+
+void BookOrbitClient::emitChanged(const PagedBooks &list)
+{
+    if (&list == &m_list)
+        emit booksChanged();
+    else if (&list == &m_search)
+        emit searchChanged();
+    else
+        emit booksOfChanged();
+}
+
+void BookOrbitClient::emitChanged(const Groups &groups)
+{
+    if (&groups == &m_collections)
+        emit collectionsChanged();
+    else if (&groups == &m_series)
+        emit seriesListChanged();
+    else if (&groups == &m_authorSeries)
+        emit authorSeriesChanged();
+    else
+        emit authorsChanged();
+}
+
+void BookOrbitClient::setListError(PagedBooks &list, const QString &error)
+{
+    if (list.error == error)
+        return;
+    list.error = error;
+    emitChanged(list);
+}
+
+void BookOrbitClient::setListError(Groups &groups, const QString &error)
+{
+    if (groups.error == error)
+        return;
+    groups.error = error;
+    emitChanged(groups);
 }

@@ -167,6 +167,39 @@ AppTestCase {
         compare(titles(page), "Dune, Dune Messiah", "over the books")
     }
 
+    // Each list has its own error, cleared when it loads again. Tested here for them all.
+    function test_errorGoesWhenItLoadsAgain() {
+        openMenuLibrary()
+        const page = openBooksOf("authorBooks")
+        tryVerify(() => titles(page) === "Dune, Dune Messiah", 5000)
+        fakeServer.respond("POST", books, 500, "server-error.json", {sort: [{field: "author"}]})
+        tap("sortButton", page)
+        tap("Author", find("sortMenu"))
+        const error = find("errorLine", page)
+        tryVerify(() => error.visible, 5000, "the error shows")
+
+        tap("sortButton", page)
+        tap("Title", find("sortMenu"))
+
+        tryVerify(() => !error.visible, 5000, "gone once the books load")
+    }
+
+    function test_errorStaysOnItsOwnList() {
+        fakeServer.respond("GET", "/api/v1/collections", 200, "collections/none.json")
+        fakeServer.respond("POST", books, 500, "server-error.json", byFrankHerbert)
+        openLibrary("libraries/menu.json", "libraries/menu-jump-buckets.json")
+        const page = openBooksOf("authorBooks")
+        tryVerify(() => find("emptyState", page).visible, 5000, "the books-of page fails")
+
+        tap("backButton", page)
+
+        verify(!find("errorLine", find("libraryPage")).visible, "not over the library's books")
+        tap("CollectionsTab")
+        const empty = find("emptyState", find("collectionsPage"))
+        tryVerify(() => empty.visible, 5000, "No collections")
+        compare(empty.title, "No collections")
+    }
+
     // Offline, the downloaded ones, without asking the server
     function test_offlineListsTheDownloadedBooks() {
         open(savedSession, {offline: true, books: [

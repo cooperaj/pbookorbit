@@ -19,8 +19,8 @@ Item {
     property int tabOverhang: Units.dp(4)
     // An error over rows already shown, under the sub-toolbar
     property bool showErrorLine: true
-    // The client's, unless set
-    property string error: bookOrbit.error
+    // The list's own error (bookOrbit.booksError and the rest)
+    property string error
 
     // The rail's sections, as JumpRail takes them, and where its first entry and spacing
     // line up with (page coordinates), if not its own

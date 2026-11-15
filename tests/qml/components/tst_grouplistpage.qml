@@ -19,7 +19,6 @@ UiTestCase {
             model: ListModel { dynamicRoles: true }
             noneTitle: "No groups"
             noneText: "Groups show here."
-            error: ""
             online: true
         }
     }

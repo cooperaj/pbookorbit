@@ -15,7 +15,6 @@ UiTestCase {
             width: 600
             height: 800
             model: ListModel { dynamicRoles: true }
-            error: ""
         }
     }
 

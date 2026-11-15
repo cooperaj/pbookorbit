@@ -40,6 +40,7 @@ Rectangle {
         width: parent.width
         model: bookOrbit.authorSeriesList
         jumpSections: bookOrbit.authorSeriesJumpSections
+        error: bookOrbit.authorSeriesError
         loaded: bookOrbit.authorSeriesLoaded
         noneTitle: "No series"
         noneText: bookOrbit.online ? "None of their books are in a series."

@@ -19,7 +19,6 @@ UiTestCase {
             model: 0
             emptyTitle: "Nothing"
             emptyText: "Things show here."
-            error: ""
             delegate: Item {
                 required property int index
                 width: ListView.view.width

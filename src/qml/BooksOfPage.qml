@@ -60,6 +60,7 @@ Rectangle {
         onSortClicked: page.sortClicked()
         onSortIconClicked: page.sortIconClicked()
         jumpSections: bookOrbit.booksOfJumpSections
+        error: bookOrbit.booksOfError
         // In the list's coordinates, below the header
         jumpRailTop: page.jumpRailTop - y
         jumpRailPitch: page.jumpRailPitch
@@ -70,9 +71,9 @@ Rectangle {
         // says so.
         loading: bookOrbit.booksOfTotal !== 0
         empty: true
-        emptyTitle: bookOrbit.booksOfTotal !== 0 ? "Something went wrong"
+        emptyTitle: error !== "" ? "Something went wrong"
                     : page.downloadedOnly ? "No downloaded books" : "No books found"
-        emptyText: bookOrbit.booksOfTotal !== 0 ? bookOrbit.error
+        emptyText: error !== "" ? error
                    : !page.downloadedOnly ? ""
                    : bookOrbit.online ? "Turn off Downloaded only to see them all." : offlineText
         onRowsWanted: (first, last) => bookOrbit.loadBooksOf(first, last)
