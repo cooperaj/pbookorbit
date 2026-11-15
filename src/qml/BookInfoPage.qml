@@ -76,43 +76,24 @@ InfoPage {
         }
     }
 
-    // "13 h 56 min", "45 min", or "" if unknown
-    function durationText(seconds) {
-        if (!seconds)
-            return ""
-        const minutes = Math.max(1, Math.round(seconds / 60))
-        const hours = Math.floor(minutes / 60)
-        return hours > 0 ? hours + " h " + (minutes % 60) + " min" : minutes + " min"
-    }
-
     // Its own record plus any separately stored version (e.g. an audiobook)
-    readonly property var records: {
-        const records = book.id === undefined ? [] : [book]
-        for (const variant of book.variants || []) {
-            if (records.every(r => r.id !== variant.bookId))
-                records.push(variant.book)
-        }
-        return records
-    }
+    readonly property var records: Books.records(book)
     // Whether there's an ebook and an audiobook to switch between
     readonly property bool hasKinds: {
         const kinds = (book.variants || []).map(v => v.kind)
         return kinds.indexOf("ebook") >= 0 && kinds.indexOf("audiobook") >= 0
     }
-    // The record described: the chosen version's, which may be the book's own
-    readonly property var record: {
-        const version = hasKinds ? (book.variants || []).find(v => v.kind === kind) : undefined
-        return version ? version.book : book
-    }
-    // GET /books/:id for the record, once loaded
-    readonly property var details: detailsById[record.id] || ({})
     // The chosen version, as in DownloadDialog's options, or null if the book has no file
     readonly property var version: {
         const versions = book.variants || []
         return (hasKinds ? versions.find(v => v.kind === kind) : versions[0]) || null
     }
+    // The record described: the chosen version's, which may be the book's own
+    readonly property var record: hasKinds ? version.book : book
+    // GET /books/:id for the record, once loaded
+    readonly property var details: detailsById[record.id] || ({})
     readonly property bool versionOnDevice: downloads.revision >= 0 && version !== null
-                                            && downloads.kindsOnDevice(version.bookId).indexOf(version.kind) >= 0
+                                            && Books.versionOnDevice(version, downloads)
     // What Open with opens (see Books.openWithTarget), for the chosen version
     readonly property var openWithTarget: version === null || downloads.revision < 0 ? null
                                           : Books.openWithTarget(book, downloads, hasKinds ? kind : "")
@@ -262,10 +243,10 @@ InfoPage {
         objectName: "fileCells"
         width: parent.width
         cells: [
-            ["Added", page.record.addedAt ? Qt.formatDateTime(new Date(page.record.addedAt), "dd/MM/yy hh:mm") : ""],
+            ["Added", Format.dateTime(page.record.addedAt)],
             // Size per format, in the same order
             ["Size", page.files.map(f => Format.fileSize(f.sizeBytes)).join(", ")],
-            ["Format", page.files.map(f => f.format.toUpperCase()).join(", ")],
+            ["Format", Format.formats(page.files.map(f => f.format))],
         ]
     }
     // From the book's details, once loaded
@@ -274,13 +255,11 @@ InfoPage {
         width: parent.width
         showTopLine: false
         cells: [
-            ["Published", page.details.publishedDate
-                          ? Qt.formatDate(new Date(page.details.publishedDate), "dd/MM/yyyy")
-                          : (page.details.publishedYear || "").toString()],
+            ["Published", Format.date(page.details.publishedDate, page.details.publishedYear)],
             // Audiobooks have a length instead of pages
             (page.hasKinds ? page.kind === "ebook" : page.details.pageCount || !page.details.audioMetadata)
                 ? ["Pages", (page.details.pageCount || "").toString()]
-                : ["Length", page.durationText((page.details.audioMetadata || {}).durationSeconds)],
+                : ["Length", Format.duration((page.details.audioMetadata || {}).durationSeconds)],
             ["Language", page.details.language || ""],
         ]
     }

@@ -101,7 +101,7 @@ Item {
     }
 
     readonly property bool onDevice: downloads.revision >= 0
-                                     && Books.recordIds(book).some(id => downloads.isOnDevice(id))
+                                     && Books.recordOnDevice(book, downloads) !== undefined
     readonly property var authors: book.authors || []
     readonly property string series: book.seriesName || ""
 

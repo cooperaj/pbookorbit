@@ -45,17 +45,11 @@ Window {
     // Otherwise offers to download it, asking which version if there's an ebook and an
     // audiobook.
     function openBook(book) {
-        const variants = book.variants || []
-        for (const variant of variants) {
-            if (downloads.isOnDevice(variant.bookId)) {
-                downloads.open(variant.bookId)
-                return
-            }
-        }
-        if (downloads.isOnDevice(book.id))
-            downloads.open(book.id)
+        const onDevice = Books.recordOnDevice(book, downloads)
+        if (onDevice !== undefined)
+            downloads.open(onDevice)
         else
-            downloadDialog.show(book, variants)
+            downloadDialog.show(book, book.variants || [])
     }
 
     // Opens target (see Books.openWithTarget) in app, downloading it first if needed

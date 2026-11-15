@@ -5,15 +5,35 @@
 // book}, as the list entry's variants and DownloadDialog's options are. Bindings that use
 // these read downloads.revision too, so they're worked out again as downloads arrive or go.
 
-// The book's own record id and any separately stored version's (e.g. an audiobook's),
-// each once
+// The ids of the book's records, each once: its versions' (the ebook's first, as the
+// variants are sorted), then its own if no version is from it
 function recordIds(book) {
-    const ids = book.id === undefined ? [] : [book.id]
+    const ids = []
     for (const variant of book.variants || []) {
         if (ids.indexOf(variant.bookId) < 0)
             ids.push(variant.bookId)
     }
+    if (book.id !== undefined && ids.indexOf(book.id) < 0)
+        ids.push(book.id)
     return ids
+}
+
+// The book's records in recordIds' order: the list entry for its own, the stored record
+// for any other version's (e.g. an audiobook's)
+function records(book) {
+    return recordIds(book).map(id => id === book.id ? book : book.variants.find(v => v.bookId === id).book)
+}
+
+// The first of the book's records with a file on the device, or undefined
+function recordOnDevice(book, downloads) {
+    return recordIds(book).find(id => downloads.isOnDevice(id))
+}
+
+// Whether a version is on the device: its kind, or any file of its record for one with no
+// kind
+function versionOnDevice(version, downloads) {
+    return version.kind ? downloads.kindsOnDevice(version.bookId).indexOf(version.kind) >= 0
+                        : downloads.isOnDevice(version.bookId)
 }
 
 // The versions a download could fetch: the book's variants, or else the file Downloads
@@ -63,9 +83,7 @@ function openWithTarget(book, downloads, kind) {
         }
     }
     for (const version of offered) {
-        const onDevice = version.kind ? downloads.kindsOnDevice(version.bookId).indexOf(version.kind) >= 0
-                                       : downloads.isOnDevice(version.bookId)
-        const apps = onDevice ? [] : downloads.appsFor(version.format)
+        const apps = versionOnDevice(version, downloads) ? [] : downloads.appsFor(version.format)
         if (apps.length > 0)
             return { bookId: version.bookId, format: version.format, apps: apps, option: version }
     }

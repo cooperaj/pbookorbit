@@ -25,7 +25,40 @@ UiTestCase {
 
     function test_recordIdsEachOnce() {
         compare(Books.recordIds({id: 2, variants: [ebook, audiobook, audiobook]}), [2, 3])
+        compare(Books.recordIds({id: 4}), [4])
         compare(Books.recordIds({}), [])
+    }
+
+    // The ebook's record first, as the variants are sorted, whichever record the row is
+    function test_recordIdsEbookFirst() {
+        compare(Books.recordIds({id: 3, variants: [ebook, audiobook]}), [2, 3])
+    }
+
+    // The row itself for its own record, the stored record for another version's
+    function test_records() {
+        const stored = {id: 3, title: "Dune (audio)"}
+        const book = {id: 2, title: "Dune", variants: [ebook, Object.assign({book: stored}, audiobook)]}
+
+        const records = Books.records(book)
+
+        compare(records.length, 2)
+        verify(records[0] === book, "the row for its own record")
+        compare(records[1].title, "Dune (audio)")
+    }
+
+    // The ebook's record when both are on the device
+    function test_recordOnDevice() {
+        compare(Books.recordOnDevice({id: 3, variants: [ebook, audiobook]}, downloads), 2)
+        compare(Books.recordOnDevice({id: 3, variants: [audiobook]}, downloads), 3)
+        compare(Books.recordOnDevice({id: 7}, downloads), undefined)
+    }
+
+    // A version with a kind needs that kind on the device, one without any file
+    function test_versionOnDevice() {
+        verify(Books.versionOnDevice(audiobook, downloads))
+        verify(!Books.versionOnDevice(Object.assign({}, audiobook, {kind: "ebook"}), downloads))
+        verify(Books.versionOnDevice({bookId: 2, kind: ""}, downloads))
+        verify(!Books.versionOnDevice({bookId: 7, kind: ""}, downloads))
     }
 
     // The variants, or else the file a download would pick, as a version with no kind

@@ -1,4 +1,5 @@
 import QtQuick
+import "format.js" as Format
 
 // One collection or series in the Collections or Series list, laid out like BookRow (see
 // ListRow): a stack of two covers (the second smaller and behind), then the name, then the
@@ -21,7 +22,7 @@ ListRow {
 
     title: group.name || ""
     subtitle: (group.authors || []).join(", ")
-    details: [books + (books === 1 ? " book" : " books"), series > 0 ? series + " series" : ""]
+    details: [Format.count(books, "book"), series > 0 ? series + " series" : ""]
     formats: group.formats || []
     sectionStart: group.sectionStart === true
     sectionLabel: group.sectionLabel || ""

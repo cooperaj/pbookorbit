@@ -5,6 +5,30 @@ function date(isoDate, year) {
     return isoDate ? Qt.formatDate(new Date(isoDate), "dd/MM/yyyy") : (year || "").toString()
 }
 
+// "12/03/48 14:05" from an ISO date and time, else ""
+function dateTime(isoDateTime) {
+    return isoDateTime ? Qt.formatDateTime(new Date(isoDateTime), "dd/MM/yy hh:mm") : ""
+}
+
+// "13 h 56 min", "45 min", or "" if unknown
+function duration(seconds) {
+    if (!seconds)
+        return ""
+    const minutes = Math.max(1, Math.round(seconds / 60))
+    const hours = Math.floor(minutes / 60)
+    return hours > 0 ? hours + " h " + (minutes % 60) + " min" : minutes + " min"
+}
+
+// "1 book", "3 books"
+function count(n, noun) {
+    return n + " " + noun + (n === 1 ? "" : "s")
+}
+
+// "EPUB, M4B" from ["epub", "m4b"]
+function formats(list) {
+    return list.map(format => format.toUpperCase()).join(", ")
+}
+
 // Whether text is HTML, as some sources send descriptions, rather than plain text (whose
 // line breaks HTML would drop). Only a closing tag of an element descriptions use, or a
 // line break tag, counts, so plain text with a stray "<", or "a <b and c>", stays plain.

@@ -54,4 +54,17 @@ AppTestCase {
         verify(!find("onDevicePill", bookRow("Hyperion")).visible, "Hyperion isn't marked")
         verify(!find("onDevicePill", bookRow("Neuromancer")).visible, "Neuromancer isn't marked")
     }
+
+    // Books not in the library are counted after the found ones
+    function test_unmatchedBooksAreCounted() {
+        open({}, {files: bookOnDevice.concat(["Unknown One.epub", "Unknown Two.epub"])})
+        signInAsNewUser()
+        const dialog = find("findBooksDialog")
+
+        tap("searchButton", dialog)
+
+        tryCompare(dialog, "step", "done")
+        compare(dialog.message, "Found 1 book from your BookOrbit library, now listed as downloaded."
+                                + " 2 others couldn't be matched.")
+    }
 }

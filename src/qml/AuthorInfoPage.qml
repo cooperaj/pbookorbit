@@ -104,7 +104,7 @@ InfoPage {
         cells: [
             ["Books", (page.author.bookCount || "").toString(), true],
             ["Series", page.seriesCount < 0 ? "" : page.seriesCount.toString(), page.seriesCount !== 0],
-            ["Format", (page.author.formats || []).map(f => f.toUpperCase()).join(", ")],
+            ["Format", Format.formats(page.author.formats || [])],
         ]
         onCellClicked: (index) => index === 0 ? page.booksClicked() : page.seriesClicked()
     }

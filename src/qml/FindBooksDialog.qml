@@ -1,4 +1,5 @@
 import QtQuick
+import "format.js" as Format
 
 // Finds books on the device that are in the BookOrbit library (see BookFinder) and marks
 // them as downloaded, then says how many. Unsure matches aren't offered yet (they need a
@@ -30,10 +31,6 @@ SystemDialog {
         visible = false
     }
 
-    function books(count) {
-        return count === 1 ? "1 book" : count + " books"
-    }
-
     heading: step === "offer" ? "Find your books?"
              : step === "searching" ? "Finding your books"
              : step === "failed" ? "Couldn't find your books"
@@ -41,7 +38,7 @@ SystemDialog {
 
     message: {
         if (step === "offer")
-            return "There " + (fileCount === 1 ? "is 1 book" : "are " + fileCount + " books")
+            return "There " + (fileCount === 1 ? "is " : "are ") + Format.count(fileCount, "book")
                    + " on this device already. Find the ones in your BookOrbit library, so they"
                    + " show as downloaded? You can do this later from the menu."
         if (step === "searching")
@@ -53,9 +50,8 @@ SystemDialog {
         if (found === 0)
             return others === 0 ? "Every book on this device is already listed."
                                 : "None of the books on this device could be matched to your BookOrbit library."
-        return "Found " + books(found) + " from your BookOrbit library, now listed as downloaded."
-               + (others === 0 ? "" : others === 1 ? " 1 other couldn't be matched."
-                                  : " " + books(others) + " others couldn't be matched.")
+        return "Found " + Format.count(found, "book") + " from your BookOrbit library, now listed as downloaded."
+               + (others === 0 ? "" : " " + Format.count(others, "other") + " couldn't be matched.")
     }
 
     icon: step === "failed" ? "icon_error" : "icon_question"
