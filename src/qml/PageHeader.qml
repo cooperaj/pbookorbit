@@ -12,15 +12,8 @@ Rectangle {
     height: Units.dp(56) + 1
     color: "white"
 
-    IconButton {
+    BackButton {
         id: backButton
-        objectName: "backButton"
-        // Same position as on the search page
-        x: Units.dp(7)
-        anchors.verticalCenter: parent.verticalCenter
-        icon: "back"
-        pressedIcon: "back_inv"
-        fallbackText: "Back"
         onClicked: header.back()
     }
 

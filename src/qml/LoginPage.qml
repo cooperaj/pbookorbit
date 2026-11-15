@@ -142,7 +142,8 @@ Item {
                     width: parent.height
                     height: parent.height
                     // The theme's cross is black; inverted to white on darker accents
-                    icon: serverPill.textColor.hslLightness > 0.5 ? "close@inverted" : "close"
+                    icon: "close"
+                    inverted: serverPill.textColor.hslLightness > 0.5
                     iconSize: Units.dp(20)
                     fallbackText: "×"
                     enabled: !bookOrbit.busy

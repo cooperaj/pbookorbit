@@ -13,6 +13,8 @@ Item {
     property alias text: label.text
     property string icon            // optional theme resource name, e.g. "logout"
     property bool showSeparator: true
+    // Whether the line below shows: not under a PopupMenu's last row
+    readonly property bool lineBelow: showSeparator && !(parent && parent.lastRow === item)
     property string arrow: ""       // "up" or "down" for a row that opens a submenu
     property bool subItem: false
     signal clicked()
@@ -28,12 +30,12 @@ Item {
         color: "black"
         visible: mouse.pressed
     }
-    Image {
+    ThemeIcon {
         // Icon placed as in the library app's menu
         x: Units.dp(26) - width / 2
         anchors.verticalCenter: parent.verticalCenter
-        visible: item.icon !== ""
-        source: item.icon === "" ? "" : "image://theme/" + item.icon + (mouse.pressed ? "@inverted" : "")
+        name: item.icon
+        inverted: mouse.pressed
     }
     Text {
         id: label
@@ -47,13 +49,13 @@ Item {
         elide: Text.ElideRight
     }
     // The theme's 21px arrow, near the right edge
-    Image {
+    ThemeIcon {
         id: arrow
         anchors.right: parent.right
         anchors.rightMargin: Units.dp(4)
         anchors.verticalCenter: parent.verticalCenter
-        visible: item.arrow !== ""
-        source: item.arrow === "" ? "" : "image://theme/arrow_" + item.arrow + (mouse.pressed ? "@inverted" : "")
+        name: item.arrow === "" ? "" : "arrow_" + item.arrow
+        inverted: mouse.pressed
     }
     // 1px mid-grey line, slightly inset (the library app dithers the same tone as dots),
     // and inset further in a submenu
@@ -65,7 +67,7 @@ Item {
         anchors.rightMargin: item.subItem ? Units.dp(15) : Units.dp(4)
         height: 1
         color: "#7f7f7f"
-        visible: item.showSeparator && !mouse.pressed
+        visible: item.lineBelow && !mouse.pressed
     }
     MouseArea {
         id: mouse

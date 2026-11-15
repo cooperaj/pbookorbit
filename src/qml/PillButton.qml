@@ -29,11 +29,10 @@ Rectangle {
         anchors.centerIn: parent
         spacing: Units.dp(12)
 
-        Image {
+        ThemeIcon {
             anchors.verticalCenter: parent.verticalCenter
-            visible: button.icon !== "" && status === Image.Ready
-            source: button.icon === "" ? ""
-                  : "image://theme/" + (mouse.pressed && button.pressedIcon ? button.pressedIcon : button.icon)
+            visible: name !== "" && status === Image.Ready
+            name: mouse.pressed && button.pressedIcon ? button.pressedIcon : button.icon
         }
         Text {
             id: label

@@ -8,6 +8,8 @@ Item {
     property alias text: label.text
     property bool checked: false
     property bool showSeparator: true
+    // Whether the line below shows: not under a PopupMenu's last row
+    readonly property bool lineBelow: showSeparator && !(parent && parent.lastRow === item)
     signal clicked()
 
     width: parent ? parent.width : 0
@@ -19,11 +21,11 @@ Item {
         color: "black"
         visible: mouse.pressed
     }
-    Image {
+    ThemeIcon {
         x: Units.dp(40) - width / 2
         anchors.verticalCenter: parent.verticalCenter
-        source: "image://theme/" + (item.checked ? "radiobtn_checked_s" : "radiobtn_s")
-                + (mouse.pressed ? "@inverted" : "")
+        name: item.checked ? "radiobtn_checked_s" : "radiobtn_s"
+        inverted: mouse.pressed
     }
     Text {
         id: label
@@ -40,7 +42,7 @@ Item {
         anchors.rightMargin: Units.dp(15)
         height: 1
         color: "#777777"
-        visible: item.showSeparator && !mouse.pressed
+        visible: item.lineBelow && !mouse.pressed
     }
     MouseArea {
         id: mouse

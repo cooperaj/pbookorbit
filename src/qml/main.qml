@@ -538,7 +538,6 @@ Window {
                 objectName: modelData
                 text: modelData
                 checked: index === root.activeQuery.sortIndex
-                showSeparator: index < root.activeQuery.sortOptions.length - 1
                 onClicked: {
                     root.activeQuery.chooseSort(index)
                     root.closeDropdowns()
@@ -591,7 +590,6 @@ Window {
             objectName: "signOut"
             visible: bookOrbit.signedIn
             text: "Sign out"
-            showSeparator: false
             onClicked: {
                 menu.visible = false
                 root.closePages()

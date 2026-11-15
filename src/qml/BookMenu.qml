@@ -77,7 +77,7 @@ Item {
         shownList = view
         placeRow()
         book = row.book
-        openWithOpen = false
+        openWithItem.expanded = false
         visible = true
     }
 
@@ -107,8 +107,6 @@ Item {
 
     // What Open with opens (see Books.openWithTarget)
     readonly property var openWithTarget: downloads.revision < 0 ? null : Books.openWithTarget(book, downloads)
-    // Whether Open with is expanded
-    property bool openWithOpen: false
 
     // The faded window, around the row where it shows in the list
     readonly property real gapTop: Math.max(rowRect.y, listRect.y)
@@ -153,71 +151,57 @@ Item {
             objectName: "bookInfo"
             icon: "info"
             text: "Book info"
-            showSeparator: authorItem.visible || seriesItem.visible || deleteItem.visible || openWithItem.visible
             onClicked: {
                 bookMenu.close()
                 bookMenu.infoChosen(bookMenu.book)
             }
         }
         PopupMenuItem {
-            id: authorItem
             objectName: "authorBooks"
             visible: bookMenu.authors.length > 0
             icon: "search"
             text: "All books of author"
-            showSeparator: seriesItem.visible || deleteItem.visible || openWithItem.visible
             onClicked: {
                 bookMenu.close()
                 bookMenu.booksOfChosen("author", bookMenu.authors)
             }
         }
         PopupMenuItem {
-            id: seriesItem
             objectName: "seriesBooks"
             visible: bookMenu.series !== ""
             icon: "search"
             text: "All books of series"
-            showSeparator: deleteItem.visible || openWithItem.visible
             onClicked: {
                 bookMenu.close()
                 bookMenu.booksOfChosen("series", [bookMenu.series])
             }
         }
         PopupMenuItem {
-            id: deleteItem
             objectName: "deleteBook"
             visible: bookMenu.onDevice
             icon: "trash"
             text: "Delete"
-            showSeparator: openWithItem.visible
             onClicked: {
                 bookMenu.close()
                 bookMenu.deleteChosen(bookMenu.book)
             }
         }
-        PopupMenuItem {
+        OpenWithItem {
             id: openWithItem
-            objectName: "openWith"
-            visible: bookMenu.openWithTarget !== null
-            icon: "e3_menu_open"
-            text: "Open with"
-            arrow: bookMenu.openWithOpen ? "up" : "down"
-            showSeparator: bookMenu.openWithOpen
-            onClicked: bookMenu.openWithOpen = !bookMenu.openWithOpen
+            target: bookMenu.openWithTarget
         }
         Repeater {
-            model: bookMenu.openWithOpen && bookMenu.openWithTarget ? bookMenu.openWithTarget.apps : []
+            model: openWithItem.apps
             PopupMenuItem {
                 required property var modelData
-                required property int index
                 objectName: modelData.name
                 subItem: true
                 text: modelData.name
-                showSeparator: index < bookMenu.openWithTarget.apps.length - 1
                 onClicked: {
                     const target = bookMenu.openWithTarget
+                    const app = modelData
                     bookMenu.close()
-                    bookMenu.openWithChosen(target, modelData)
+                    bookMenu.openWithChosen(target, app)
                 }
             }
         }
@@ -225,9 +209,9 @@ Item {
 
     // The arrow: the theme's pointer laid over the menu's left border, level with the row's
     // middle but never past the rounded corners
-    Image {
+    ThemeIcon {
         id: pointer
-        source: "image://theme/context_menu_pointer"
+        name: "context_menu_pointer"
         x: menu.x + menu.border.width - width + 1
         y: Math.max(menu.y + menu.radius,
                     Math.min(bookMenu.rowRect.y + bookMenu.rowRect.height / 2 - height / 2,

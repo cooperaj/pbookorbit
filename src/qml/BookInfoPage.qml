@@ -313,9 +313,10 @@ InfoPage {
                     font.pointSize: 8
                     font.capitalization: Font.AllUppercase
                 }
-                Image {
+                ThemeIcon {
                     anchors.verticalCenter: parent.verticalCenter
-                    source: "image://theme/arrow_up" + (actionMouse.pressed ? "@inverted" : "")
+                    name: "arrow_up"
+                    inverted: actionMouse.pressed
                 }
             }
             MouseArea {
@@ -331,10 +332,8 @@ InfoPage {
             objectName: "actions"
             anchors.fill: parent
             visible: false
-            // Whether Open with is expanded
-            property bool openWithOpen: false
             onVisibleChanged: {
-                openWithOpen = false
+                openWithItem.expanded = false
                 // The cover fades or returns in the same pass as the rest
                 eink.requireHqUpdate()
             }
@@ -356,7 +355,6 @@ InfoPage {
                     visible: page.versionOnDevice && page.openWithTarget === null
                     icon: "e3_menu_open"
                     text: "Open book"
-                    showSeparator: openWithItem.visible || deleteItem.visible
                     onClicked: {
                         actions.visible = false
                         page.openChosen(page.version.bookId, page.hasKinds ? page.kind : "")
@@ -367,31 +365,22 @@ InfoPage {
                     visible: !page.versionOnDevice
                     icon: "download_from_cloud"
                     text: "Download"
-                    showSeparator: openWithItem.visible || deleteItem.visible
                     onClicked: {
                         actions.visible = false
                         page.downloadChosen(page.version.book, [page.version])
                     }
                 }
-                PopupMenuItem {
+                OpenWithItem {
                     id: openWithItem
-                    objectName: "openWith"
-                    visible: page.openWithTarget !== null
-                    icon: "e3_menu_open"
-                    text: "Open with"
-                    arrow: actions.openWithOpen ? "up" : "down"
-                    showSeparator: actions.openWithOpen || deleteItem.visible
-                    onClicked: actions.openWithOpen = !actions.openWithOpen
+                    target: page.openWithTarget
                 }
                 Repeater {
-                    model: actions.openWithOpen && page.openWithTarget ? page.openWithTarget.apps : []
+                    model: openWithItem.apps
                     PopupMenuItem {
                         required property var modelData
-                        required property int index
                         objectName: modelData.name
                         subItem: true
                         text: modelData.name
-                        showSeparator: index < page.openWithTarget.apps.length - 1 || deleteItem.visible
                         // Closing empties this Repeater and destroys the item, so ids and
                         // modelData are read first
                         onClicked: {
@@ -404,12 +393,10 @@ InfoPage {
                     }
                 }
                 PopupMenuItem {
-                    id: deleteItem
                     objectName: "deleteBook"
                     visible: page.versionOnDevice
                     icon: "trash"
                     text: "Delete"
-                    showSeparator: false
                     onClicked: {
                         actions.visible = false
                         page.deleteChosen(page.book, page.hasKinds ? page.kind : "")

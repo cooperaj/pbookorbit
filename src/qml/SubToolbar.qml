@@ -60,13 +60,13 @@ Item {
             id: content
             anchors.verticalCenter: parent.verticalCenter
             spacing: button.spacing
-            Image {
+            ThemeIcon {
                 id: iconImage
                 anchors.verticalCenter: parent.verticalCenter
                 // Left out of the open-tab copy so the faded one beneath shows
                 opacity: button.iconIsButton && bar.onlyOpenTab ? 0 : 1
-                source: "image://theme/" + (!button.iconIsButton ? button.icon + (button.open ? "@inverted" : "")
-                                            : iconMouse.pressed ? button.pressedIcon : button.icon)
+                name: button.iconIsButton && iconMouse.pressed ? button.pressedIcon : button.icon
+                inverted: !button.iconIsButton && button.open
             }
             Text {
                 id: label

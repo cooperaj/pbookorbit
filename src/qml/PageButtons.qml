@@ -45,7 +45,7 @@ Item {
         id: button
         // Inner side, with the line and rounded corner
         property bool innerLeft
-        property alias icon: image.source
+        property alias icon: image.name
         signal clicked()
 
         width: Units.dp(84)
@@ -63,7 +63,7 @@ Item {
             border.width: 1
             border.color: "black"
         }
-        Image {
+        ThemeIcon {
             id: image
             anchors.centerIn: parent
         }
@@ -76,14 +76,14 @@ Item {
     PageButton {
         objectName: "pageUp"
         anchors.left: parent.left
-        icon: "image://theme/arrow_page_prev"
+        icon: "arrow_page_prev"
         onClicked: buttons.page(-1)
     }
     PageButton {
         objectName: "pageDown"
         anchors.right: parent.right
         innerLeft: true
-        icon: "image://theme/arrow_page_next"
+        icon: "arrow_page_next"
         onClicked: buttons.page(1)
     }
 }

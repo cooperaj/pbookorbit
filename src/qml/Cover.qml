@@ -9,7 +9,7 @@ Item {
     // {id, coverVersion} and, for list entries, hasCover
     property var book: ({})
     // The blank book (see CoverPlaceholder)
-    property alias placeholder: placeholder.icon
+    property alias placeholder: placeholder.name
     // "", or "bottomLeft" or "topRight" to put the image in that corner
     property string corner: ""
     // A white edge this wide around the image (or the blank book), to separate it from

@@ -3,12 +3,15 @@
         <file>qml/main.qml</file>
         <file>qml/AppHeader.qml</file>
         <file>qml/IconButton.qml</file>
+        <file>qml/BackButton.qml</file>
+        <file>qml/ThemeIcon.qml</file>
         <file>qml/units.js</file>
         <file>qml/night.js</file>
         <file>qml/LoginPage.qml</file>
         <file>qml/PillButton.qml</file>
         <file>qml/PopupMenu.qml</file>
         <file>qml/PopupMenuItem.qml</file>
+        <file>qml/OpenWithItem.qml</file>
         <file>qml/SearchPage.qml</file>
         <file>qml/SubToolbar.qml</file>
         <file>qml/MenuHeading.qml</file>
@@ -49,6 +52,7 @@
         <file>qml/AuthorSeriesPage.qml</file>
         <file>qml/AuthorPortrait.qml</file>
         <file>qml/InfoField.qml</file>
+        <file>qml/Chevron.qml</file>
         <file>qml/InfoCells.qml</file>
         <file>icons/pbookorbit.bmp</file>
         <file>icons/pbookorbit_f.bmp</file>

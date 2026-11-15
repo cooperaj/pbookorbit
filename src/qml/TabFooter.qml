@@ -43,9 +43,9 @@ Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: Units.dp(2)
 
-                    Image {
+                    ThemeIcon {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        source: "image://theme/" + tab.modelData.icon
+                        name: tab.modelData.icon
                     }
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter

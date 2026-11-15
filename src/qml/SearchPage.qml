@@ -71,15 +71,9 @@ Rectangle {
         width: parent.width
         height: page.headerHeight
 
-        IconButton {
+        // The search box starts after it
+        BackButton {
             id: backButton
-            objectName: "backButton"
-            // Chevron with a little space either side; the search box starts after it
-            x: Units.dp(7)
-            anchors.verticalCenter: parent.verticalCenter
-            icon: "back"
-            pressedIcon: "back_inv"
-            fallbackText: "Back"
             onClicked: page.close()
         }
 
@@ -102,14 +96,14 @@ Rectangle {
                 color: "black"
             }
 
-            Image {
+            ThemeIcon {
                 id: searchIcon
                 anchors.left: parent.left
                 anchors.leftMargin: searchBox.thickBorder
                 anchors.verticalCenter: parent.verticalCenter
-                source: "image://theme/search_transp"
+                name: "search_transp"
                 // Not every theme has the transparent version
-                onStatusChanged: if (status === Image.Error) source = "image://theme/search"
+                onStatusChanged: if (status === Image.Error) name = "search"
             }
             // Clears the box once it has text. Under three characters the recent searches
             // come back, so clearing returns to them.

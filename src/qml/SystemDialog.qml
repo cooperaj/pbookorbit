@@ -58,11 +58,11 @@ Item {
             width: panel.width - 2 * x
             height: Math.max(Units.dp(175), messageArea.height + 2 * Units.dp(25))
 
-            Image {
+            ThemeIcon {
                 id: icon
                 x: Units.dp(25)
                 anchors.verticalCenter: parent.verticalCenter
-                source: "image://theme/" + dialog.icon
+                name: dialog.icon
             }
 
             Column {

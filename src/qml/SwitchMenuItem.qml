@@ -42,7 +42,7 @@ Item {
             font.pointSize: 8
         }
         // The theme's 145x61px switch at 3/4 size
-        Image {
+        ThemeIcon {
             id: toggle
             anchors.right: parent.right
             anchors.rightMargin: item.sideMargin
@@ -51,8 +51,8 @@ Item {
             height: Units.dp(21)
             sourceSize.width: width
             sourceSize.height: height
-            source: "image://theme/" + (item.checked ? "switch_on" : "switch_off")
-                    + (mouse.pressed ? "@inverted" : "")
+            name: item.checked ? "switch_on" : "switch_off"
+            inverted: mouse.pressed
             opacity: item.enabled ? 1 : 0.5
         }
         MouseArea {

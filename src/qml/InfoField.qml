@@ -77,15 +77,13 @@ Item {
         }
     }
 
-    // As in InfoCells: the toolbar's back chevron turned to point right, level with the
-    // label and value
-    Image {
+    // Level with the label and value
+    Chevron {
         id: chevron
         visible: field.tappable
+        inverted: mouse.pressed
         anchors.right: parent.right
         y: (valueText.y + valueText.height - height) / 2
-        source: !field.tappable ? "" : mouse.pressed ? "image://theme/back@inverted" : "image://theme/back"
-        mirror: true
     }
     TapArea {
         id: linkMouse

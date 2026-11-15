@@ -6,8 +6,8 @@ import "units.js" as Units
 // corner only where a menu joins a tab (the library's "ALL BOOKS", Libby's filter tab); set
 // joinedCorner for that. Menus opened from buttons keep all four corners rounded.
 //
-// Fill with PopupMenuItems (the last visible one should set showSeparator: false), or
-// MenuHeadings and RadioMenuItems with sidePadding: 0 for a Libby-style options menu.
+// Fill with PopupMenuItems, or MenuHeadings and RadioMenuItems with sidePadding: 0 for a
+// Libby-style options menu. The last visible row has no line below it.
 Rectangle {
     id: menu
     default property alias items: column.data
@@ -40,5 +40,16 @@ Rectangle {
         x: menu.border.width + menu.sidePadding
         y: menu.border.width + menu.padding
         width: menu.width - 2 * x
+
+        // The last visible row, which has no line below it. Found by position, since a
+        // Repeater's rows are moved into place without notice.
+        readonly property Item lastRow: {
+            let last = null
+            for (const row of children) {
+                if (row.visible && !(row instanceof Repeater) && (last === null || row.y > last.y))
+                    last = row
+            }
+            return last
+        }
     }
 }

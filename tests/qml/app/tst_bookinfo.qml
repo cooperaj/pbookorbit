@@ -71,11 +71,11 @@ AppTestCase {
         waitForItemPolished(column)
         const items = []
         for (const item of column.children) {
-            if (item.visible && item.showSeparator !== undefined)
+            if (item.visible && item.lineBelow !== undefined)
                 items.push(item)
         }
         items.sort((a, b) => a.y - b.y)
-        return items.map(item => item.objectName + (item.showSeparator ? "-" : "")).join(", ")
+        return items.map(item => item.objectName + (item.lineBelow ? "-" : "")).join(", ")
     }
 
     function test_showsTheBooksFields() {
