@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="990" height="520" viewBox="0 0 990 520" role="img" aria-label="Each list page in main.qml takes its own ListQuery. frontPage is the first visible page, checking the pages opened over the views first, then the footer views. Its pageButtons drive the page keys, its list is the active list, and its query, or else libraryQuery, labels the shared sort and filter menus.">
+<svg xmlns="http://www.w3.org/2000/svg" width="990" height="520" viewBox="0 0 990 520" role="img" aria-label="Each list page in main.qml takes its own ListQuery; the books-of page takes the author, series or collection books query, whichever it shows. frontPage is the first visible page, checking the pages opened over the views first, then the footer views. Its pageButtons drive the page keys, its list is the active list, and its query, or else libraryQuery, labels the shared sort and filter menus.">
   <style>
     svg { font-family: "IBM Plex Mono", ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace; }
     text { font-size: 12px; }
@@ -80,6 +80,8 @@
   <text x="262" y="257"><tspan class="name">searchPage</tspan><tspan class="muted" dx="10">SearchPage</tspan></text>
 
   <text class="muted" x="262" y="301">signed out: no front page</text>
+  <text class="muted" x="20" y="294">* author, series or</text>
+  <text class="muted" x="20" y="308">  collection books query</text>
 
   <!-- 6-9 footer views -->
   <rect class="box" x="20" y="324" width="180" height="34" rx="4"/>
