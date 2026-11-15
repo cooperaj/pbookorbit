@@ -3,11 +3,17 @@ import "units.js" as Units
 
 // The frame every list page shares (BookListPage, GroupListPage): rows from a delegate,
 // with the sub-toolbar (when there's a query) and any error above them, a scrollbar, a jump
-// rail, page buttons, a spinner and an empty state. The owner says when the spinner and
+// rail, page buttons, a spinner and an empty state. A page opened over the views has a
+// title, in a toolbar with a back button above it all. The owner says when the spinner and
 // the empty state show and what the empty state says; main.qml owns the sort and filter
 // menus, and the sort icon reverses the query here.
-Item {
+Rectangle {
     id: page
+    color: "white"
+
+    // For a page opened over the views, e.g. "Series / A Song of Ice and Fire". None: no
+    // toolbar.
+    property string title
 
     property var model
     // A row, given its model data
@@ -52,11 +58,23 @@ Item {
     signal rowsWanted(int first, int last)
     // Scrolling began, by flicking rather than with the page buttons
     signal scrollStarted()
+    // The toolbar's back button was tapped
+    signal back()
+
+    PageHeader {
+        id: header
+        visible: page.title !== ""
+        width: parent.width
+        title: page.title
+        onBack: page.back()
+    }
 
     ListView {
         id: rows
         objectName: page.listName
-        anchors.fill: parent
+        anchors.top: header.visible ? header.bottom : parent.top
+        anchors.bottom: parent.bottom
+        width: parent.width
         clip: true
         // No bounce at the ends; on e-ink that's just extra redraws
         boundsBehavior: Flickable.StopAtBounds

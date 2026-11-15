@@ -698,8 +698,6 @@ Window {
         railLayout: rails
         // Sub-toolbar, using the shared menus
         query: root.booksOfQuery
-        seriesOrder: root.booksOfQuery.sortFields[root.booksOfQuery.sortIndex] === "seriesIndex"
-        downloadedOnly: root.booksOfQuery.downloadedOnly
         menus: listMenus
         anchors.fill: parent
         visible: root.showingBooksOf

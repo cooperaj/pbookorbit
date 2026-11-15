@@ -41,6 +41,7 @@ UiTestCase {
 
     SignalSpy { id: rowsWanted; signalName: "rowsWanted" }
     SignalSpy { id: scrolls; signalName: "scrollStarted" }
+    SignalSpy { id: backs; signalName: "back" }
     SignalSpy { id: sortTaps; target: menus; signalName: "sortClicked" }
     SignalSpy { id: filterTaps; target: menus; signalName: "filterClicked" }
 
@@ -48,7 +49,7 @@ UiTestCase {
     function make(rows, properties) {
         root = createTemporaryObject(listPage, test, Object.assign({model: rows}, properties || {}))
         verify(root)
-        for (const spy of [rowsWanted, scrolls]) {
+        for (const spy of [rowsWanted, scrolls, backs]) {
             spy.target = root
             spy.clear()
         }
@@ -122,6 +123,24 @@ UiTestCase {
         make(0, {empty: false})
 
         verify(!find("emptyState").visible)
+    }
+
+    // A page opened over the views: its title in a toolbar, with a back button
+    function test_titleShowsAToolbar() {
+        make(3, withQuery({title: "Series / Dune"}))
+
+        const back = find("backButton")
+        verify(back.visible)
+        verify(root.list.y >= back.y + back.height, "the rows and sub-toolbar below it")
+        tap("backButton")
+        compare(backs.count, 1)
+    }
+
+    function test_noToolbarWithoutATitle() {
+        make(3)
+
+        verify(!find("backButton").visible)
+        compare(root.list.y, 0)
     }
 
     function test_noSubToolbarWithoutAQuery() {
