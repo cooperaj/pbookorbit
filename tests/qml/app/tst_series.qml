@@ -117,14 +117,6 @@ AppTestCase {
         compare(rows(), "Hyperion Cantos (1), Dune (3), The Expanse (2)", "most read first")
     }
 
-    function test_sortIconReverses() {
-        openLoadedSeries()
-
-        tap("iconButton", find("sortButton", find("seriesPage")))
-
-        compare(rows(), "The Expanse (2), Hyperion Cantos (1), Dune (3)", "Z to A")
-    }
-
     // A-Z sections for the name sort only
     function test_jumpRailSectionsByName() {
         openLoadedSeries()

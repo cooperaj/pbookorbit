@@ -1,5 +1,4 @@
 import QtQuick
-import "units.js" as Units
 
 // An author's series, opened from their info page: series rows under a toolbar with a back
 // button, e.g. "SERIES / ADRIAN TCHAIKOVSKY". The Series tab's sorts sit above, with the
@@ -18,12 +17,10 @@ Rectangle {
     // Y of the jump rail's first entry, in page coordinates, and its entry spacing
     property real jumpRailTop: NaN
     property real jumpRailPitch: NaN
-    property bool sortOpen: false
-    property int tabOverhang: Units.dp(4)
+    // The menu its sub-toolbar opens
+    property ListMenus menus: null
 
     signal back()
-    signal sortClicked()
-    signal sortIconClicked()
     signal groupClicked(var series)
 
     PageHeader {
@@ -49,10 +46,7 @@ Rectangle {
         // In the list's coordinates, below the header
         jumpRailTop: page.jumpRailTop - y
         jumpRailPitch: page.jumpRailPitch
-        sortOpen: page.sortOpen
-        tabOverhang: page.tabOverhang
-        onSortClicked: page.sortClicked()
-        onSortIconClicked: page.sortIconClicked()
+        menus: page.menus
         onGroupClicked: (group) => page.groupClicked(group)
     }
 }

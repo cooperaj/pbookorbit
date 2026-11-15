@@ -1,5 +1,4 @@
 import QtQuick
-import "units.js" as Units
 
 // All books of an author or series (from the book menu) or of a collection: library rows
 // under a toolbar with a back button, e.g. "SERIES / A SONG OF ICE AND FIRE". Author and
@@ -26,15 +25,11 @@ Rectangle {
     // In series order: each book under its number, with a number rail
     property bool seriesOrder: false
     property bool downloadedOnly: false
-    property bool filterOpen: false
-    property bool sortOpen: false
-    property int tabOverhang: Units.dp(4)
+    // The menus its sub-toolbar opens
+    property ListMenus menus: null
     readonly property alias list: books.list
 
     signal back()
-    signal filterClicked()
-    signal sortClicked()
-    signal sortIconClicked()
     signal bookClicked(var book)
     signal bookHeld(BookRow row)
 
@@ -53,12 +48,7 @@ Rectangle {
         listName: "booksOfList"
         model: bookOrbit.booksOf
         query: page.query
-        filterOpen: page.filterOpen
-        sortOpen: page.sortOpen
-        tabOverhang: page.tabOverhang
-        onFilterClicked: page.filterClicked()
-        onSortClicked: page.sortClicked()
-        onSortIconClicked: page.sortIconClicked()
+        menus: page.menus
         jumpSections: bookOrbit.booksOfJumpSections
         error: bookOrbit.booksOfError
         // In the list's coordinates, below the header

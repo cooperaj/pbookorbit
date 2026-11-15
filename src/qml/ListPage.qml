@@ -5,7 +5,7 @@ import "units.js" as Units
 // with the sub-toolbar (when there's a query) and any error above them, a scrollbar, a jump
 // rail, page buttons, a spinner and an empty state. The owner says when the spinner and
 // the empty state show and what the empty state says; main.qml owns the sort and filter
-// menus.
+// menus, and the sort icon reverses the query here.
 Item {
     id: page
 
@@ -14,9 +14,8 @@ Item {
     property Component delegate
     // The sort and filter shown in the sub-toolbar. None: no sub-toolbar.
     property ListQuery query: null
-    property bool filterOpen: false
-    property bool sortOpen: false
-    property int tabOverhang: Units.dp(4)
+    // The menus its buttons open
+    property ListMenus menus: null
     // An error over rows already shown, under the sub-toolbar
     property bool showErrorLine: true
     // The list's own error (bookOrbit.booksError and the rest)
@@ -50,9 +49,6 @@ Item {
     readonly property alias rail: rail
     readonly property alias pageButtons: pageButtons
 
-    signal filterClicked()
-    signal sortClicked()
-    signal sortIconClicked()
     // The rows to load: the ones on screen and a screenful either side
     signal rowsWanted(int first, int last)
     // Scrolling began, by flicking rather than with the page buttons
@@ -105,12 +101,11 @@ Item {
                     filterText: page.query?.filterOptions[page.query.filterIndex] ?? ""
                     sortText: page.query ? "By " + page.query.sortOptions[page.query.sortIndex] : ""
                     sortReversed: page.query?.sortReversed ?? false
-                    filterOpen: page.filterOpen
-                    sortOpen: page.sortOpen
-                    tabOverhang: page.tabOverhang
-                    onFilterClicked: page.filterClicked()
-                    onSortClicked: page.sortClicked()
-                    onSortIconClicked: page.sortIconClicked()
+                    filterOpen: page.menus?.filterOpen ?? false
+                    sortOpen: page.menus?.sortOpen ?? false
+                    onFilterClicked: page.menus?.filterClicked()
+                    onSortClicked: page.menus?.sortClicked()
+                    onSortIconClicked: page.query.reverseSort()
                 }
                 Text {
                     id: errorLine

@@ -195,6 +195,14 @@ class Setup : public QObject
     Q_OBJECT
 
 public slots:
+    // The tests load the QML from src/qml, not from the app's compiled resources. Qt's disk
+    // cache of it lives in the build folder between runs and isn't refreshed when a
+    // component a file uses changes, which can hang a test, so it's off.
+    void applicationAvailable()
+    {
+        qputenv("QML_DISABLE_DISK_CACHE", "1");
+    }
+
     void qmlEngineAvailable(QQmlEngine *engine)
     {
         engine->addImageProvider("theme", new ThemeImageProvider);

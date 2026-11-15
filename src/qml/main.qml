@@ -324,6 +324,15 @@ Window {
         sortMenu.visible = false
     }
 
+    // The shared menus, for the list pages' sub-toolbars
+    ListMenus {
+        id: listMenus
+        filterOpen: filterMenu.visible
+        sortOpen: sortMenu.visible
+        onFilterClicked: root.toggleDropdown(filterMenu)
+        onSortClicked: root.toggleDropdown(sortMenu)
+    }
+
     function toggleDropdown(dropdown) {
         const open = !dropdown.visible
         closeDropdowns()
@@ -352,12 +361,7 @@ Window {
         anchors.right: parent.right
         model: bookOrbit.books
         query: libraryQuery
-        filterOpen: filterMenu.visible
-        sortOpen: sortMenu.visible
-        tabOverhang: filterMenu.border.width - 1
-        onFilterClicked: root.toggleDropdown(filterMenu)
-        onSortClicked: root.toggleDropdown(sortMenu)
-        onSortIconClicked: libraryQuery.reverseSort()
+        menus: listMenus
         // For A-Z sorts
         jumpSections: bookOrbit.jumpSections
         error: bookOrbit.booksError
@@ -397,10 +401,7 @@ Window {
         // Jump rail aligned and spaced like the library's
         jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
         jumpRailPitch: libraryPage.rail.pitch
-        sortOpen: sortMenu.visible
-        tabOverhang: sortMenu.border.width - 1
-        onSortClicked: root.toggleDropdown(sortMenu)
-        onSortIconClicked: collectionsQuery.reverseSort()
+        menus: listMenus
         // Reloaded every time the view opens. Offline, the saved collections' downloaded books.
         onVisibleChanged: if (visible) bookOrbit.loadCollections()
         onGroupClicked: (collection) => root.openBooksOf("Collection", collection.name, "collection",
@@ -426,10 +427,7 @@ Window {
         // Jump rail aligned and spaced like the library's
         jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
         jumpRailPitch: libraryPage.rail.pitch
-        sortOpen: sortMenu.visible
-        tabOverhang: sortMenu.border.width - 1
-        onSortClicked: root.toggleDropdown(sortMenu)
-        onSortIconClicked: seriesQuery.reverseSort()
+        menus: listMenus
         // Loaded the first time the view opens: large libraries have many series, and their
         // formats take a request per few series. Offline, the downloaded books' each time.
         onVisibleChanged: if (visible && (!bookOrbit.seriesLoaded || !bookOrbit.online)) bookOrbit.loadSeries()
@@ -456,16 +454,11 @@ Window {
         anchors.bottom: footer.top
         anchors.left: parent.left
         anchors.right: parent.right
-        filterOpen: filterMenu.visible
         query: authorsQuery
         // Jump rail aligned and spaced like the library's
         jumpRailTop: libraryPage.y + libraryPage.rail.entriesY - y
         jumpRailPitch: libraryPage.rail.pitch
-        sortOpen: sortMenu.visible
-        tabOverhang: sortMenu.border.width - 1
-        onFilterClicked: root.toggleDropdown(filterMenu)
-        onSortClicked: root.toggleDropdown(sortMenu)
-        onSortIconClicked: authorsQuery.reverseSort()
+        menus: listMenus
         // Loaded the first time the view opens, like the series
         onVisibleChanged: if (visible && !bookOrbit.authorsLoaded) bookOrbit.loadAuthors()
         onGroupClicked: (author) => {
@@ -524,7 +517,6 @@ Window {
         sortReversed: root.activeQuery.sortReversed
         filterOpen: filterMenu.visible
         sortOpen: sortMenu.visible
-        tabOverhang: filterMenu.border.width - 1
         onFilterClicked: root.closeDropdowns()
         onSortClicked: root.closeDropdowns()
     }
@@ -690,14 +682,11 @@ Window {
         // Jump rail aligned and spaced like the library's
         jumpRailTop: libraryPage.y + libraryPage.rail.entriesY
         jumpRailPitch: libraryPage.rail.pitch
-        sortOpen: sortMenu.visible
-        tabOverhang: sortMenu.border.width - 1
+        menus: listMenus
         onBack: {
             root.closeDropdowns()
             root.showingAuthorSeries = false
         }
-        onSortClicked: root.toggleDropdown(sortMenu)
-        onSortIconClicked: authorSeriesQuery.reverseSort()
         onGroupClicked: (series) => root.openBooksOf("Series", series.name, "series", [series.name])
     }
 
@@ -711,12 +700,7 @@ Window {
         query: root.booksOfQuery
         seriesOrder: root.booksOfQuery.sortFields[root.booksOfQuery.sortIndex] === "seriesIndex"
         downloadedOnly: root.booksOfQuery.downloadedOnly
-        filterOpen: filterMenu.visible
-        sortOpen: sortMenu.visible
-        tabOverhang: filterMenu.border.width - 1
-        onFilterClicked: root.toggleDropdown(filterMenu)
-        onSortClicked: root.toggleDropdown(sortMenu)
-        onSortIconClicked: root.booksOfQuery.reverseSort()
+        menus: listMenus
         anchors.fill: parent
         visible: root.showingBooksOf
         onBack: {

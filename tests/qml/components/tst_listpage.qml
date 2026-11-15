@@ -5,7 +5,7 @@ import "../../../src/qml"
 
 // The frame every list page shares, on its own with plain rows: the sub-toolbar from a
 // query, the error line, which rows it asks for, the spinner and empty state it's told to
-// show, the rail, and what it says was tapped. What a book or group row adds is tested
+// show, the rail, and what its sub-toolbar does when tapped. What a book or group row adds is tested
 // with BookListPage and GroupListPage.
 UiTestCase {
     id: test
@@ -37,26 +37,32 @@ UiTestCase {
         }
     }
 
+    ListMenus { id: menus }
+
     SignalSpy { id: rowsWanted; signalName: "rowsWanted" }
-    SignalSpy { id: sortTaps; signalName: "sortClicked" }
-    SignalSpy { id: iconTaps; signalName: "sortIconClicked" }
-    SignalSpy { id: filterTaps; signalName: "filterClicked" }
     SignalSpy { id: scrolls; signalName: "scrollStarted" }
+    SignalSpy { id: sortTaps; target: menus; signalName: "sortClicked" }
+    SignalSpy { id: filterTaps; target: menus; signalName: "filterClicked" }
 
     // A page of this many rows
     function make(rows, properties) {
         root = createTemporaryObject(listPage, test, Object.assign({model: rows}, properties || {}))
         verify(root)
-        for (const spy of [rowsWanted, sortTaps, iconTaps, filterTaps, scrolls]) {
+        for (const spy of [rowsWanted, scrolls]) {
             spy.target = root
             spy.clear()
         }
+        sortTaps.clear()
+        filterTaps.clear()
+        menus.filterOpen = false
+        menus.sortOpen = false
         waitForRendering(root)
         return root
     }
 
+    // With a query, and the menus its sub-toolbar opens
     function withQuery(properties) {
-        return Object.assign({query: createTemporaryObject(query, test)}, properties || {})
+        return Object.assign({query: createTemporaryObject(query, test), menus: menus}, properties || {})
     }
 
     // The rows on screen and a screenful either side, once scrolling pauses
@@ -135,16 +141,28 @@ UiTestCase {
         verify(!find("filterButton").visible, "no filter when the query has none")
     }
 
-    function test_subToolbarSaysWhatWasTapped() {
+    // Its buttons open the shared menus, which say which is open
+    function test_subToolbarOpensTheMenus() {
         make(3, withQuery())
 
         tap("sortButton")
-        tap("iconButton", find("sortButton"))
         tap("filterButton")
 
         compare(sortTaps.count, 1, "the sort")
-        compare(iconTaps.count, 1, "the sort icon")
         compare(filterTaps.count, 1, "the filter")
+        menus.sortOpen = true
+        verify(find("sortButton").open, "the sort tab shows open")
+        verify(!find("filterButton").open)
+    }
+
+    // The sort icon reverses the sort, without a menu
+    function test_sortIconReversesTheQuery() {
+        make(3, withQuery())
+
+        tap("iconButton", find("sortButton"))
+
+        verify(root.query.sortReversed)
+        compare(sortTaps.count, 0)
     }
 
     // Rows already shown stay, with the error under the sub-toolbar

@@ -16,8 +16,9 @@ Item {
     property bool sortReversed: false
     // Sort-only pages leave out the filter button
     property bool showFilter: true
-    // How far an open tab reaches below the bar: the menu border width
-    property int tabOverhang: Units.dp(4)
+    // How far an open tab reaches below the bar: PopupMenu's border, less the bar's line,
+    // which the menu starts on
+    property int tabOverhang: Units.dp(4) - 1
     // For a copy drawn over the faded page while a menu is open, showing just the open tab
     property bool onlyOpenTab: false
     signal filterClicked()
