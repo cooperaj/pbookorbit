@@ -84,11 +84,11 @@ Item {
                     source: !cell.tappable ? "" : mouse.pressed ? "image://theme/back@inverted" : "image://theme/back"
                     mirror: true
                 }
-                MouseArea {
+                TapArea {
                     id: mouse
                     anchors.fill: parent
                     enabled: cell.tappable
-                    onClicked: cellRow.cellClicked(cell.index)
+                    onTapped: cellRow.cellClicked(cell.index)
                 }
             }
         }

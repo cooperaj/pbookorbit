@@ -1,7 +1,8 @@
 import QtQuick
 import "units.js" as Units
 
-// A MouseArea for list rows that sends tapped() only for a deliberate tap:
+// A MouseArea for anything tappable in a list or other scrolling page that sends tapped()
+// only for a deliberate tap:
 //  - The finger lifts near where it pressed. The list takes over a swipe once it sees the
 //    finger move, but if the touch screen sends few move events (as when the device is
 //    busy), a swipe can arrive as a press and a distant release.
@@ -11,8 +12,15 @@ MouseArea {
     id: area
     signal tapped()
 
-    // The list the row is in, if any
+    // The list or other Flickable it's in, if any. Found by looking up its parents unless
+    // set.
     property Flickable list: null
+    Component.onCompleted: {
+        for (let item = parent; item && !list; item = item.parent) {
+            if (item instanceof Flickable)
+                list = item
+        }
+    }
 
     property point pressedAt
     property bool pressedScrolling: false

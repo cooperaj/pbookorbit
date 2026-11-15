@@ -41,6 +41,8 @@
         <file>qml/RailLayout.qml</file>
         <file>qml/Cover.qml</file>
         <file>qml/ListRow.qml</file>
+        <file>qml/InfoPage.qml</file>
+        <file>qml/format.js</file>
         <file>qml/AuthorInfoPage.qml</file>
         <file>qml/AuthorSeriesPage.qml</file>
         <file>qml/AuthorPortrait.qml</file>

@@ -1,16 +1,17 @@
 import QtQuick
 import "units.js" as Units
+import "format.js" as Format
 
 // One field on an info page (BookInfoPage, AuthorInfoPage): bold label over value with a
 // grey line below; nothing if there's no value. A tappable field has a chevron on the
 // right, inverts while pressed like InfoCells' cells, and sends clicked(). A link field
 // (web address) underlines its value instead; only the text is tappable, inverting while
-// pressed, and it sends linkClicked().
+// pressed, and it sends linkClicked(). A value that's HTML (see Format.isHtml) shows as
+// rich text, anything else as plain text.
 Item {
     id: field
     property string label
     property string value
-    property bool richText: false
     property bool showLine: true
     property bool tappable: false
     property bool link: false
@@ -54,12 +55,12 @@ Item {
         }
         Text {
             id: valueText
+            objectName: "value"
             width: parent.width - (field.tappable ? chevron.width + Units.dp(6) : 0)
             text: field.value
             color: mouse.pressed || linkMouse.pressed ? "white" : "black"
             font.underline: field.link
-            // Descriptions are HTML
-            textFormat: field.richText ? Text.RichText : Text.PlainText
+            textFormat: Format.isHtml(field.value) ? Text.RichText : Text.PlainText
             font.pointSize: 8
             wrapMode: Text.Wrap
         }
@@ -86,21 +87,22 @@ Item {
         source: !field.tappable ? "" : mouse.pressed ? "image://theme/back@inverted" : "image://theme/back"
         mirror: true
     }
-    MouseArea {
+    TapArea {
         id: linkMouse
+        objectName: "link"
         enabled: field.link
         x: valueText.x
         y: valueText.y
         width: valueText.contentWidth
         height: valueText.contentHeight
-        onClicked: field.linkClicked()
+        onTapped: field.linkClicked()
     }
-    MouseArea {
+    TapArea {
         id: mouse
         enabled: field.tappable
         y: -Units.dp(9)
         width: parent.width
         height: column.height
-        onClicked: field.clicked()
+        onTapped: field.clicked()
     }
 }
