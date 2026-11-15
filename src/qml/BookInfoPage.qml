@@ -1,6 +1,5 @@
 import QtQuick
 import "units.js" as Units
-import "night.js" as Night
 
 // A book's details, laid out like the system library's Book info page (screenshot 11):
 // cover on the left with title, author, series and file path beside it, then ADDED, SIZE
@@ -207,39 +206,15 @@ Rectangle {
                 width: parent.width
                 height: Math.max(cover.height, kindSwitch.visible ? kindSwitch.y + kindSwitch.height : fields.height)
 
-                // Scaled to fit. Shows the system's blank book while downloading or if
-                // there's none.
-                Item {
+                // Loaded before the page first draws, so the screen updates once rather than
+                // again when it arrives. It's a PNG from the cover cache.
+                Cover {
                     id: cover
                     width: Units.dp(197)
                     height: Units.dp(297)
-
-                    // Bumped when the download arrives so the URL is re-fetched. A binding
-                    // rather than setting url, so it follows the next book shown.
-                    property int revision: 0
-                    property string url: revision >= 0 && page.book.hasCover
-                                         ? covers.source(page.book.id, page.book.coverVersion, width, height) : ""
-                    Connections {
-                        target: covers
-                        function onReady(bookId) {
-                            if (bookId === page.book.id)
-                                cover.revision++
-                        }
-                    }
-                    CoverPlaceholder {
-                        visible: coverImage.status !== Image.Ready
-                        icon: "book_card_dummy_cover_land"
-                    }
-                    Image {
-                        id: coverImage
-                        anchors.centerIn: parent
-                        width: Math.min(implicitWidth, parent.width)
-                        height: Math.min(implicitHeight, parent.height)
-                        fillMode: Image.PreserveAspectFit
-                        source: Night.image(cover.url)
-                        // Loaded before the page first draws, so the screen updates once
-                        // rather than again when it arrives. It's a PNG from the cover cache.
-                    }
+                    book: page.book
+                    placeholder: "book_card_dummy_cover_land"
+                    asynchronous: false
                 }
 
                 Column {
