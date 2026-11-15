@@ -10,8 +10,6 @@ Item {
     property alias title: titleText.text
     property alias text: bodyText.text
     default property alias content: column.data
-    // The explanation for lists cut down to downloaded books while offline
-    readonly property string offlineText: "You're currently offline, only downloaded books can be shown."
 
     Column {
         id: column

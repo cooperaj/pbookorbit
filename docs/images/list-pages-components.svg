@@ -100,7 +100,7 @@
   <text class="muted" x="36" y="333">bookClicked · bookHeld</text>
   <rect class="box" x="690" y="290" width="250" height="56" rx="4"/>
   <text class="name" x="706" y="313">GroupListPage</text>
-  <text class="muted" x="706" y="333">loaded · noneTitle · groupClicked</text>
+  <text class="muted" x="706" y="333">loaded · groupClicked</text>
 
   <line class="line" x1="140" y1="290" x2="140" y2="248" marker-end="url(#h-extends)"/>
   <text class="muted" x="150" y="274">extends</text>

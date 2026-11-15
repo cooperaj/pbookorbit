@@ -27,8 +27,8 @@ Item {
     property rect listRect
 
     signal infoChosen(var book)
-    // field is "author" or "series", values the names to match, title the page title
-    signal booksOfChosen(string field, var values, string title)
+    // field is "author" or "series", values the names to match
+    signal booksOfChosen(string field, var values)
     signal deleteChosen(var book)
     // target as in openWithTarget, app one of its apps
     signal openWithChosen(var target, var app)
@@ -168,7 +168,7 @@ Item {
             showSeparator: seriesItem.visible || deleteItem.visible || openWithItem.visible
             onClicked: {
                 bookMenu.close()
-                bookMenu.booksOfChosen("author", bookMenu.authors, bookMenu.authors.join(", "))
+                bookMenu.booksOfChosen("author", bookMenu.authors)
             }
         }
         PopupMenuItem {
@@ -180,7 +180,7 @@ Item {
             showSeparator: deleteItem.visible || openWithItem.visible
             onClicked: {
                 bookMenu.close()
-                bookMenu.booksOfChosen("series", [bookMenu.series], bookMenu.series)
+                bookMenu.booksOfChosen("series", [bookMenu.series])
             }
         }
         PopupMenuItem {

@@ -12,9 +12,11 @@ UiTestCase {
     Component {
         id: listQuery
         ListQuery {
-            sortOptions: ["Date added", "Title", "Author"]
-            sortFields: ["addedAt", "title", "author"]
-            sortDescendingByDefault: [true, false, false]
+            sorts: [
+                { name: "Date added", field: "addedAt", descending: true },
+                { name: "Title", field: "title", descending: false },
+                { name: "Author", field: "author", descending: false }
+            ]
             sortIndex: 1
         }
     }
@@ -70,6 +72,32 @@ UiTestCase {
         query.chooseFilter(0)
 
         compare(applied.count, 0)
+    }
+
+    // The chosen sort's name and field, for the sub-toolbar and the request
+    function test_chosenSort() {
+        make()
+        compare(query.sortOptions, ["Date added", "Title", "Author"])
+        compare(query.sortName, "Title")
+        compare(query.sortField, "title")
+
+        query.chooseSort(2)
+
+        compare(query.sortName, "Author")
+        compare(query.sortField, "author")
+    }
+
+    // The content type's name and the formats it stands for; all titles is no filter
+    function test_chosenFilter() {
+        make()
+        compare(query.filterName, "All titles")
+        compare(query.formats, [])
+
+        query.chooseFilter(2)
+
+        compare(query.filterName, "Audiobooks")
+        verify(query.formats.indexOf("m4b") >= 0, "audiobook formats")
+        verify(query.formats.indexOf("epub") < 0, "not ebook ones")
     }
 
     function test_choosingAFilter() {

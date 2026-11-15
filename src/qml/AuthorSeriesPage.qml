@@ -12,7 +12,6 @@ GroupListPage {
     jumpSections: bookOrbit.authorSeriesJumpSections
     error: bookOrbit.authorSeriesError
     loaded: bookOrbit.authorSeriesLoaded
-    noneTitle: "No series"
-    noneText: bookOrbit.online ? "None of their books are in a series."
-                               : "You're currently offline, only series with downloaded books can be shown."
+    emptyTitle: "No series"
+    emptyText: bookOrbit.online ? "None of their books are in a series." : offlineText("series with downloaded books")
 }

@@ -5,8 +5,9 @@ import "units.js" as Units
 // with the sub-toolbar (when there's a query) and any error above them, a scrollbar, a jump
 // rail, page buttons, a spinner and an empty state. A page opened over the views has a
 // title, in a toolbar with a back button above it all. The owner says when the spinner and
-// the empty state show and what the empty state says; main.qml owns the sort and filter
-// menus, and the sort icon reverses the query here.
+// the empty state show and what the empty state says, though an error with no rows always
+// shows as "Something went wrong". main.qml owns the sort and filter menus, and the sort
+// icon reverses the query here. The list goes back to the top when the query changes.
 Rectangle {
     id: page
     color: "white"
@@ -42,13 +43,15 @@ Rectangle {
     property string emptyTitle
     property string emptyText
 
+    // For emptyText offline: "You're currently offline, only downloaded books can be shown."
+    function offlineText(what = "downloaded books", verb = "shown") {
+        return "You're currently offline, only " + what + " can be " + verb + "."
+    }
+
     // So the tests can tell the lists apart
     property string listName: "list"
     property string railName: "jumpRail"
     property string emptyName: "emptyState"
-
-    // What the empty state says offline, for emptyText
-    readonly property alias offlineText: emptyState.offlineText
 
     readonly property alias list: rows
     readonly property alias rail: rail
@@ -60,6 +63,11 @@ Rectangle {
     signal scrollStarted()
     // The toolbar's back button was tapped
     signal back()
+
+    Connections {
+        target: page.query
+        function onApplied() { rows.positionViewAtBeginning() }
+    }
 
     PageHeader {
         id: header
@@ -114,10 +122,7 @@ Rectangle {
                 // The query goes before the bar as the page closes
                 SubToolbar {
                     width: parent.width
-                    showFilter: page.query?.hasFilter ?? false
-                    filterText: page.query?.filterOptions[page.query.filterIndex] ?? ""
-                    sortText: page.query ? "By " + page.query.sortOptions[page.query.sortIndex] : ""
-                    sortReversed: page.query?.sortReversed ?? false
+                    query: page.query
                     filterOpen: page.menus?.filterOpen ?? false
                     sortOpen: page.menus?.sortOpen ?? false
                     onFilterClicked: page.menus?.filterClicked()
@@ -178,8 +183,8 @@ Rectangle {
         objectName: page.emptyName
         anchors.fill: rows
         anchors.topMargin: rows.headerItem ? rows.headerItem.height : 0
-        visible: rows.count === 0 && !spinner.visible && page.empty
-        title: page.emptyTitle
-        text: page.emptyText
+        visible: rows.count === 0 && !spinner.visible && (page.empty || page.error !== "")
+        title: page.error !== "" ? "Something went wrong" : page.emptyTitle
+        text: page.error !== "" ? page.error : page.emptyText
     }
 }

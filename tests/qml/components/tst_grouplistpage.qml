@@ -5,8 +5,8 @@ import "../../../src/qml"
 
 // What GroupListPage adds to the ListPage frame: a GroupRow per group, saying which was
 // tapped, a spinner until the groups are loaded (not offline, where they come from the
-// downloads), and what to say when there are none or they failed to load. Which groups a
-// tab lists is tested with the tab.
+// downloads), and the empty state once loaded with none. Which groups a tab lists is tested
+// with the tab.
 UiTestCase {
     id: test
     name: "GroupListPage"
@@ -17,8 +17,8 @@ UiTestCase {
             width: 600
             height: 800
             model: ListModel { dynamicRoles: true }
-            noneTitle: "No groups"
-            noneText: "Groups show here."
+            emptyTitle: "No groups"
+            emptyText: "Groups show here."
             online: true
         }
     }
@@ -80,16 +80,6 @@ UiTestCase {
         verify(empty.visible)
         compare(empty.title, "No groups")
         compare(empty.text, "Groups show here.")
-        verify(!find("spinner").visible)
-    }
-
-    function test_errorWithNoRowsSaysSomethingWentWrong() {
-        make([], {loaded: false, error: "Internal server error (HTTP 500)"})
-
-        const empty = find("emptyState")
-        verify(empty.visible)
-        compare(empty.title, "Something went wrong")
-        compare(empty.text, "Internal server error (HTTP 500)")
         verify(!find("spinner").visible)
     }
 }

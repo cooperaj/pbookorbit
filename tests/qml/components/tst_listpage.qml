@@ -30,9 +30,10 @@ UiTestCase {
     Component {
         id: query
         ListQuery {
-            sortOptions: ["Date added", "Title"]
-            sortFields: ["addedAt", "title"]
-            sortDescendingByDefault: [true, false]
+            sorts: [
+                { name: "Date added", field: "addedAt", descending: true },
+                { name: "Title", field: "title", descending: false }
+            ]
             sortIndex: 1
         }
     }
@@ -125,6 +126,26 @@ UiTestCase {
         verify(!find("emptyState").visible)
     }
 
+    // Whatever the page says about being empty
+    function test_errorWithNoRowsSaysSomethingWentWrong() {
+        make(0, {empty: false, error: "Internal server error (HTTP 500)"})
+
+        const empty = find("emptyState")
+        verify(empty.visible)
+        compare(empty.title, "Something went wrong")
+        compare(empty.text, "Internal server error (HTTP 500)")
+    }
+
+    function test_offlineText() {
+        make(0)
+
+        compare(root.offlineText(), "You're currently offline, only downloaded books can be shown.")
+        compare(root.offlineText("series with downloaded books"),
+                "You're currently offline, only series with downloaded books can be shown.")
+        compare(root.offlineText("downloaded books", "searched"),
+                "You're currently offline, only downloaded books can be searched.")
+    }
+
     // A page opened over the views: its title in a toolbar, with a back button
     function test_titleShowsAToolbar() {
         make(3, withQuery({title: "Series / Dune"}))
@@ -172,6 +193,17 @@ UiTestCase {
         menus.sortOpen = true
         verify(find("sortButton").open, "the sort tab shows open")
         verify(!find("filterButton").open)
+    }
+
+    // A new sort or filter starts at the top
+    function test_queryChangeGoesBackToTheTop() {
+        make(30, withQuery())
+        root.list.contentY = 800
+        verify(root.list.contentY > 0)
+
+        root.query.chooseSort(0)
+
+        compare(root.list.contentY, root.list.originY)
     }
 
     // The sort icon reverses the sort, without a menu

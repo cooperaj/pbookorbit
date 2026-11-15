@@ -14,7 +14,7 @@ BookListPage {
     property string kind
     property string name
     // In series order: each book under its number, with a number rail
-    readonly property bool seriesOrder: query !== null && query.sortFields[query.sortIndex] === "seriesIndex"
+    readonly property bool seriesOrder: query !== null && query.sortField === "seriesIndex"
     readonly property bool downloadedOnly: query !== null && query.downloadedOnly
 
     title: kind + " / " + name
@@ -25,23 +25,11 @@ BookListPage {
     alphabetical: !seriesOrder
     // Short series are quick enough to scroll without one
     minSections: seriesOrder ? 16 : 1
-    // Until the first page says how many there are. No books, or they failed to load,
-    // says so.
+    // Until the first page says how many there are. No books says so.
     loading: bookOrbit.booksOfTotal !== 0
     empty: true
-    emptyTitle: error !== "" ? "Something went wrong"
-                : downloadedOnly ? "No downloaded books" : "No books found"
-    emptyText: error !== "" ? error
-               : !downloadedOnly ? ""
-               : bookOrbit.online ? "Turn off Downloaded only to see them all." : offlineText
+    emptyTitle: downloadedOnly ? "No downloaded books" : "No books found"
+    emptyText: !downloadedOnly ? ""
+               : bookOrbit.online ? "Turn off Downloaded only to see them all." : offlineText()
     onRowsWanted: (first, last) => bookOrbit.loadBooksOf(first, last)
-
-    // A different author or series starts at the top
-    Connections {
-        target: bookOrbit
-        function onBooksOfChanged() {
-            if (bookOrbit.booksOfTotal === -1)
-                page.list.positionViewAtBeginning()
-        }
-    }
 }

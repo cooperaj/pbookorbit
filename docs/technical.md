@@ -155,7 +155,10 @@ whose header is the sub-toolbar (when the page has a `ListQuery`) and an error l
 a scrollbar, jump rail, page buttons, spinner and empty state. A page opened over the
 views gives it a `title`, shown in a `PageHeader` with a back button. It asks for rows as
 they come into view with `rowsWanted(first, last)`, and takes its sort and filter labels,
-and the rail's direction, from its query. Two components extend it with their row:
+and the rail's direction, from its query, going back to the top whenever the query
+changes. A query's `sorts` are `{name, field, descending}`, and it gives the chosen
+`sortField` and content type `formats` for the request. Two components extend it with
+their row:
 
 - `BookListPage` has a `BookRow` per book and reports taps and holds. The library, a
   books-of page (an author's, series' or collection's books) and the search results use
@@ -169,8 +172,9 @@ and the rail's direction, from its query. Two components extend it with their ro
 ![ListPage, what it's given, the two lists and rows that extend it, and the pages built on them](images/list-pages-components.svg)
 
 The page that owns a list decides when its spinner and empty state show and what the
-empty state says (`loading`, `empty`, `emptyTitle`, `emptyText`); `GroupListPage` decides
-these for every group list from `loaded` and its `noneTitle` and `noneText`. `BooksOfPage`
+empty state says (`loading`, `empty`, `emptyTitle`, `emptyText`, with `offlineText()` for
+the offline sentence); `GroupListPage` decides when for every group list from `loaded`.
+An error with no rows always shows as "Something went wrong". `BooksOfPage`
 extends `BookListPage`, and `AuthorSeriesPage` extends `GroupListPage`, each adding a title
 and model. `SearchPage` contains a `BookListPage` for its results, with no query and so no
 sub-toolbar or rail.

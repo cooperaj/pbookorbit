@@ -121,78 +121,60 @@ Window {
     }
 
     // Signed in: sub-toolbar with filter and sort, the book list, and a footer for the
-    // views, modelled on Libby
-    readonly property var filterOptions: libraryQuery.filterOptions
-    // File formats per filter option (BookOrbit's EBOOK_FORMAT_LIST and AUDIO_FORMAT_LIST)
-    readonly property var filterFormats: [
-        [],
-        ["epub", "kepub", "mobi", "azw3", "azw", "fb2", "pdf", "djvu"],
-        ["m4b", "mp3", "m4a", "opus", "ogg", "flac"]
-    ]
-
     // Library sort and filter. Dates default to newest first, everything else to A-Z.
     ListQuery {
         id: libraryQuery
-        sortOptions: ["Date added", "Title", "Author", "Recently read"]
-        sortFields: ["addedAt", "title", "author", "lastReadAt"]
-        sortDescendingByDefault: [true, false, false, true]
+        sorts: [
+            { name: "Date added", field: "addedAt", descending: true },
+            { name: "Title", field: "title", descending: false },
+            { name: "Author", field: "author", descending: false },
+            { name: "Recently read", field: "lastReadAt", descending: true }
+        ]
         sortIndex: 1   // Title, matching bookOrbit's default
-        onApplied: {
-            bookOrbit.setBookQuery(sortFields[sortIndex], descending(), root.filterFormats[filterIndex],
-                                   downloadedOnly)
-            libraryPage.list.positionViewAtBeginning()
-        }
+        onApplied: bookOrbit.setBookQuery(sortField, descending(), formats, downloadedOnly)
     }
     // Collection sorts from BookOrbit's collections page, minus "Custom order": A-Z, and
     // most books first
     ListQuery {
         id: collectionsQuery
-        sortOptions: ["Name", "Book count"]
-        sortFields: ["name", "bookCount"]
-        sortDescendingByDefault: [false, true]
+        sorts: [
+            { name: "Name", field: "name", descending: false },
+            { name: "Book count", field: "bookCount", descending: true }
+        ]
         hasFilter: false
-        onApplied: {
-            bookOrbit.setCollectionSort(sortFields[sortIndex], descending())
-            collectionsPage.list.positionViewAtBeginning()
-        }
+        onApplied: bookOrbit.setCollectionSort(sortField, descending())
     }
     // Series sorts from BookOrbit's series page: A-Z, then most books, latest added and
     // most read first
     ListQuery {
         id: seriesQuery
-        sortOptions: ["Name", "Book count", "Recently added", "Read progress"]
-        sortFields: ["name", "bookCount", "lastAddedAt", "readProgress"]
-        sortDescendingByDefault: [false, true, true, true]
+        sorts: [
+            { name: "Name", field: "name", descending: false },
+            { name: "Book count", field: "bookCount", descending: true },
+            { name: "Recently added", field: "lastAddedAt", descending: true },
+            { name: "Read progress", field: "readProgress", descending: true }
+        ]
         hasFilter: false
-        onApplied: {
-            bookOrbit.setSeriesSort(sortFields[sortIndex], descending())
-            seriesPage.list.positionViewAtBeginning()
-        }
+        onApplied: bookOrbit.setSeriesSort(sortField, descending())
     }
     // Author sorts from BookOrbit's authors page: A-Z by name or surname, most books and
     // latest added first. Filtered by their books, like the library.
     ListQuery {
         id: authorsQuery
-        sortOptions: ["Name", "Sort name", "Book count", "Recently added"]
-        sortFields: ["name", "sortName", "bookCount", "lastAddedAt"]
-        sortDescendingByDefault: [false, false, true, true]
-        onApplied: {
-            bookOrbit.setAuthorQuery(sortFields[sortIndex], descending(), root.filterFormats[filterIndex],
-                                     downloadedOnly)
-            authorsPage.list.positionViewAtBeginning()
-        }
+        sorts: [
+            { name: "Name", field: "name", descending: false },
+            { name: "Sort name", field: "sortName", descending: false },
+            { name: "Book count", field: "bookCount", descending: true },
+            { name: "Recently added", field: "lastAddedAt", descending: true }
+        ]
+        onApplied: bookOrbit.setAuthorQuery(sortField, descending(), formats, downloadedOnly)
     }
     // An author's series: the Series view's sorts, kept between authors
     ListQuery {
         id: authorSeriesQuery
-        sortOptions: seriesQuery.sortOptions
-        sortFields: seriesQuery.sortFields
-        sortDescendingByDefault: seriesQuery.sortDescendingByDefault
+        sorts: seriesQuery.sorts
         hasFilter: false
-        onApplied: {
-            bookOrbit.setAuthorSeriesSort(sortFields[sortIndex], descending())
-            authorSeriesPage.list.positionViewAtBeginning()
-        }
+        onApplied: bookOrbit.setAuthorSeriesSort(sortField, descending())
     }
     function openAuthorSeries(name) {
         authorSeriesPage.name = name
@@ -200,55 +182,47 @@ Window {
         authorSeriesPage.list.positionViewAtBeginning()
         showingAuthorSeries = true
     }
-    // Books of an author, series or collection (see bookOrbit.showBooksOf()). Each kind
+    // Books of an author, series or collection (see bookOrbit.showBooksOf()). Each field
     // keeps its own sort and filter between uses, like the library.
     property string booksOfField
     property var booksOfValues: []
     readonly property ListQuery booksOfQuery: booksOfField === "series" ? seriesBooksQuery
                                               : booksOfField === "collection" ? collectionBooksQuery
                                               : authorBooksQuery
-    function openBooksOf(kind, name, field, values) {
-        booksOfPage.kind = kind
-        booksOfPage.name = name
+    // field is "author", "series" or "collection", values the names (or collection id) to
+    // match, and title the name shown, if not the values
+    function openBooksOf(field, values, title) {
+        booksOfPage.kind = field === "series" ? "Series" : field === "collection" ? "Collection"
+                           : values.length > 1 ? "Authors" : "Author"
+        booksOfPage.name = title || values.join(", ")
         booksOfField = field
         booksOfValues = values
-        applyBooksOf(booksOfQuery)
+        booksOfQuery.applied()
         showingBooksOf = true
     }
-    // Used by the book menu's "All books of" items and the book info page's links. field is
-    // "author" or "series".
-    function openBooksOfChosen(field, values, title) {
-        openBooksOf(field === "series" ? "Series" : values.length > 1 ? "Authors" : "Author", title, field, values)
-    }
     function applyBooksOf(query) {
-        bookOrbit.showBooksOf(booksOfField, booksOfValues, query.sortFields[query.sortIndex], query.descending(),
-                              filterFormats[query.filterIndex], query.downloadedOnly)
-        booksOfPage.list.positionViewAtBeginning()
+        bookOrbit.showBooksOf(booksOfField, booksOfValues, query.sortField, query.descending(), query.formats,
+                              query.downloadedOnly)
     }
     // An author's books use the library's sorts
     ListQuery {
         id: authorBooksQuery
-        sortOptions: libraryQuery.sortOptions
-        sortFields: libraryQuery.sortFields
-        sortDescendingByDefault: libraryQuery.sortDescendingByDefault
+        sorts: libraryQuery.sorts
         sortIndex: 1
         onApplied: root.applyBooksOf(authorBooksQuery)
     }
     // A series' books: series order first, then the library's sorts
     ListQuery {
         id: seriesBooksQuery
-        sortOptions: ["Series order"].concat(libraryQuery.sortOptions)
-        sortFields: ["seriesIndex"].concat(libraryQuery.sortFields)
-        sortDescendingByDefault: [false].concat(libraryQuery.sortDescendingByDefault)
+        sorts: [{ name: "Series order", field: "seriesIndex", descending: false }].concat(libraryQuery.sorts)
         onApplied: root.applyBooksOf(seriesBooksQuery)
     }
     // A collection's books: the library's sorts, with Date added meaning when it was added
     // to the collection
     ListQuery {
         id: collectionBooksQuery
-        sortOptions: libraryQuery.sortOptions
-        sortFields: ["collectionOrder", "title", "author", "lastReadAt"]
-        sortDescendingByDefault: libraryQuery.sortDescendingByDefault
+        sorts: libraryQuery.sorts.map(sort => sort.field === "addedAt" ? Object.assign({}, sort, { field: "collectionOrder" })
+                                                                       : sort)
         sortIndex: 1
         onApplied: root.applyBooksOf(collectionBooksQuery)
     }
@@ -371,15 +345,13 @@ Window {
         railLayout: rails
         error: bookOrbit.booksError
         // The spinner only until the first books arrive; later pages load on scroll. No
-        // books, or the library couldn't load, says so.
+        // books says so.
         loading: bookOrbit.busy
-        empty: error !== "" || bookOrbit.totalBooks === 0
-        emptyTitle: error !== "" ? "Something went wrong"
-                    : libraryQuery.downloadedOnly
+        empty: bookOrbit.totalBooks === 0
+        emptyTitle: libraryQuery.downloadedOnly
                     ? ["No downloaded books", "No downloaded ebooks", "No downloaded audiobooks"][libraryQuery.filterIndex]
                     : ["No books", "No ebooks", "No audiobooks"][libraryQuery.filterIndex]
-        emptyText: error !== "" ? error
-                   : !bookOrbit.online ? libraryPage.offlineText
+        emptyText: !bookOrbit.online ? offlineText()
                    : libraryQuery.downloadedOnly ? "Books you download show here, and can be read offline."
                    : "Books in your BookOrbit library show here."
         onRowsWanted: (first, last) => bookOrbit.loadBooks(first, last)
@@ -395,9 +367,9 @@ Window {
         jumpSections: bookOrbit.collectionJumpSections
         error: bookOrbit.collectionsError
         loaded: bookOrbit.collectionsLoaded
-        noneTitle: "No collections"
-        noneText: bookOrbit.online ? "Collections you make in BookOrbit show here."
-                                    : "You're currently offline, only collections containing downloaded books can be shown."
+        emptyTitle: "No collections"
+        emptyText: bookOrbit.online ? "Collections you make in BookOrbit show here."
+                                    : offlineText("collections containing downloaded books")
         anchors.top: header.bottom
         anchors.bottom: footer.top
         anchors.left: parent.left
@@ -407,8 +379,7 @@ Window {
         menus: listMenus
         // Reloaded every time the view opens. Offline, the saved collections' downloaded books.
         onVisibleChanged: if (visible) bookOrbit.loadCollections()
-        onGroupClicked: (collection) => root.openBooksOf("Collection", collection.name, "collection",
-                                                        [String(collection.id)])
+        onGroupClicked: (collection) => root.openBooksOf("collection", [String(collection.id)], collection.name)
     }
 
     GroupListPage {
@@ -419,9 +390,9 @@ Window {
         jumpSections: bookOrbit.seriesJumpSections
         error: bookOrbit.seriesError
         loaded: bookOrbit.seriesLoaded
-        noneTitle: "No series"
-        noneText: bookOrbit.online ? "Series show here once books in the library belong to one."
-                                    : "You're currently offline, only series with downloaded books can be shown."
+        emptyTitle: "No series"
+        emptyText: bookOrbit.online ? "Series show here once books in the library belong to one."
+                                    : offlineText("series with downloaded books")
         anchors.top: header.bottom
         anchors.bottom: footer.top
         anchors.left: parent.left
@@ -432,7 +403,7 @@ Window {
         // Loaded the first time the view opens: large libraries have many series, and their
         // formats take a request per few series. Offline, the downloaded books' each time.
         onVisibleChanged: if (visible && (!bookOrbit.seriesLoaded || !bookOrbit.online)) bookOrbit.loadSeries()
-        onGroupClicked: (series) => root.openBooksOf("Series", series.name, "series", [series.name])
+        onGroupClicked: (series) => root.openBooksOf("series", [series.name])
     }
 
     GroupListPage {
@@ -445,9 +416,9 @@ Window {
         // With a filter on, authors appear once their books have been looked up
         loaded: bookOrbit.authorsLoaded && (bookOrbit.authorBooksLoaded
                                             || (authorsQuery.filterIndex === 0 && !authorsQuery.downloadedOnly))
-        noneTitle: authorsQuery.downloadedOnly || authorsQuery.filterIndex === 0 ? "No authors"
-                    : "No authors with " + root.filterOptions[authorsQuery.filterIndex].toLowerCase()
-        noneText: !bookOrbit.online ? "You're currently offline, only authors of downloaded books can be shown."
+        emptyTitle: authorsQuery.downloadedOnly || authorsQuery.filterIndex === 0 ? "No authors"
+                    : "No authors with " + authorsQuery.filterName.toLowerCase()
+        emptyText: !bookOrbit.online ? offlineText("authors of downloaded books")
                    : authorsQuery.downloadedOnly ? "Turn off Downloaded only to see every author."
                    : authorsQuery.filterIndex !== 0 ? "Choose All titles to see every author."
                    : "Authors show here once the library has books."
@@ -506,10 +477,7 @@ Window {
         z: 2
         width: parent.width
         onlyOpenTab: true
-        showFilter: root.activeQuery.hasFilter
-        filterText: root.filterOptions[root.activeQuery.filterIndex]
-        sortText: "By " + root.activeQuery.sortOptions[root.activeQuery.sortIndex]
-        sortReversed: root.activeQuery.sortReversed
+        query: root.activeQuery
         filterOpen: filterMenu.visible
         sortOpen: sortMenu.visible
         onFilterClicked: root.closeDropdowns()
@@ -527,14 +495,14 @@ Window {
 
         MenuHeading { text: "Content type" }
         Repeater {
-            model: root.filterOptions
+            model: root.activeQuery.filterOptions
             RadioMenuItem {
                 required property string modelData
                 required property int index
                 objectName: modelData
                 text: modelData
                 checked: index === root.activeQuery.filterIndex
-                showSeparator: index < root.filterOptions.length - 1
+                showSeparator: index < root.activeQuery.filterOptions.length - 1
                 onClicked: {
                     root.activeQuery.chooseFilter(index)
                     root.closeDropdowns()
@@ -650,14 +618,13 @@ Window {
         visible: root.showingAuthor
         onBack: root.showingAuthor = false
         onBooksClicked: {
-            const name = authorInfoPage.author.name
-            root.openBooksOf("Author", name, "author", [name])
+            root.openBooksOf("author", [authorInfoPage.author.name])
         }
         // Go straight to the series if there's only one
         onSeriesClicked: {
             const names = authorInfoPage.seriesNames
             if (authorInfoPage.seriesCount === 1 && names.length === 1)
-                root.openBooksOf("Series", names[0], "series", [names[0]])
+                root.openBooksOf("series", [names[0]])
             else
                 root.openAuthorSeries(authorInfoPage.author.name)
         }
@@ -676,7 +643,7 @@ Window {
             root.closeDropdowns()
             root.showingAuthorSeries = false
         }
-        onGroupClicked: (series) => root.openBooksOf("Series", series.name, "series", [series.name])
+        onGroupClicked: (series) => root.openBooksOf("series", [series.name])
     }
 
     BooksOfPage {
@@ -703,9 +670,9 @@ Window {
         visible: root.showingInfo
         onBack: root.showingInfo = false
         // Close this page, since the books-of page is underneath
-        onBooksOfChosen: (field, values, title) => {
+        onBooksOfChosen: (field, values) => {
             root.showingInfo = false
-            root.openBooksOfChosen(field, values, title)
+            root.openBooksOf(field, values)
         }
         onOpenChosen: (bookId, kind) => downloads.open(bookId, kind)
         onDownloadChosen: (book, versions) => downloadDialog.show(book, versions)
@@ -722,7 +689,7 @@ Window {
             bookInfoPage.show(book)
             root.showingInfo = true
         }
-        onBooksOfChosen: (field, values, title) => root.openBooksOfChosen(field, values, title)
+        onBooksOfChosen: (field, values) => root.openBooksOf(field, values)
         onDeleteChosen: (book) => deleteDialog.ask(book)
         onOpenWithChosen: (target, app) => root.openWith(target, app)
     }

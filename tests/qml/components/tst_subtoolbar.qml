@@ -3,8 +3,8 @@ import QtTest
 import "../helpers"
 import "../../../src/qml"
 
-// The bar of filter and sort buttons over a list. It only shows what it's given and says
-// what was tapped; each view decides what that does.
+// The bar of filter and sort buttons over a list. It shows its query's sort and filter and
+// says what was tapped; each view decides what that does.
 UiTestCase {
     id: test
     name: "SubToolbar"
@@ -13,8 +13,15 @@ UiTestCase {
         id: subToolbar
         SubToolbar {
             width: 600
-            filterText: "All titles"
-            sortText: "By Title"
+        }
+    }
+    Component {
+        id: listQuery
+        ListQuery {
+            sorts: [
+                { name: "Title", field: "title", descending: false },
+                { name: "Author", field: "author", descending: false }
+            ]
         }
     }
 
@@ -22,8 +29,10 @@ UiTestCase {
     SignalSpy { id: sortTaps; signalName: "sortClicked" }
     SignalSpy { id: iconTaps; signalName: "sortIconClicked" }
 
-    function make(properties) {
-        root = createTemporaryObject(subToolbar, test, properties || {})
+    // queryProperties set up its query, e.g. {sortIndex: 1}
+    function make(properties, queryProperties) {
+        const query = createTemporaryObject(listQuery, test, queryProperties || {})
+        root = createTemporaryObject(subToolbar, test, Object.assign({query: query}, properties || {}))
         verify(root)
         for (const spy of [filterTaps, sortTaps, iconTaps]) {
             spy.target = root
@@ -33,7 +42,7 @@ UiTestCase {
     }
 
     function test_showsItsLabels() {
-        make({filterText: "Ebooks", sortText: "By Author"})
+        make({}, {filterIndex: 1, sortIndex: 1})
 
         compare(find("filterButton").text, "Ebooks")
         compare(find("sortButton").text, "By Author")
@@ -66,13 +75,13 @@ UiTestCase {
         make()
         compare(find("sortButton").icon, "sorting_descending")
 
-        root.sortReversed = true
+        root.query.reverseSort()
         compare(find("sortButton").icon, "sorting_ascending")
     }
 
     // Collections and series have no content type to filter by
     function test_filterCanBeLeftOut() {
-        make({showFilter: false})
+        make({}, {hasFilter: false})
 
         verify(!find("filterButton").visible, "no filter button")
         verify(find("sortButton").visible, "the sort button")

@@ -6,16 +6,14 @@ import "units.js" as Units
 // running down over the menu's top border so they read as one shape. The down arrow after
 // each label marks a menu. As in the system library, the sort icon is a separate round
 // button that reverses the sort and shows its direction; it isn't part of the tab, so it
-// doesn't change while the menu is open.
+// doesn't change while the menu is open. Its labels and icon show a query's sort and filter.
 Item {
     id: bar
-    property string filterText
-    property string sortText
+    property ListQuery query: null
     property bool filterOpen: false
     property bool sortOpen: false
-    property bool sortReversed: false
-    // Sort-only pages leave out the filter button
-    property bool showFilter: true
+    // Sort-only queries leave out the filter button
+    readonly property bool showFilter: query ? query.hasFilter : false
     // How far an open tab reaches below the bar: PopupMenu's border, less the bar's line,
     // which the menu starts on
     property int tabOverhang: Units.dp(4) - 1
@@ -112,7 +110,7 @@ Item {
         objectName: "filterButton"
         x: Units.dp(26)
         icon: "filter_empty"
-        text: bar.filterText
+        text: bar.query ? bar.query.filterName : ""
         capitals: true
         open: bar.filterOpen
         visible: bar.showFilter && (!bar.onlyOpenTab || open)
@@ -122,8 +120,8 @@ Item {
         id: sortButton
         objectName: "sortButton"
         x: bar.width - Units.dp(26) - width
-        icon: bar.sortReversed ? "sorting_ascending" : "sorting_descending"
-        text: bar.sortText
+        icon: bar.query && bar.query.sortReversed ? "sorting_ascending" : "sorting_descending"
+        text: bar.query ? "By " + bar.query.sortName : ""
         spacing: Units.dp(10)
         open: bar.sortOpen
         iconIsButton: true

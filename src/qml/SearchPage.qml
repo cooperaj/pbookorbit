@@ -282,7 +282,7 @@ Rectangle {
         empty: true
         emptyTitle: "No books found"
         emptyText: bookOrbit.online ? "Try a different title, author or series."
-                                    : "You're currently offline, only downloaded books can be searched."
+                                    : offlineText("downloaded books", "searched")
         onRowsWanted: (first, last) => bookOrbit.loadSearchResults(first, last)
         // Scrolling or tapping a book ends typing, which saves the search
         onScrollStarted: page.hideKeyboard()

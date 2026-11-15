@@ -31,9 +31,8 @@ InfoPage {
 
     readonly property alias menuOpen: actions.visible
 
-    // Same as BookMenu's: field "author" or "series", the names to match, and the page
-    // title
-    signal booksOfChosen(string field, var values, string title)
+    // Same as BookMenu's: field "author" or "series", and the names to match
+    signal booksOfChosen(string field, var values)
     // The menu's actions, for the chosen version. kind is "" if the book has just one.
     signal openChosen(int bookId, string kind)
     // versions as in DownloadDialog's options
@@ -89,7 +88,7 @@ InfoPage {
         return (hasKinds ? versions.find(v => v.kind === kind) : versions[0]) || null
     }
     // The record described: the chosen version's, which may be the book's own
-    readonly property var record: hasKinds ? version.book : book
+    readonly property var record: hasKinds && version !== null ? version.book : book
     // GET /books/:id for the record, once loaded
     readonly property var details: detailsById[record.id] || ({})
     readonly property bool versionOnDevice: downloads.revision >= 0 && version !== null
@@ -167,7 +166,7 @@ InfoPage {
                     label: modelData[0]
                     value: modelData[1]
                     tappable: modelData.length > 2 && modelData[3].length > 0
-                    onClicked: page.booksOfChosen(modelData[2], modelData[3], modelData[3].join(", "))
+                    onClicked: page.booksOfChosen(modelData[2], modelData[3])
                 }
             }
         }
