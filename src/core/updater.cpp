@@ -1,7 +1,7 @@
 #include "core/updater.h"
 
-#include "core/bookorbitclient.h"
 #include "core/diagnostics.h"
+#include "core/network.h"
 #include "core/savefile.h"
 #include "core/systemlibrary.h"
 #include "core/zipreader.h"
@@ -166,8 +166,6 @@ Updater::Updater(const QString &releasesUrl, const QString &version, const QStri
 {
 }
 
-static const QString NO_NETWORK = QStringLiteral("There's no network connection. Connect to Wi-Fi and try again.");
-
 void Updater::check()
 {
     if (m_state == "checking" || m_state == "downloading")
@@ -176,31 +174,20 @@ void Updater::check()
     m_state = "checking";
     m_error.clear();
     emit changed();
-    if (!BookOrbitClient::ensureNetwork()) {
-        finish("failed", NO_NETWORK);
-        return;
-    }
 
     // GitHub lists the newest first
     QNetworkRequest request = this->request(m_releasesUrl + "?per_page=20");
     request.setRawHeader("Accept", "application/vnd.github+json");
     request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
     request.setTransferTimeout(30000);
-    QNetworkReply *reply = get(request);
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        reply->deleteLater();
-        if (reply != m_reply)
-            return;   // cancelled
-        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        diagnostics::trace(QString("releases -> %1").arg(status ? QString::number(status) : reply->errorString()));
-        if (reply->error() != QNetworkReply::NoError) {
-            // GitHub allows 60 unauthenticated requests an hour per address
-            finish("failed", status == 403 || status == 429 ? "GitHub is busy. Try again later."
-                             : status ? QString("GitHub couldn't list the releases (HTTP %1).").arg(status)
-                                      : "Couldn't reach GitHub. Check your connection and try again.");
-            return;
-        }
-        const QJsonDocument releases = QJsonDocument::fromJson(reply->readAll());
+    const auto failure = [](int status) {
+        // GitHub allows 60 unauthenticated requests an hour per address
+        return status == 403 || status == 429 ? QString("GitHub is busy. Try again later.")
+               : status ? QString("GitHub couldn't list the releases (HTTP %1).").arg(status)
+                        : QString("Couldn't reach GitHub. Check your connection and try again.");
+    };
+    fetch(request, "failed", failure, [this](const QByteArray &body) {
+        const QJsonDocument releases = QJsonDocument::fromJson(body);
         if (!releases.isArray()) {
             finish("failed", "GitHub's list of releases couldn't be read.");
             return;
@@ -229,37 +216,16 @@ void Updater::install()
                                 " Get it from its GitHub page instead.");
         return;
     }
-    if (!BookOrbitClient::ensureNetwork()) {
-        finish("installFailed", NO_NETWORK);
-        return;
-    }
 
     // GitHub redirects to where the file is stored
     QNetworkRequest request = this->request(m_choice.asset.url);
     request.setRawHeader("Accept", "application/octet-stream");
     request.setTransferTimeout(60000);
-    QNetworkReply *reply = get(request);
-    connect(reply, &QNetworkReply::downloadProgress, this, [this](qint64 received, qint64 total) {
-        const int percent = total > 0 ? int(received * 100 / total) : 0;
-        if (percent != m_percent) {
-            m_percent = percent;
-            emit changed();
-        }
-    });
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        reply->deleteLater();
-        if (reply != m_reply)
-            return;   // cancelled
-        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        const QByteArray archive = reply->readAll();
-        diagnostics::log(QString("update download %1 -> %2, %3 bytes")
-                             .arg(m_choice.asset.name, status ? QString::number(status) : reply->errorString())
-                             .arg(archive.size()));
-        if (reply->error() != QNetworkReply::NoError) {
-            finish("installFailed", status ? QString("GitHub couldn't send the update (HTTP %1).").arg(status)
-                                           : "The download stopped. Check your connection and try again.");
-            return;
-        }
+    const auto failure = [](int status) {
+        return status ? QString("GitHub couldn't send the update (HTTP %1).").arg(status)
+                      : QString("The download stopped. Check your connection and try again.");
+    };
+    fetch(request, "installFailed", failure, [this](const QByteArray &archive) {
         if (archive.size() != m_choice.asset.size
                 || QCryptographicHash::hash(archive, QCryptographicHash::Sha256).toHex() != m_choice.asset.sha256.toLatin1()) {
             finish("installFailed", "The download was damaged. Try again.");
@@ -269,6 +235,40 @@ void Updater::install()
         const QString problem = unpack(archive);
         diagnostics::log(problem.isEmpty() ? "update " + m_choice.version + " ready" : "update failed: " + problem);
         finish(problem.isEmpty() ? "ready" : "installFailed", problem);
+    });
+}
+
+void Updater::fetch(const QNetworkRequest &request, const QString &failState,
+                    const std::function<QString(int status)> &failure,
+                    const std::function<void(const QByteArray &body)> &done)
+{
+    if (!network::ensure()) {
+        finish(failState, "There's no network connection. Connect to Wi-Fi and try again.");
+        return;
+    }
+
+    if (!m_nam)
+        m_nam = new QNetworkAccessManager(this);
+    const QString url = request.url().toString();
+    diagnostics::trace("GET " + url);
+    QNetworkReply *reply = m_nam->get(request);
+    m_reply = reply;
+    connect(reply, &QNetworkReply::downloadProgress, this, [this](qint64 received, qint64 total) {
+        setPercent(total > 0 ? int(received * 100 / total) : 0);
+    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply, url, failState, failure, done]() {
+        reply->deleteLater();
+        if (reply != m_reply)
+            return;   // cancelled
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const QByteArray body = reply->readAll();
+        const bool failed = reply->error() != QNetworkReply::NoError;
+        (failed ? diagnostics::log : diagnostics::trace)(QString("%1 -> %2, %3 bytes")
+            .arg(url, status ? QString::number(status) : reply->errorString()).arg(body.size()));
+        if (failed)
+            finish(failState, failure(status));
+        else
+            done(body);
     });
 }
 
@@ -331,14 +331,12 @@ QNetworkRequest Updater::request(const QString &url) const
     return request;
 }
 
-QNetworkReply *Updater::get(const QNetworkRequest &request)
+void Updater::setPercent(int percent)
 {
-    if (!m_nam)
-        m_nam = new QNetworkAccessManager(this);
-    diagnostics::trace("GET " + request.url().toString());
-    QNetworkReply *reply = m_nam->get(request);
-    m_reply = reply;
-    return reply;
+    if (percent == m_percent)
+        return;
+    m_percent = percent;
+    emit changed();
 }
 
 void Updater::finish(const QString &state, const QString &error)

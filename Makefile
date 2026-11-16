@@ -30,24 +30,11 @@ arm:
 # The SDKs a release has a file for. RK3566-6.11 (the 1030) needs more first: see PR 1.
 RELEASE_SDKS ?= B288-6.10 B300-6.10
 
-# A release's files, a zip per SDK in build/release, named as the update check expects:
-# pbookorbit-<version>-<sdk>.zip, from each build's pb_build.h. Each unzips into the
-# device's applications/ folder: the launcher, pbookorbit.app, and the app,
-# pbookorbit/pbookorbit. SERVER=books.example.com prefills the sign-in server, for builds
-# handed to users of that server. Needs python3.
+# A release's files, a zip per SDK in build/release: see scripts/release.sh.
+# SERVER=books.example.com prefills the sign-in server, for builds handed to users of that
+# server. Needs python3.
 release:
-	@for sdk in $(RELEASE_SDKS); do \
-		PB_SDK=$$sdk PB_QMAKE_ARGS="$(if $(SERVER),SUGGESTED_SERVER=$(SERVER))" $(PB) arm . || exit 1; \
-		build=build/pbookorbit/$$sdk/arm; \
-		version=$$(sed -n 's/^#define PB_APP_VERSION "\(.*\)"$$/\1/p' $$build/pb_build.h); \
-		stage=build/release/$$sdk; \
-		mkdir -p "$$stage/pbookorbit" || exit 1; \
-		install -m 755 src/launcher.sh "$$stage/pbookorbit.app" || exit 1; \
-		install -m 755 $$build/pbookorbit.app "$$stage/pbookorbit/pbookorbit" || exit 1; \
-		python3 -I -c 'import shutil, sys; shutil.make_archive(sys.argv[1], "zip", sys.argv[2])' \
-			build/release/pbookorbit-$$version-$$sdk "$$stage" || exit 1; \
-		echo "build/release/pbookorbit-$$version-$$sdk.zip"; \
-	done
+	PB=$(PB) SERVER=$(SERVER) scripts/release.sh $(RELEASE_SDKS)
 
 # Build and run the tests in tests/; see Tests in docs/technical.md
 test:

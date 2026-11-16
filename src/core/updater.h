@@ -6,6 +6,7 @@
 #include <QNetworkRequest>
 #include <QObject>
 #include <QPointer>
+#include <functional>
 
 class QNetworkReply;
 
@@ -106,8 +107,13 @@ private:
     // Unpacks the downloaded zip into place; returns why it couldn't
     QString unpack(const QByteArray &archive);
     QNetworkRequest request(const QString &url) const;
-    // Sends it, as the current request
-    QNetworkReply *get(const QNetworkRequest &request);
+    // Connects Wi-Fi, sends request, and calls done with the reply's body. If it fails,
+    // finishes in failState with failure's message for the HTTP status (0 if none). Nothing
+    // is called for a request that was cancelled.
+    void fetch(const QNetworkRequest &request, const QString &failState,
+               const std::function<QString(int status)> &failure,
+               const std::function<void(const QByteArray &body)> &done);
+    void setPercent(int percent);
 
     QString m_releasesUrl;
     QString m_version;

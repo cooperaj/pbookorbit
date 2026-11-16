@@ -9,6 +9,7 @@ SOURCES += \
     $$PWD/core/diagnostics.cpp \
     $$PWD/core/downloads.cpp \
     $$PWD/core/launcherfiles.cpp \
+    $$PWD/core/network.cpp \
     $$PWD/core/savefile.cpp \
     $$PWD/core/systemlibrary.cpp \
     $$PWD/core/updater.cpp \
@@ -29,6 +30,7 @@ HEADERS += \
     $$PWD/core/diagnostics.h \
     $$PWD/core/downloads.h \
     $$PWD/core/launcherfiles.h \
+    $$PWD/core/network.h \
     $$PWD/core/savefile.h \
     $$PWD/core/formats.h \
     $$PWD/core/systemlibrary.h \
