@@ -30,6 +30,7 @@ Window {
         bookMenu.close()
         showingInfo = false
         showingBooksOf = false
+        booksOfBack = []
         showingAuthorSeries = false
         showingAuthor = false
         searching = false
@@ -192,6 +193,12 @@ Window {
     // field is "author", "series" or "collection", values the names (or collection id) to
     // match, and title the name shown, if not the values
     function openBooksOf(field, values, title) {
+        booksOfBack.push({ booksOf: showingBooksOf ? { field: booksOfField, values: booksOfValues, title: booksOfPage.name }
+                                                   : null,
+                           info: null })
+        showBooksOf(field, values, title)
+    }
+    function showBooksOf(field, values, title) {
         booksOfPage.kind = field === "series" ? "Series" : field === "collection" ? "Collection"
                            : values.length > 1 ? "Authors" : "Author"
         booksOfPage.name = title || values.join(", ")
@@ -199,6 +206,31 @@ Window {
         booksOfValues = values
         booksOfQuery.applied()
         showingBooksOf = true
+    }
+    // Opened from a book's info page, which is above the books-of page, so closes it. Back
+    // reopens it.
+    function openBooksOfFromInfo(field, values) {
+        const info = { book: bookInfoPage.book, kind: bookInfoPage.kind }
+        showingInfo = false
+        openBooksOf(field, values)
+        booksOfBack[booksOfBack.length - 1].info = info
+    }
+    // What each books-of list replaced, for Back: the list before it, if any, and the info
+    // page it was opened from
+    property var booksOfBack: []
+    function closeBooksOf() {
+        const previous = booksOfBack.pop()
+        if (previous?.booksOf)
+            showBooksOf(previous.booksOf.field, previous.booksOf.values, previous.booksOf.title)
+        else
+            showingBooksOf = false
+        if (previous?.info) {
+            if (bookInfoPage.book !== previous.info.book)
+                bookInfoPage.show(previous.info.book)
+            if (bookInfoPage.kind !== previous.info.kind)
+                bookInfoPage.choose(previous.info.kind)
+            showingInfo = true
+        }
     }
     function applyBooksOf(query) {
         bookOrbit.showBooksOf(booksOfField, booksOfValues, query.sortField, query.descending(), query.formats,
@@ -655,7 +687,7 @@ Window {
         visible: root.showingBooksOf
         onBack: {
             root.closeDropdowns()
-            root.showingBooksOf = false
+            root.closeBooksOf()
         }
         onBookClicked: (book) => root.openBook(book)
         onBookHeld: (row) => bookMenu.open(row)
@@ -667,11 +699,7 @@ Window {
         anchors.fill: parent
         visible: root.showingInfo
         onBack: root.showingInfo = false
-        // Close this page, since the books-of page is underneath
-        onBooksOfChosen: (field, values) => {
-            root.showingInfo = false
-            root.openBooksOf(field, values)
-        }
+        onBooksOfChosen: (field, values) => root.openBooksOfFromInfo(field, values)
         onOpenChosen: (bookId, kind) => downloads.open(bookId, kind)
         onDownloadChosen: (book, versions) => downloadDialog.show(book, versions)
         onDeleteChosen: (book, kind) => deleteDialog.ask(book, kind)

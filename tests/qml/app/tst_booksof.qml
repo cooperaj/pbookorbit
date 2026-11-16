@@ -99,6 +99,23 @@ AppTestCase {
         verify(find("bookList").visible, "the library")
     }
 
+    // A book's menu on a books-of page opens another over it
+    function test_backReturnsToTheBooksBefore() {
+        openMenuLibrary()
+        const page = openBooksOf("seriesBooks")
+        tryVerify(() => titlesIn(page.list) === "Dune, Dune Messiah", 5000)
+        tap("authorBooks", holdBook("Dune Messiah", "booksOfList"))
+        compare(page.name, "Frank Herbert")
+
+        tap("backButton", page)
+
+        verify(page.visible)
+        compare(page.name, "Dune")
+        compare(page.kind, "Series")
+        back(page)
+        verify(find("bookList").visible, "the library")
+    }
+
     function test_noBooksSaysSo() {
         openMenuLibrary()
         fakeServer.respond("POST", books, 200, "libraries/search-none.json", byFrankHerbert)

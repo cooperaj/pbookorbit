@@ -146,6 +146,35 @@ AppTestCase {
         compare(page.name, "Dune")
     }
 
+    // Back goes the way it came, through each info page and list, to the library
+    function test_backFromItsBooksReturnsToTheInfoPage() {
+        openMenuLibrary()
+        const info = openInfo("Dune")
+        tap("seriesField", info)
+        const page = find("booksOfPage")
+        tryVerify(() => titlesIn(page.list) === "Dune, Dune Messiah", 5000)
+        tap("bookInfo", holdBook("Dune Messiah", "booksOfList"))
+        compare(field(info, "titleField"), "Dune Messiah")
+        tap("authorField", info)
+        compare(page.name, "Frank Herbert")
+
+        tap("backButton", page)
+        verify(info.visible, "Dune Messiah's info")
+        compare(field(info, "titleField"), "Dune Messiah")
+
+        tap("backButton", info)
+        verify(page.visible, "the series")
+        compare(page.name, "Dune")
+
+        tap("backButton", page)
+        verify(info.visible, "Dune's info")
+        compare(field(info, "titleField"), "Dune")
+
+        tap("backButton", info)
+        verify(!page.visible)
+        verify(find("bookList").visible, "the library")
+    }
+
     function test_backReturnsToTheLibrary() {
         openMenuLibrary()
         const info = openInfo("Dune")
