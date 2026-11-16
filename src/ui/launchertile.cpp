@@ -49,6 +49,13 @@ bool saveIfMissing(const QString &path, const QString &resource)
     return source.open(QIODevice::ReadOnly) && save(path, source.readAll());
 }
 
+// What the tile starts: the launcher script that runs the app, if it says where it is
+QString launcherPath()
+{
+    const QString launcher = qEnvironmentVariable("PBOOKORBIT_LAUNCHER");
+    return launcher.isEmpty() ? QCoreApplication::applicationFilePath() : launcher;
+}
+
 // view.json paths: the app's is absolute, the icons are "object paths" relative to the
 // storage root (the firmware's comment in the file explains both)
 QJsonObject launcherEntry()
@@ -60,7 +67,7 @@ QJsonObject launcherEntry()
     };
     return {
         {"title", TITLE},
-        {"path", QCoreApplication::applicationFilePath()},
+        {"path", launcherPath()},
         {"icon", fromStorage(ICON_FILE)},
         {"focused_icon", fromStorage(FOCUSED_ICON_FILE)},
     };
