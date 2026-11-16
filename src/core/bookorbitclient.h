@@ -285,9 +285,10 @@ signals:
     void savedBooksChanged();
 
 private:
-    // How a list is sectioned: not at all, A-Z (from the server's jump buckets), by day
-    // (date sorts), or by series number (rows then omit the series name)
-    enum class Sections { None, Letters, Days, SeriesNumbers };
+    // How a list is sectioned: not at all, at the rows in sectionStarts (A-Z, or the
+    // server's date buckets for last read), by day (date added), or by series number (rows
+    // then omit the series name)
+    enum class Sections { None, Starts, Days, SeriesNumbers };
 
     // A book list loaded a page at a time. The model has a row for every book once the
     // first page arrives; other pages load on demand.
@@ -325,7 +326,7 @@ private:
         // Only safe when the ebook is guaranteed to be in the list.
         bool mergePairs = false;
         Sections sections = Sections::None;
-        // See jumpSections. For Letters, sectionStarts maps each section's first row to its
+        // See jumpSections. For Starts, sectionStarts maps each section's first row to its
         // letter.
         QVariantList jumpSections;
         QHash<int, QString> sectionStarts;
@@ -487,7 +488,8 @@ private:
     void updateSectionStarts(PagedBooks &list, int first, int last);
     // Letter sorts and date sorts
     static bool isLetterSort(const QString &field) { return field == "title" || field == "author"; }
-    static bool isDateSort(const QString &field) { return field == "addedAt" || field == "lastReadAt"; }
+    // Sorts sectioned by each book's date. Last read has no date per book (see refreshList).
+    static bool isDateSort(const QString &field) { return field == "addedAt"; }
     // Exchanges the refresh token for a new access token, then runs any queued callbacks
     void refreshSession(std::function<void()> then);
     void applyCredentials(const QJsonObject &credentials);

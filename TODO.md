@@ -17,9 +17,11 @@
 - Test data for reading status: the `app` test account has no reading progress or
   statuses, so "Completed" and "N% read" can't be seen in the emulator. Add a mock, e.g. an
   environment variable that makes `decorateBook()` give books sample progress and statuses.
-- The list entries have no lastReadAt, so the Recently read sort shows every date section
-  as "Never" (in the downloaded list it also can't order by it). Find where BookOrbit
-  keeps the last read date.
+- Recently read for the downloaded list (and offline): BookOrbit gives no last read date
+  per book (only its sort and jump buckets use it), so these list by title with no
+  sections. Sort and section them by when the device last opened each file instead, from
+  the system library. Find where the firmware keeps that (the reader's database, see
+  NOTES.md) and whether it can be read without the internal `reader_db_manager.h`.
 - Opening a downloaded book in the emulator froze the app until it was force-quit (seen
   offline, 28 October 2026). Try the same book online to see whether offline matters.
 - Find books: review unsure matches in a list. Since any title match is now offered, a
@@ -70,3 +72,6 @@
   books-of, the tabs) is messy and incomplete: raw text such as "Internal server error
   (HTTP 500)" squeezed between the sub-toolbar and the rows. Consider an icon in the
   header's title instead, like the offline one, that opens the details.
+- Sort names: the Series and Authors tabs call their newest-first sort "Recently added"
+  (`lastAddedAt`, when their latest book was added), while the library calls its own
+  "Date added" (`addedAt`). They're much the same thing, so pick one name for both.

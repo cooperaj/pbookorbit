@@ -331,8 +331,14 @@ On a 401 the client refreshes and retries the request once.
   The response is `{items, total, page, size}`. Items include `id`, `title`, `authors`,
   `seriesName`, `seriesIndex`, `files: [{id, format, role, sizeBytes}]`, `hasCover`,
   `readingProgress` and `readStatus`. Sort fields are listed in `StaticSortField`.
-- `POST /libraries/:id/books/jump-buckets` takes the same query and returns the A-Z rail's
-  sections.
+- `POST /libraries/:id/books/jump-buckets` takes the same query plus `maxBuckets` (8 to
+  64) and returns `{buckets: [{key, label, index, isUnknown}], kind, granularity}`, each
+  bucket's `index` being its first row. Letter sorts give the A-Z rail's sections. Date
+  sorts give `kind: "temporal"` buckets by day, month or year (`granularity`, the finest
+  that fits), in the user's time zone, with an `isUnknown` bucket last for books with no
+  date. List entries have no last read date (`lastReadAt` is the latest
+  `reading_progress.last_read_at` of the book's files), so these buckets are the only way
+  to section the Recently read sort.
 - `GET /books/:id` returns a single book in full, including each file's `filename` and
   `fileHash`.
 - `GET /books/:id/thumbnail` returns the cover.

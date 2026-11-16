@@ -1,0 +1,26 @@
+{
+  "buckets": [
+    {
+      "key": "2026-11-14",
+      "label": "2026-11-14",
+      "index": 0
+    },
+    {
+      "key": "2026-11-02",
+      "label": "2026-11-02",
+      "index": 3
+    },
+    {
+      "key": "__unknown__",
+      "label": "__unknown__",
+      "index": 7,
+      "isUnknown": true
+    }
+  ],
+  "total": 30,
+  "kind": "temporal",
+  "granularity": {
+    "unit": "day",
+    "step": 1
+  }
+}

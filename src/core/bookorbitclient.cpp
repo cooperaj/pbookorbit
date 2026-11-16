@@ -264,9 +264,10 @@ void BookOrbitClient::refreshList(PagedBooks &list)
             // With every type listed, an audiobook's ebook record is in the list too
             refreshed->mergePairs = refreshed->formats.isEmpty();
         }
-        // A-Z sorts need their sections first, to know which rows start one
-        if (isLetterSort(refreshed->sortField)) {
-            refreshed->sections = Sections::Letters;
+        // A-Z and last read sorts need their sections first, to know which rows start one.
+        // List entries have no last read date, so only its jump buckets can section it.
+        if (isLetterSort(refreshed->sortField) || refreshed->sortField == "lastReadAt") {
+            refreshed->sections = Sections::Starts;
             loadJumpSections(*refreshed, [this, refreshed]() { loadPage(*refreshed, 0); });
         } else if (refreshed->sortField == "seriesIndex") {
             // Each book under its number in the series
@@ -722,11 +723,13 @@ void BookOrbitClient::showListedBooks(PagedBooks &list)
     // Search results have no sections, as from the server
     const bool letters = isLetterSort(list.sortField) && &list != &m_search;
     const bool seriesNumbers = list.sortField == "seriesIndex";
-    list.sections = letters ? Sections::Letters
+    list.sections = letters ? Sections::Starts
                   : seriesNumbers ? Sections::SeriesNumbers
                   : isDateSort(list.sortField) ? Sections::Days : Sections::None;
-    // Each book's sort key, matching the server's
-    const QString field = list.sortField;
+    // Each book's sort key, matching the server's. The saved books have no last read date,
+    // so that sort lists them by title for now.
+    const bool byTitle = list.sortField == "lastReadAt";
+    const QString field = byTitle ? QString("title") : list.sortField;
     const QVariantList collectionIds = &list == &m_booksOf ? m_booksOfCollectionIds : QVariantList();
     const auto sortKey = [field, collectionIds](const QVariantMap &book) -> QString {
         if (field == "author") {
@@ -781,7 +784,7 @@ void BookOrbitClient::showListedBooks(PagedBooks &list)
         addCompanions(row, records, false);
         books.append({sortKey(book), row});
     }
-    const bool descending = list.sortDescending;
+    const bool descending = list.sortDescending && !byTitle;
     std::stable_sort(books.begin(), books.end(), [descending](const auto &a, const auto &b) {
         const int order = QString::localeAwareCompare(a.first.toLower(), b.first.toLower());
         return descending ? order > 0 : order < 0;
@@ -818,11 +821,26 @@ void BookOrbitClient::showListedBooks(PagedBooks &list)
     emitChanged(list);
 }
 
+// A date bucket's section label, like the system library's dates: "2026/10/23" for a day,
+// "2026/10" for a month, "2026" or "2020-2029" for years, and "Never" for books not read
+static QString dateBucketLabel(const QJsonObject &bucket, const QJsonObject &granularity)
+{
+    if (bucket.value("isUnknown").toBool())
+        return QStringLiteral("Never");
+    const QString key = bucket.value("key").toString();
+    const int step = granularity.value("step").toInt(1);
+    if (granularity.value("unit").toString() == "year" && step > 1)
+        return QString("%1-%2").arg(key).arg(key.toInt() + step - 1);
+    return QString(key).replace('-', '/');
+}
+
 void BookOrbitClient::loadJumpSections(PagedBooks &list, std::function<void()> then)
 {
-    // Same request as the web client's jump rail: the list query plus maxBuckets. Returns
-    // {buckets: [{key, label, index}], total, kind: "letter"}, where index is the section's
-    // first row. Buckets use the server's sort keys, so they always match the list.
+    // Same request as the web client's jump rail: the list query plus maxBuckets (at most
+    // 64). Returns {buckets: [{key, label, index, isUnknown}], total, kind, granularity},
+    // where index is the section's first row. Buckets use the server's sort keys, so they
+    // always match the list. Letters go on the rail too; dates (kind "temporal") only label
+    // the rows.
     QJsonObject query = list.query;
     query.insert("pagination", QJsonObject{{"page", 0}, {"size", BOOKS_PAGE_SIZE}});
     query.insert("maxBuckets", 64);
@@ -835,12 +853,16 @@ void BookOrbitClient::loadJumpSections(PagedBooks &list, std::function<void()> t
             const QJsonObject result = doc.object();
             sectioned->sectionStarts.clear();
             sectioned->jumpSections.clear();
-            if (result.value("kind").toString() == "letter") {
-                for (const QJsonValue &bucket : result.value("buckets").toArray()) {
+            const QString kind = result.value("kind").toString();
+            const QJsonObject granularity = result.value("granularity").toObject();
+            for (const QJsonValue &bucket : result.value("buckets").toArray()) {
+                const int index = bucket["index"].toInt();
+                if (kind == "letter") {
                     const QString label = bucket["label"].toString();
-                    const int index = bucket["index"].toInt();
                     sectioned->sectionStarts.insert(index, label);
                     sectioned->jumpSections.append(QVariantMap{{"label", label}, {"index", index}});
+                } else if (kind == "temporal") {
+                    sectioned->sectionStarts.insert(index, dateBucketLabel(bucket.toObject(), granularity));
                 }
             }
             emit jumpSectionsChanged();
@@ -1085,14 +1107,13 @@ QVariantMap BookOrbitClient::decorateBook(const QVariantMap &book, const PagedBo
 {
     QVariantMap row = book;
 
-    // Date sorts are sectioned by day. A-Z sorts use the jump sections instead (see
+    // Date added is sectioned by day. A-Z and last read use the jump sections instead (see
     // updateSectionStarts).
     QString section;
     row.insert("sectionLabel", QString());
     if (list.sections == Sections::Days) {
         // Labelled like the system library: "2026/10/23" or "Never"
-        const QString field = list.sortField == "lastReadAt" ? "lastReadAt" : "addedAt";
-        const QDateTime when = QDateTime::fromString(book.value(field).toString(), Qt::ISODateWithMs);
+        const QDateTime when = QDateTime::fromString(book.value("addedAt").toString(), Qt::ISODateWithMs);
         if (when.isValid()) {
             const QDate date = when.toLocalTime().date();
             section = date.toString("yyyy-MM-dd");
@@ -1160,7 +1181,7 @@ void BookOrbitClient::updateSectionStarts(PagedBooks &list, int first, int last)
             books.setField(row, "sectionStart", !index.isNull());
             books.setField(row, "sectionLabel", index.isNull() ? QString() : index.toString());
             books.setField(row, "seriesText", QString());
-        } else if (list.sections == Sections::Letters) {
+        } else if (list.sections == Sections::Starts) {
             // A section starting here, or on the hidden rows just before
             QString label;
             for (int r = row; r > previous && label.isEmpty(); r--)
