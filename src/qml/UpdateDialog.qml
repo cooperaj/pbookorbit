@@ -9,9 +9,42 @@ SystemDialog {
     // Set once Restart now is pressed, until the app quits
     property bool restarting: false
     readonly property string step: restarting ? "restarting" : updater.state
-    readonly property string latest: updater.latestVersion
 
     signal restartRequested()
+
+    // What each step shows. Buttons are [label, action]. The download's percent is left out,
+    // so the buttons aren't made again each time it changes.
+    readonly property var view: {
+        const latest = updater.latestVersion
+        const installed = updater.version
+        const close = [["Close", "close"]]
+        const changelog = browser.available ? [["Changelog", "changelog"]] : []
+        const views = {
+            checking: {heading: "Checking for updates", message: "Asking GitHub for the latest release…",
+                       buttons: [["Cancel", "close"]]},
+            upToDate: {heading: "PBookOrbit is up to date",
+                       message: "You have the latest version, " + installed + ".", buttons: [["OK", "close"]]},
+            failed: {heading: "Couldn't check for updates", message: updater.error, error: true,
+                     buttons: [["Try again", "check"]].concat(close)},
+            noBuild: {heading: "Version " + latest + " isn't ready for this device",
+                      message: "It has no build for this device yet. You have version " + installed + ".",
+                      buttons: changelog.concat(close)},
+            // Installing needs the launcher, otherwise it's the GitHub page
+            available: {heading: "Version " + latest + " is available",
+                        message: "You have version " + installed + "."
+                                 + (updater.canInstall ? "" : " Get the new one from its GitHub page."),
+                        buttons: (updater.canInstall ? [["Update", "install"]] : []).concat(changelog, close)},
+            downloading: {heading: "Downloading version " + latest, buttons: [["Cancel", "close"]]},
+            installFailed: {heading: "Couldn't update", message: updater.error, error: true,
+                            buttons: [["Try again", "install"]].concat(close)},
+            ready: {heading: "Version " + latest + " is ready",
+                    message: "Restart PBookOrbit to finish. Otherwise it updates the next time you open it.",
+                    buttons: [["Restart now", "restart"], ["Later", "close"]]},
+            restarting: {heading: "Restarting…", message: "PBookOrbit will open again in a moment.", buttons: []},
+        }
+        // Before the first check, and after one is cancelled, the dialog is hidden
+        return views[step] ?? views.checking
+    }
 
     function check() {
         visible = true
@@ -23,46 +56,11 @@ SystemDialog {
         visible = false
     }
 
-    heading: step === "checking" ? "Checking for updates"
-             : step === "available" ? "Version " + latest + " is available"
-             : step === "noBuild" ? "Version " + latest + " isn't ready for this device"
-             : step === "failed" ? "Couldn't check for updates"
-             : step === "downloading" ? "Downloading version " + latest
-             : step === "installFailed" ? "Couldn't update"
-             : step === "ready" ? "Version " + latest + " is ready"
-             : step === "restarting" ? "Restarting…"
-             : "PBookOrbit is up to date"
-
-    message: step === "checking" ? "Asking GitHub for the latest release…"
-             : step === "available" ? "You have version " + updater.version + "."
-                                      + (updater.canInstall ? "" : " Get the new one from its GitHub page.")
-             : step === "noBuild" ? "It has no build for this device yet. You have version " + updater.version + "."
-             : step === "failed" || step === "installFailed" ? updater.error
-             : step === "downloading" ? updater.percent + "%"
-             : step === "ready" ? "Restart PBookOrbit to finish. Otherwise it updates the next time you open it."
-             : step === "restarting" ? "PBookOrbit will open again in a moment."
-             : "You have the latest version, " + updater.version + "."
-
-    icon: step === "failed" || step === "installFailed" ? "icon_error" : "icon_information"
+    heading: view.heading
+    message: step === "downloading" ? updater.percent + "%" : view.message
+    icon: view.error ? "icon_error" : "icon_information"
     percent: step === "downloading" ? updater.percent : -1
-    buttons: {
-        const changelog = browser.available ? [["Changelog", "changelog"]] : []
-        if (step === "checking" || step === "downloading")
-            return [["Cancel", "close"]]
-        if (step === "failed")
-            return [["Try again", "check"], ["Close", "close"]]
-        if (step === "installFailed")
-            return [["Try again", "install"], ["Close", "close"]]
-        if (step === "available")
-            return (updater.canInstall ? [["Update", "install"]] : []).concat(changelog, [["Close", "close"]])
-        if (step === "noBuild")
-            return changelog.concat([["Close", "close"]])
-        if (step === "ready")
-            return [["Restart now", "restart"], ["Later", "close"]]
-        if (step === "restarting")
-            return []
-        return [["OK", "close"]]
-    }
+    buttons: view.buttons
 
     onPressed: (action) => {
         if (action === "check")
