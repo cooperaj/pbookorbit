@@ -53,9 +53,8 @@ int main(int argc, char *argv[])
     // So the downloaded book lists show the latest status and progress
     QObject::connect(&client, &BookOrbitClient::savedBooksChanged, &downloads, &Downloads::entriesChanged);
     Browser browser;
-    // The launcher script says where it is (see src/launcher.sh)
     Updater updater(Updater::GITHUB_RELEASES, QString::fromUtf8(PB_APP_VERSION), QString::fromUtf8(PB_SDK),
-                    qEnvironmentVariable("PBOOKORBIT_LAUNCHER"));
+                    LauncherFiles::current());
     Eink eink;
     eink.followNightMode();
 

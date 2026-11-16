@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/launcherfiles.h"
 #include <QJsonArray>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
@@ -49,11 +50,10 @@ Choice choose(const QJsonArray &releases, const QString &installed, const QStrin
 // Checks GitHub for a newer release of the app, when the user asks, and installs it.
 //
 // The app runs from applications/pbookorbit/pbookorbit, started by the launcher script
-// applications/pbookorbit.app (src/launcher.sh). Installing downloads the release's zip,
+// applications/pbookorbit.app (see LauncherFiles). Installing downloads the release's zip,
 // checks it against GitHub's SHA-256, replaces the launcher (which runs from a copy in
-// /tmp) and leaves the new binary in pbookorbit/update/. The launcher swaps it in when the
-// app next starts: at once after restart(), which asks it to start the app again, or the
-// next time the user opens it.
+// /tmp) and leaves the new binary for it to swap in when the app next starts: at once after
+// restart(), which asks it to start the app again, or the next time the user opens it.
 class Updater : public QObject
 {
     Q_OBJECT
@@ -77,10 +77,9 @@ public:
         QStringLiteral("https://api.github.com/repos/cooperaj/pbookorbit/releases");
 
     // For this build: GITHUB_RELEASES, its version, the SDK it was built with (PB_APP_VERSION
-    // and PB_SDK), and the launcher that started it (PBOOKORBIT_LAUNCHER, empty if none).
-    // Tests give their own.
+    // and PB_SDK), and the launcher that started it. Tests give their own.
     Updater(const QString &releasesUrl, const QString &version, const QString &sdk,
-            const QString &launcher, QObject *parent = nullptr);
+            const LauncherFiles &launcher, QObject *parent = nullptr);
 
     QString version() const { return m_version; }
     QString state() const { return m_state; }
@@ -88,7 +87,7 @@ public:
     QString releaseUrl() const { return m_choice.pageUrl; }
     QString error() const { return m_error; }
     int percent() const { return m_percent; }
-    bool canInstall() const { return !m_launcher.isEmpty(); }
+    bool canInstall() const { return !m_launcher.script.isEmpty(); }
 
     // Connects Wi-Fi if needed, then asks GitHub for its releases
     Q_INVOKABLE void check();
@@ -109,13 +108,11 @@ private:
     QNetworkRequest request(const QString &url) const;
     // Sends it, as the current request
     QNetworkReply *get(const QNetworkRequest &request);
-    // applications/pbookorbit, beside the launcher
-    QString appDir() const;
 
     QString m_releasesUrl;
     QString m_version;
     QString m_sdk;
-    QString m_launcher;
+    LauncherFiles m_launcher;
     QString m_state;
     QString m_error;
     int m_percent = 0;

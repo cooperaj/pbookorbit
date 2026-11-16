@@ -2,6 +2,7 @@
 
 #include "core/bookorbitclient.h"
 #include "core/diagnostics.h"
+#include "core/savefile.h"
 #include "core/systemlibrary.h"
 #include "core/zipreader.h"
 #include <QCryptographicHash>
@@ -11,7 +12,6 @@
 #include <QJsonObject>
 #include <QNetworkReply>
 #include <QRegularExpression>
-#include <QSaveFile>
 #include <QVersionNumber>
 #include <optional>
 #include <unistd.h>
@@ -161,7 +161,7 @@ Choice choose(const QJsonArray &releases, const QString &installed, const QStrin
 }
 
 Updater::Updater(const QString &releasesUrl, const QString &version, const QString &sdk,
-                 const QString &launcher, QObject *parent)
+                 const LauncherFiles &launcher, QObject *parent)
     : QObject(parent), m_releasesUrl(releasesUrl), m_version(version), m_sdk(sdk), m_launcher(launcher)
 {
 }
@@ -281,19 +281,19 @@ QString Updater::unpack(const QByteArray &archive)
     if (files.size() != 2)
         return "The download isn't a PBookOrbit release.";
 
+    // Both run as programs
     const auto save = [](const QString &path, const QByteArray &bytes) {
-        QSaveFile file(path);
-        if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit())
-            return "Can't write " + path + ": " + file.errorString();
-        QFile::setPermissions(path, QFile::permissions(path) | QFile::ExeOwner | QFile::ExeGroup | QFile::ExeOther);
-        return QString();
+        const QString problem = saveFile(path, bytes);
+        if (problem.isEmpty())
+            QFile::setPermissions(path, QFile::permissions(path) | QFile::ExeOwner | QFile::ExeGroup | QFile::ExeOther);
+        return problem;
     };
-    const QString updateDir = appDir() + "/update";
+    const QString updateDir = QFileInfo(m_launcher.update()).path();
     if (!QDir().mkpath(updateDir))
         return "Can't create " + updateDir;
-    QString problem = save(updateDir + "/pbookorbit", files[BINARY]);
+    QString problem = save(m_launcher.update(), files[BINARY]);
     if (problem.isEmpty())
-        problem = save(m_launcher, files[LAUNCHER]);
+        problem = save(m_launcher.script, files[LAUNCHER]);
     // The device may be switched off before the cache is written
     sync();
     return problem;
@@ -315,7 +315,7 @@ bool Updater::restart()
 {
     if (m_state != "ready")
         return false;
-    QFile marker(appDir() + "/restart");
+    QFile marker(m_launcher.restart());
     const bool marked = marker.open(QIODevice::WriteOnly);
     marker.close();
     sync();
@@ -339,11 +339,6 @@ QNetworkReply *Updater::get(const QNetworkRequest &request)
     QNetworkReply *reply = m_nam->get(request);
     m_reply = reply;
     return reply;
-}
-
-QString Updater::appDir() const
-{
-    return QFileInfo(m_launcher).absolutePath() + "/pbookorbit";
 }
 
 void Updater::finish(const QString &state, const QString &error)

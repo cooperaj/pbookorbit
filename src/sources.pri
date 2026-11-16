@@ -8,6 +8,8 @@ SOURCES += \
     $$PWD/core/database.cpp \
     $$PWD/core/diagnostics.cpp \
     $$PWD/core/downloads.cpp \
+    $$PWD/core/launcherfiles.cpp \
+    $$PWD/core/savefile.cpp \
     $$PWD/core/systemlibrary.cpp \
     $$PWD/core/updater.cpp \
     $$PWD/core/zipreader.cpp \
@@ -26,6 +28,8 @@ HEADERS += \
     $$PWD/core/database.h \
     $$PWD/core/diagnostics.h \
     $$PWD/core/downloads.h \
+    $$PWD/core/launcherfiles.h \
+    $$PWD/core/savefile.h \
     $$PWD/core/formats.h \
     $$PWD/core/systemlibrary.h \
     $$PWD/core/updater.h \

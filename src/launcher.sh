@@ -11,7 +11,8 @@ COPY=/tmp/pbookorbit.app
 APPLICATIONS=$(dirname "$PBOOKORBIT_LAUNCHER")
 APP_DIR="$APPLICATIONS/pbookorbit"
 BINARY="$APP_DIR/pbookorbit"
-# The app writes these: a new binary, and a request to start again once it exits
+# The app writes these (see LauncherFiles): a new binary, and a request to start again once
+# it exits
 UPDATE="$APP_DIR/update/pbookorbit"
 RESTART="$APP_DIR/restart"
 # At the root of the storage, beside the app's own log

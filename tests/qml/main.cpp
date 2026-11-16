@@ -136,8 +136,8 @@ private:
         objects->browser = std::make_unique<Browser>();
         // GitHub's releases come from the fake server too, at /releases. The build is
         // 0.9.0 for an Era Color (B300); the firmware option says what it runs.
-        const QString launcher = options.value("noLauncher").toBool() ? QString()
-                                 : QString::fromUtf8(FLASHDIR "/applications/pbookorbit.app");
+        const LauncherFiles launcher{options.value("noLauncher").toBool()
+                                         ? QString() : QString::fromUtf8(FLASHDIR "/applications/pbookorbit.app")};
         objects->updater = std::make_unique<Updater>(m_server->url() + "/releases", "0.9.0", "B300-6.10", launcher);
         objects->eink = std::make_unique<Eink>();
         objects->eink->followNightMode();

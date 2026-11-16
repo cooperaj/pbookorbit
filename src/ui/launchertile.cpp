@@ -1,6 +1,8 @@
 #include "ui/launchertile.h"
 
 #include "core/diagnostics.h"
+#include "core/launcherfiles.h"
+#include "core/savefile.h"
 
 #include <inkview.h>
 #include <QCoreApplication>
@@ -10,7 +12,6 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QSaveFile>
 #include <cstring>
 #include <unistd.h>
 
@@ -33,11 +34,10 @@ const QString FOCUSED_ICON_FILE = ICON_DIR + "/pbookorbit_f.bmp";
 // with a broken view.json
 bool save(const QString &path, const QByteArray &bytes)
 {
-    QSaveFile file(path);
-    if (file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit())
-        return true;
-    diagnostics::log("launcher tile: can't write " + path + ": " + file.errorString());
-    return false;
+    const QString problem = saveFile(path, bytes);
+    if (!problem.isEmpty())
+        diagnostics::log("launcher tile: " + problem);
+    return problem.isEmpty();
 }
 
 // Only if missing, since the user may have replaced it
@@ -49,11 +49,11 @@ bool saveIfMissing(const QString &path, const QString &resource)
     return source.open(QIODevice::ReadOnly) && save(path, source.readAll());
 }
 
-// What the tile starts: the launcher script that runs the app, if it says where it is
+// What the tile starts: the launcher script that runs the app, if there is one
 QString launcherPath()
 {
-    const QString launcher = qEnvironmentVariable("PBOOKORBIT_LAUNCHER");
-    return launcher.isEmpty() ? QCoreApplication::applicationFilePath() : launcher;
+    const QString script = LauncherFiles::current().script;
+    return script.isEmpty() ? QCoreApplication::applicationFilePath() : script;
 }
 
 // view.json paths: the app's is absolute, the icons are "object paths" relative to the
