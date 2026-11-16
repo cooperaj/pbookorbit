@@ -73,26 +73,36 @@ UiTestCase {
         return menu
     }
 
-    // Waits for the book's row to be marked as on the device, or not
-    function expectOnDevice(title) {
-        tryVerify(() => find("onDevicePill", bookRow(title)).visible, 5000, title + " is marked on the device")
+    // The formats in the book's row marked as on the device: "epub, m4b"
+    function formatsOnDevice(title) {
+        const row = bookRow(title)
+        return row.formats.filter(format => find("onDevicePill", find("format " + format, row)).visible)
+                          .join(", ")
+    }
+
+    // Waits for the book's row to mark those formats, "epub, m4b", as on the device
+    function expectOnDevice(title, formats) {
+        tryVerify(() => formatsOnDevice(title) === formats, 5000,
+                  title + " has " + formats + " on the device, not " + formatsOnDevice(title))
     }
 
     function expectNotOnDevice(title) {
-        tryVerify(() => !find("onDevicePill", bookRow(title)).visible, 5000, title + " isn't marked on the device")
+        expectOnDevice(title, "")
     }
 
-    // Checks the one thing opened was the book at a path ending with file, in the system's
-    // reader or the app given
+    // Waits for the app to open something, then checks the one thing opened was the book at
+    // a path ending with file, in the system's reader or the app given
     function expectOpenedInReader(file, app) {
+        tryVerify(() => inkview.openedBooks.length + inkview.openedTasks.length > 0, 5000, "something opened")
         compare(inkview.openedBooks.length, 1, "one book opened")
         verify(inkview.openedBooks[0].path.endsWith(file), inkview.openedBooks[0].path + " is " + file)
         compare(inkview.openedBooks[0].app, app || "", app ? "in " + app : "in the system's reader")
         compare(inkview.openedTasks.length, 0, "no other app started")
     }
 
-    // Checks the one thing opened was the audiobook player, on a path ending with file
+    // As expectOpenedInReader, for the audiobook player on a path ending with file
     function expectOpenedInPlayer(file) {
+        tryVerify(() => inkview.openedBooks.length + inkview.openedTasks.length > 0, 5000, "something opened")
         compare(inkview.openedTasks.length, 1, "one app started")
         compare(inkview.openedTasks[0].app, audiobookPlayer, "the audiobook player")
         compare(inkview.openedTasks[0].args[0], "--bookPlay")

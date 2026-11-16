@@ -218,8 +218,8 @@ and exits non-zero if any failed. Everything is under `tests/`:
   data-driven, and `QSignalSpy` records signals.
 - `tests/qml/` holds the QML tests, written with Qt Quick Test. Every `tst_*.qml` in it
   or its subfolders is picked up, and every `test_*` function in one runs as one test.
-  `app/` tests the whole app, a file per feature (`tst_signin.qml`), and `components/`
-  tests one component on its own. They import the QML from `src/qml` directly.
+  `app/` tests the whole app, a file per thing a user does (`tst_gettingbooks.qml`), and
+  `components/` tests one component on its own. They import the QML from `src/qml` directly.
 - `tests/support/` has `FakeServer`, a stand-in BookOrbit server on 127.0.0.1, and
   `FakeInkview`, stand-ins for the inkview calls that would reach the device (see
   below). `tests/fixtures/` has the JSON and files the server replies with.
@@ -244,8 +244,8 @@ under its `root`, or under another item, with `find(name, under)`, and has `tap(
 under)`, `type(name, text)` and `signIn(server, username, password)`. It also works by the
 text on screen: `tapText(text, under)` taps the one visible, on-screen place a text shows,
 such as a dialog's "Download", and `expectText(text, under)` and `expectNoText` wait for
-one to show or go. `AppTestCase` adds
-`open(settings, options)`, which resets `testApp`, opens `main.qml` as `root` in a window
+one to show or go; a `RegExp` matches text that changes, e.g. `/^Downloading /`.
+`AppTestCase` adds `open(settings, options)`, which resets `testApp`, opens `main.qml` as `root` in a window
 of its own, and once it's drawn calls `bookOrbit.start()` as `main.cpp` does. `options`
 can have `offline: true`, to start with no network as `PBOOKORBIT_OFFLINE=1` does
 (`testApp.offline` turns it on or off while the app is open); `books`, entries saved in
@@ -262,9 +262,11 @@ audiobook databases with the tables the app reads. `savedSession` is a signed-in
 fixtures (three books by default), and `openLibrary(books, jumpBuckets, options)` does
 both and opens the app on the library. For the books in a list, `bookRow(title, listName)`
 finds a row, `titlesIn(list)` reads the titles, and `holdBook(title)` opens a row's menu
-without the second-long hold (`tst_bookmenu` holds for real once). `expectOnDevice(title)`
-and `expectNotOnDevice` check a row's on-device mark, and `expectOpenedInReader(file, app)`
-and `expectOpenedInPlayer(file)` check what the app asked the system to open. A test typically opens the app or page, says what
+without the second-long hold (`tst_bookmenu` holds for real once).
+`expectOnDevice(title, formats)` waits for a row to mark those formats, e.g. `"epub, m4b"`,
+as on the device, and `expectNotOnDevice(title)` for none. `expectOpenedInReader(file,
+app)` and `expectOpenedInPlayer(file)` wait for the app to ask the system to open that
+file, and nothing else. A test typically opens the app or page, says what
 the server replies with `fakeServer.respond(method, path, status, fixture, match)`, taps
 and types, then waits for the result with `tryCompare` or `tryVerify`. With `match`, a
 reply is only for requests whose body has those fields, e.g. `{sort: [{field:
@@ -279,6 +281,39 @@ To add a C++ test, copy a folder under `tests/unit/`, rename its `.pro` and `.cp
 add it to `SUBDIRS` and the `depends` lines in `tests/tests.pro`. To add a QML test, add a
 `tst_<name>.qml` to a folder under `tests/qml/`, with an `AppTestCase` or `UiTestCase` (from
 `import "../helpers"`) whose `name` says what it covers.
+
+### Writing tests
+
+A test goes in the lowest layer where its subject is the whole story:
+
+- `app/`: what a user can do, through the whole app. A file per goal, such as getting a
+  book onto the device, not per page.
+- `components/`: what a shared component promises that is awkward to reach through the
+  app: layout, gestures, the edge cases of its inputs. Behaviour several views share is
+  tested once, here or through one view, and each view's file keeps only its own wiring.
+- `unit/`: logic on its own, as tables of inputs and results.
+
+In `app/`, one test follows the main path from the user's first tap to the outcome, named
+for what the user can do: `test_aUserCanDownloadABookAndReadIt`. A variant gets a test of
+its own when its outcome differs, named for that outcome:
+`test_aFailedDownloadCanBeTriedAgain`. A step on the way, such as a button showing or a
+dialog opening, is part of the journey rather than a test, and so is something not on
+offer, checked where the user would look for it (no Delete in the menu of a book that
+isn't on the device).
+
+Tests act as the user does. They tap rows, and tap and wait for text by what the screen
+says (`tapText("Delete")`, `expectText(...)`), keeping `objectName` for things without
+text, such as icon buttons and lists. When choosing among options, they pick one that
+isn't first, so the order alone can't pass.
+
+They check what a user or the device would see: text on screen, a row's on-device mark,
+files in `Books`, what the system was asked to open, and what is still there after
+`reopen()`. Not the app's own records, such as `downloads.isOnDevice()` or a page's
+properties. The exception is the requests sent to the server, where the point is how few
+there are.
+
+`make test-map` shows a file's tests as sentences; each should read as something the app
+does.
 
 ### inkview in tests
 

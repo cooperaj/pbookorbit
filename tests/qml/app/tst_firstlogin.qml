@@ -50,7 +50,7 @@ AppTestCase {
         compare(dialog.message, "Found 1 book from your BookOrbit library, now listed as downloaded.")
         verify(downloads.isOnDevice(1), "Dune is recorded as downloaded")
         verify(!downloads.isOnDevice(2), "Hyperion isn't")
-        expectOnDevice("Dune")
+        expectOnDevice("Dune", "epub")
         expectNotOnDevice("Hyperion")
         expectNotOnDevice("Neuromancer")
     }

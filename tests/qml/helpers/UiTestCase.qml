@@ -44,15 +44,18 @@ TestCase {
 
     // The text items under root, or under another item, that show exactly this text on
     // screen: visible, and inside the window and any list they're in. Matches the text as
-    // set, so a button drawn in capitals is still "Download".
+    // set, so a button drawn in capitals is still "Download". text can be a RegExp, for
+    // text that changes, e.g. /^Downloading /.
     function textItems(text, under) {
         const start = under || root
         const window = root.contentItem || root
+        const matches = (shown) => typeof text === "string" ? shown === text : text.test(shown)
         const found = []
         const walk = (item) => {
             if (!item.visible)
                 return
-            if (item.font !== undefined && item.text === text && onScreen(item, window))
+            if (item.font !== undefined && typeof item.text === "string" && matches(item.text)
+                    && onScreen(item, window))
                 found.push(item)
             for (const child of item.children || [])
                 walk(child)
