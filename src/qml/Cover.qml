@@ -1,9 +1,8 @@
 import QtQuick
-import "night.js" as Night
 
-// A book's cover, fetched at the item's size (covers.source() scales it to fit) and fetched
-// again once its download arrives. Until then, or if the book has none, the system's blank
-// book fills the item. The image sits in the middle, or in a corner of the item.
+// A book's cover, made for the item's size (covers.source() scales it to fit, see
+// CoversImage). Until it arrives, or if the book has none, the system's blank book fills
+// the item. The image sits in the middle, or in a corner of the item.
 Item {
     id: cover
     // {id, coverVersion} and, for list entries, hasCover
@@ -17,19 +16,6 @@ Item {
     property int edge: 0
     property alias asynchronous: image.asynchronous
     readonly property bool ready: image.status === Image.Ready
-
-    // Bumped when the download arrives so the URL is re-fetched. A binding rather than
-    // setting the URL, so the cover follows a re-sorted list.
-    property int revision: 0
-    readonly property string url: revision >= 0 && book.id !== undefined && book.hasCover !== false
-                                  ? covers.source(book.id, book.coverVersion, width, height) : ""
-    Connections {
-        target: covers
-        function onReady(bookId) {
-            if (bookId === cover.book.id)
-                cover.revision++
-        }
-    }
 
     Rectangle {
         objectName: "edge"
@@ -45,9 +31,13 @@ Item {
         objectName: "placeholder"
         visible: !cover.ready
     }
-    Image {
+    CoversImage {
         id: image
         objectName: "image"
+        itemId: cover.book.id !== undefined && cover.book.hasCover !== false ? cover.book.id : -1
+        version: cover.book.coverVersion || ""
+        fetchWidth: cover.width
+        fetchHeight: cover.height
         width: Math.min(implicitWidth, cover.width)
         height: Math.min(implicitHeight, cover.height)
         x: cover.corner === "bottomLeft" ? 0
@@ -55,7 +45,5 @@ Item {
         y: cover.corner === "bottomLeft" ? cover.height - height
            : cover.corner === "topRight" ? 0 : Math.round((cover.height - height) / 2)
         fillMode: Image.PreserveAspectFit
-        source: Night.image(cover.url)
-        asynchronous: true
     }
 }

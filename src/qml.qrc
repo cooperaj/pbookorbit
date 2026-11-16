@@ -45,6 +45,7 @@
         <file>qml/ListMenus.qml</file>
         <file>qml/RailLayout.qml</file>
         <file>qml/Cover.qml</file>
+        <file>qml/CoversImage.qml</file>
         <file>qml/ListRow.qml</file>
         <file>qml/InfoPage.qml</file>
         <file>qml/format.js</file>

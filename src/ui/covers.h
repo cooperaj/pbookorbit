@@ -15,10 +15,9 @@ class BookOrbitClient;
 // made from that: scaled (photos cropped to fill, as BookOrbit does), its colours adjusted
 // for the screen (einkcolors.h), and cached as a PNG.
 //
-// QML calls source(). If the cover hasn't been downloaded, it returns empty, starts a
-// download and emits ready(bookId) when done. authorPhoto() and photoReady(authorId) work
-// the same way. Offline it doesn't download, and emits them once back online so QML asks
-// again. Meanwhile it uses a download of another version, or rescales a copy cached at
+// QML calls source() or authorPhoto() (see CoversImage.qml). If the image hasn't been
+// downloaded, it returns empty, starts a download and emits ready(id, photo) when done.
+// Offline it doesn't download, and emits ready() once back online so QML asks again. Meanwhile it uses a download of another version, or rescales a copy cached at
 // another size, if any.
 class Covers : public QObject
 {
@@ -35,14 +34,14 @@ public:
     Q_INVOKABLE QString authorPhoto(int authorId, const QString &imageUrl, int width, int height);
 
 signals:
-    void ready(int bookId);
-    void photoReady(int authorId);
+    // The book's cover, or the author's photo, can be asked for again
+    void ready(int id, bool photo);
 
 private:
     struct Request {
-        // A book cover or an author photo
-        int bookId;
-        int authorId;
+        // A book's id and its cover, or an author's id and their photo
+        int id;
+        bool photo;
         QString path;
         QSize size;
         QString name;   // see cacheFile()
@@ -72,9 +71,8 @@ private:
     QList<Request> m_queue;
     QSet<QString> m_wanted;
     int m_running = 0;
-    // Wanted while offline
-    QSet<int> m_missedBooks;
-    QSet<int> m_missedAuthors;
+    // Wanted while offline, as {id, photo}
+    QSet<std::pair<int, bool>> m_missed;
     // Cached sizes and downloads by name (see cacheFile and sourceFile), read from the
     // folder when first needed offline and again after each time online
     QHash<QString, QStringList> m_cached;

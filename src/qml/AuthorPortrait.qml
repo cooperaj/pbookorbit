@@ -2,7 +2,7 @@ import QtQuick
 import "night.js" as Night
 
 // An author's photo filling the item (covers.authorPhoto() crops it to size, as BookOrbit
-// does), or if there's none their initials as BookOrbit shows them: a serif face on a
+// does, see CoversImage), or if there's none their initials as BookOrbit shows them: a serif face on a
 // gradient chosen by name near the accent hue (bookOrbit.authorMonogram()). The initials
 // sit underneath, so they show while the photo downloads or if it fails. The caller sets
 // the size; 3:4 suits most photos.
@@ -40,20 +40,10 @@ Item {
         font.pixelSize: Math.max(1, Math.round(portrait.width * 0.36))
     }
 
-    Image {
-        id: photo
+    CoversImage {
         anchors.fill: parent
-        // Bumped to re-fetch when the download arrives
-        property int revision: 0
-        source: Night.image(revision >= 0 && (portrait.author.photo || "") !== ""
-                ? covers.authorPhoto(portrait.author.id, portrait.author.photo, portrait.width, portrait.height) : "")
-        Connections {
-            target: covers
-            function onPhotoReady(authorId) {
-                if (authorId === portrait.author.id)
-                    photo.revision++
-            }
-        }
-        asynchronous: true
+        photo: true
+        itemId: (portrait.author.photo || "") !== "" ? portrait.author.id : -1
+        version: portrait.author.photo || ""
     }
 }

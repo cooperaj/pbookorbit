@@ -44,7 +44,7 @@ UiTestCase {
     function test_blankBookWithoutACover() {
         const cover = make({book: {id: 1, hasCover: false}})
 
-        compare(cover.url, "")
+        compare(find("image").url, "")
         verify(find("placeholder").visible)
         wait(200)
         compare(fakeServer.requests.length, 0, "nothing fetched")

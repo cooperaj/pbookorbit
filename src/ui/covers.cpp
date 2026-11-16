@@ -28,19 +28,14 @@ Covers::Covers(BookOrbitClient *client, const QString &cacheDir, QObject *parent
             m_cachedRead = false;
             return;
         }
-        for (int bookId : std::exchange(m_missedBooks, {}))
-            emit ready(bookId);
-        for (int authorId : std::exchange(m_missedAuthors, {}))
-            emit photoReady(authorId);
+        for (const auto &[id, photo] : std::exchange(m_missed, {}))
+            emit ready(id, photo);
     });
 }
 
 void Covers::missed(const Request &request)
 {
-    if (request.authorId >= 0)
-        m_missedAuthors.insert(request.authorId);
-    else
-        m_missedBooks.insert(request.bookId);
+    m_missed.insert({request.id, request.photo});
 }
 
 static QString versionHash(const QString &version)
@@ -83,7 +78,7 @@ QString Covers::source(int bookId, const QString &version, int width, int height
     const QSize size(width, height);
     const QString name = QString::number(bookId);
     const QString hash = versionHash(version);
-    return fetch({bookId, -1, QString("/books/%1/thumbnail").arg(bookId), size, name,
+    return fetch({bookId, false, QString("/books/%1/thumbnail").arg(bookId), size, name,
                   cacheFile(name, hash, size), sourceFile(name, hash)});
 }
 
@@ -98,7 +93,7 @@ QString Covers::authorPhoto(int authorId, const QString &imageUrl, int width, in
     const QSize size(width, height);
     const QString name = QString("author-%1").arg(authorId);
     const QString hash = versionHash(version);
-    return fetch({-1, authorId, path, size, name, cacheFile(name, hash, size), sourceFile(name, hash)});
+    return fetch({authorId, true, path, size, name, cacheFile(name, hash, size), sourceFile(name, hash)});
 }
 
 QString Covers::sizeFrom(const Request &request, const QString &source)
@@ -110,7 +105,7 @@ QString Covers::sizeFrom(const Request &request, const QString &source)
         QFile::remove(source);
         return QString();
     }
-    image = fitted(image, request.size, request.authorId >= 0);
+    image = fitted(image, request.size, request.photo);
     // Adjust for the colour screen, as the system library does for covers
     adjustForEink(image);
     if (!image.save(request.file, "PNG"))
@@ -164,7 +159,7 @@ QString Covers::localCopy(const Request &request)
     // Already adjusted for the screen. Named for the version it came from, so the current
     // one is still fetched once online.
     const QString file = cacheFile(request.name, cacheName.match(largest).captured(2), request.size);
-    if (!fitted(image, request.size, request.authorId >= 0).save(file, "PNG"))
+    if (!fitted(image, request.size, request.photo).save(file, "PNG"))
         return QString();
     m_cached[request.name].append(QFileInfo(file).fileName());
     return file;
@@ -218,10 +213,7 @@ void Covers::startDownloads()
                     file.close();
                     if (m_cachedRead)
                         m_sources[request.name].append(QFileInfo(request.source).fileName());
-                    if (request.authorId >= 0)
-                        emit photoReady(request.authorId);
-                    else
-                        emit ready(request.bookId);
+                    emit ready(request.id, request.photo);
                 }
                 startDownloads();
             },
