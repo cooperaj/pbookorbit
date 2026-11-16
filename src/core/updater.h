@@ -13,8 +13,8 @@ class QNetworkReply;
 // tested on its own
 namespace updates {
 
-// Orders versions as semantic versions: -1, 0 or 1. Takes release tags ("0.9.0-beta",
-// "v1.2.0") and git describe output for builds between them ("0.9.0-beta-63-g3232675-dirty"
+// Orders versions as semantic versions: -1, 0 or 1. Takes release tags ("0.9.0-beta") and
+// git describe output for builds between them ("0.9.0-beta-63-g3232675-dirty"
 // counts as 0.9.0-beta). Anything else counts as older than every version.
 int compare(const QString &a, const QString &b);
 

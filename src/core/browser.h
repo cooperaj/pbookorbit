@@ -6,7 +6,7 @@
 // with the browser app and the URL. Needs multitasking, so the app is still there when the
 // browser closes.
 //
-// The emulator has no browser, so there it just logs the URL.
+// The emulator has no browser: there OpenBook() does nothing, and tests see what was asked.
 class Browser : public QObject
 {
     Q_OBJECT

@@ -31,7 +31,7 @@ Version parse(QString text)
     static const QRegularExpression describe(R"((-\d+-g[0-9a-f]+)?(-dirty)?$)");
     text.remove(describe);
 
-    static const QRegularExpression semver(R"(^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$)");
+    static const QRegularExpression semver(R"(^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$)");
     const QRegularExpressionMatch match = semver.match(text);
     Version version;
     if (!match.hasMatch())

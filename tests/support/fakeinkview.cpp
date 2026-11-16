@@ -53,9 +53,9 @@ void FakeInkview::reset(const QVariantMap &apps, bool night, const QString &vers
     emit changed();
 }
 
-void FakeInkview::bookOpened(const QString &path, const QString &app)
+void FakeInkview::bookOpened(const QString &path, const QString &parameters, const QString &app)
 {
-    m_openedBooks.append(QVariantMap{{"path", path}, {"app", app}});
+    m_openedBooks.append(QVariantMap{{"path", path}, {"parameters", parameters}, {"app", app}});
     emit changed();
 }
 
@@ -78,10 +78,10 @@ void SetFileHandler(const char *path, const char *handler)
     FakeInkview::instance()->fileHandlers.insert(path, QString::fromUtf8(handler));
 }
 
-int OpenBook(const char *path, const char *, int)
+int OpenBook(const char *path, const char *parameters, int)
 {
     FakeInkview *inkview = FakeInkview::instance();
-    inkview->bookOpened(QString::fromUtf8(path), inkview->fileHandlers.value(path));
+    inkview->bookOpened(QString::fromUtf8(path), QString::fromUtf8(parameters), inkview->fileHandlers.value(path));
     return 0;
 }
 

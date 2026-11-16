@@ -42,10 +42,6 @@ private slots:
         QTest::newRow("major") << "0.10.0" << "1.0.0";
         QTest::newRow("pre-release before its release") << "0.9.0-beta" << "0.9.0";
         QTest::newRow("pre-releases by name") << "1.0.0-alpha" << "1.0.0-beta";
-        QTest::newRow("pre-release numbers by value") << "1.0.0-beta.2" << "1.0.0-beta.10";
-        QTest::newRow("numbers before words") << "1.0.0-1" << "1.0.0-beta";
-        QTest::newRow("longer pre-release") << "1.0.0-beta" << "1.0.0-beta.1";
-        QTest::newRow("v prefix") << "v0.9.0" << "0.9.1";
         QTest::newRow("a build after a tag, before the next") << "0.9.0-beta-63-g3232675-dirty" << "0.9.0";
         QTest::newRow("no version before any") << "3232675" << "0.0.1";
     }

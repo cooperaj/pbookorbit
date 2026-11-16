@@ -12,8 +12,9 @@
 class FakeInkview : public QObject
 {
     Q_OBJECT
-    // OpenBook() calls: [{path, app}], app being the one SetFileHandler() named for the
-    // file, or empty for the reader the system picks
+    // OpenBook() calls: [{path, parameters, app}], app being the one SetFileHandler() named
+    // for the file, or empty for the reader the system picks. The browser is opened this way
+    // too, with its app as path and the address as parameters.
     Q_PROPERTY(QVariantList openedBooks READ openedBooks NOTIFY changed)
     // OpenTask() calls: [{app, args}]
     Q_PROPERTY(QVariantList openedTasks READ openedTasks NOTIFY changed)
@@ -47,7 +48,7 @@ public:
     bool nightMode = false;
     QByteArray firmware;
     int appCapabilities = 0;
-    void bookOpened(const QString &path, const QString &app);
+    void bookOpened(const QString &path, const QString &parameters, const QString &app);
     void taskOpened(const QString &app, const QStringList &args);
     void libraryScanned();
 

@@ -62,6 +62,13 @@ public:
     {
         return QDir(QString::fromUtf8(FLASHDIR "/") + folder).entryList(QDir::Files | QDir::Hidden, QDir::Name);
     }
+
+    // What a file on the device's storage holds, as text, e.g. "applications/pbookorbit.app"
+    Q_INVOKABLE QString fileText(const QString &path) const
+    {
+        QFile file(QString::fromUtf8(FLASHDIR "/") + path);
+        return file.open(QIODevice::ReadOnly) ? QString::fromUtf8(file.readAll()) : QString();
+    }
     void setOffline(bool offline)
     {
         if (offline)

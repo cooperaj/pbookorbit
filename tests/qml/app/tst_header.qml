@@ -20,15 +20,14 @@ AppTestCase {
         compare(homeTaps.count, 1)
     }
 
-    // Home and the menu work signed out too, unlike search. The menu only checks for
-    // updates then.
+    // Home and the menu work signed out too, unlike search. Checking for updates, all the
+    // menu has then, is tested in tst_updating.qml.
     function test_signedOutHasHomeAndTheMenu() {
         open()
 
         verify(find("homeButton").visible, "home")
         verify(!find("searchButton").visible, "no search")
         tap("menuButton")
-        verify(find("checkForUpdates").visible, "Check for updates")
         verify(!find("findBooks").visible, "no Find books")
         verify(!find("signOut").visible, "no Sign out")
     }

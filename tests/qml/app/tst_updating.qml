@@ -40,13 +40,16 @@ AppTestCase {
         checkForUpdates()
         expectText("Version 0.10.0 is available")
         expectText("You have version 0.9.0.")
-        expectText("Changelog")
         compare(releaseRequests(), 1)
+        tapText("Changelog")
+        compare(inkview.openedBooks.map(b => b.parameters),
+                ["https://github.com/cooperaj/pbookorbit/releases/tag/0.10.0"], "its page in the browser")
         tapText("Update")
 
+        // As the zip has them (see tests/fixtures/releases/make.py)
         expectText("Version 0.10.0 is ready")
-        compare(testApp.filesIn("applications/pbookorbit/update"), ["pbookorbit"])
-        compare(testApp.filesIn("applications"), ["pbookorbit.app"], "the new launcher")
+        compare(testApp.fileText("applications/pbookorbit/update/pbookorbit"), "binary 0.10.0\n".repeat(200))
+        compare(testApp.fileText("applications/pbookorbit.app"), "#!/bin/sh\n# launcher 0.10.0\n", "the new launcher")
         compare(testApp.filesIn("applications/pbookorbit"), [], "no restart asked for yet")
 
         tapText("Restart now")
@@ -68,6 +71,24 @@ AppTestCase {
         expectNoText("Version 0.10.0 is ready")
         compare(testApp.filesIn("applications/pbookorbit/update"), ["pbookorbit"])
         compare(testApp.filesIn("applications/pbookorbit"), [], "no restart asked for")
+    }
+
+    // Nothing is written, and the update can still be had
+    function test_aCancelledDownloadLeavesTheUpdateOnOffer() {
+        serveRelease()
+        fakeServer.hold("GET", "/download/" + zip)
+        open()
+        checkForUpdates()
+        tapText("Update")
+        expectText("Downloading version 0.10.0")
+
+        tapText("Cancel")
+
+        expectNoText("Downloading version 0.10.0")
+        compare(testApp.filesIn("applications/pbookorbit/update"), [])
+        fakeServer.release("GET", "/download/" + zip)
+        checkForUpdates()
+        expectText("Version 0.10.0 is available")
     }
 
     // A file that doesn't match GitHub's checksum
@@ -102,7 +123,7 @@ AppTestCase {
 
     function test_beingUpToDateIsSaid() {
         fakeServer.respond("GET", "/releases", 200, "releases/none-newer.json")
-        openLibrary()
+        open()
 
         checkForUpdates()
 
@@ -114,7 +135,7 @@ AppTestCase {
     // A newer release built only for other devices
     function test_anUpdateWithoutABuildForThisDeviceSaysSo() {
         fakeServer.respond("GET", "/releases", 200, "releases/newer-not-for-b300.json")
-        openLibrary()
+        open()
 
         checkForUpdates()
 
