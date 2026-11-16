@@ -37,7 +37,7 @@ Item {
         anchors.fill: parent
     }
 
-    Rectangle {
+    Panel {
         id: panel
         // Near the bottom of the screen, like the system's dialogs (screenshot 13)
         anchors.horizontalCenter: parent.horizontalCenter
@@ -45,10 +45,6 @@ Item {
         anchors.bottomMargin: Units.dp(60)
         width: parent.width - 2 * Units.dp(42)
         height: body.height + buttonRow.height + 2 * border.width
-        radius: Units.dp(9)
-        border.width: Units.dp(4)
-        border.color: "black"
-        color: "white"
 
         // Icon and message
         Item {
@@ -143,10 +139,9 @@ Item {
                         font.capitalization: Font.AllUppercase
                     }
                     // Divider before this button
-                    Rectangle {
+                    Line {
                         visible: index > 0
-                        width: 1
-                        height: parent.height
+                        vertical: true
                         color: "#7f7f7f"
                     }
                     MouseArea {
@@ -158,12 +153,10 @@ Item {
             }
         }
         // Line above the buttons
-        Rectangle {
+        Line {
             visible: dialog.buttons.length > 0
-            x: buttonRow.x
             y: buttonRow.y
-            width: buttonRow.width
-            height: 1
+            inset: buttonRow.x
             color: "#7f7f7f"
         }
     }

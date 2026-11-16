@@ -93,16 +93,10 @@ Item {
         }
     }
 
-    // 1px line, inset from both sides
-    Rectangle {
+    Line {
         visible: !bar.onlyOpenTab
         anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.leftMargin: Units.dp(26)
-        anchors.rightMargin: Units.dp(26)
-        height: 1
-        color: "black"
+        inset: Units.dp(26)
     }
 
     DropdownButton {

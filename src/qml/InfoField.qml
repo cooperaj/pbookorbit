@@ -67,11 +67,9 @@ Item {
         Item {
             width: parent.width
             height: Units.dp(18)
-            Rectangle {
+            Line {
                 visible: field.showLine
                 anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                height: 1
                 color: "#7f7f7f"
             }
         }

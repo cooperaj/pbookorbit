@@ -198,13 +198,11 @@ Item {
         }
     }
 
-    // 1px black line under the row, from after the date box to the row's end
-    Rectangle {
+    // Under the row, from after the date box to the row's end
+    Line {
         anchors.bottom: parent.bottom
-        x: row.lineLeft
-        width: row.contentRight - x
-        height: 1
-        color: "black"
+        startInset: row.lineLeft
+        endInset: row.width - row.contentRight
     }
 
     // Section letter or number: a floating square at top left, over the picture's corner

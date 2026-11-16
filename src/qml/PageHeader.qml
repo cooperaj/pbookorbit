@@ -28,10 +28,7 @@ Rectangle {
         font.capitalization: Font.AllUppercase
     }
 
-    Rectangle {
+    Line {
         anchors.bottom: parent.bottom
-        width: parent.width
-        height: 1
-        color: "black"
     }
 }

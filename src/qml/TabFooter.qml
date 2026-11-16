@@ -14,11 +14,7 @@ Rectangle {
     color: "white"
     height: 1 + Units.dp(1) + tabRow.height + Units.dp(7)
 
-    Rectangle {
-        width: parent.width
-        height: 1
-        color: "black"
-    }
+    Line {}
 
     Row {
         id: tabRow

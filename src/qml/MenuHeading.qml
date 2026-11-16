@@ -17,13 +17,8 @@ Item {
         font.pointSize: 8
         font.capitalization: Font.AllUppercase
     }
-    Rectangle {
+    Line {
         anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.leftMargin: Units.dp(15)
-        anchors.rightMargin: Units.dp(15)
-        height: 1
-        color: "black"
+        inset: Units.dp(15)
     }
 }

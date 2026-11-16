@@ -10,7 +10,9 @@
         <file>qml/LoginPage.qml</file>
         <file>qml/PillButton.qml</file>
         <file>qml/PopupMenu.qml</file>
+        <file>qml/Panel.qml</file>
         <file>qml/PopupMenuItem.qml</file>
+        <file>qml/PressableRow.qml</file>
         <file>qml/OpenWithItem.qml</file>
         <file>qml/SearchPage.qml</file>
         <file>qml/SubToolbar.qml</file>
@@ -29,6 +31,7 @@
         <file>qml/FindBooksDialog.qml</file>
         <file>qml/BookMenu.qml</file>
         <file>qml/PageHeader.qml</file>
+        <file>qml/Line.qml</file>
         <file>qml/BookInfoPage.qml</file>
         <file>qml/BookListPage.qml</file>
         <file>qml/BooksOfPage.qml</file>

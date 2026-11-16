@@ -226,11 +226,9 @@ InfoPage {
                 }
             }
             // Between the halves
-            Rectangle {
+            Line {
+                vertical: true
                 x: parent.width / 2
-                width: 1
-                height: parent.height
-                color: "black"
             }
         }
     }

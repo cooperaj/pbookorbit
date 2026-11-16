@@ -8,7 +8,7 @@ import "units.js" as Units
 //
 // Fill with PopupMenuItems, or MenuHeadings and RadioMenuItems with sidePadding: 0 for a
 // Libby-style options menu. The last visible row has no line below it.
-Rectangle {
+Panel {
     id: menu
     default property alias items: column.data
     // "", "topLeft" or "topRight": the corner that joins a tab
@@ -28,12 +28,8 @@ Rectangle {
     }
     height: column.height + 2 * (border.width + padding)
     readonly property int padding: Units.dp(8)
-    radius: Units.dp(9)
     topLeftRadius: joinedCorner === "topLeft" ? 0 : radius
     topRightRadius: joinedCorner === "topRight" ? 0 : radius
-    border.width: Units.dp(4)
-    border.color: "black"
-    color: "white"
 
     Column {
         id: column

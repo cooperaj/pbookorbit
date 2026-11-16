@@ -89,11 +89,9 @@ Rectangle {
             border.width: searchField.activeFocus ? thickBorder : 0
             border.color: "black"
 
-            Rectangle {
+            Line {
                 visible: !searchField.activeFocus
-                width: 1
-                height: parent.height
-                color: "black"
+                vertical: true
             }
 
             ThemeIcon {
@@ -175,11 +173,8 @@ Rectangle {
         }
 
         // Toolbar bottom line, under the back button too
-        Rectangle {
+        Line {
             anchors.bottom: parent.bottom
-            width: parent.width
-            height: 1
-            color: "black"
         }
     }
 
@@ -198,11 +193,8 @@ Rectangle {
             font.pointSize: 8
             font.capitalization: Font.AllUppercase
         }
-        Rectangle {
+        Line {
             anchors.bottom: parent.bottom
-            width: parent.width
-            height: 1
-            color: "black"
         }
     }
 
@@ -216,17 +208,24 @@ Rectangle {
         boundsBehavior: Flickable.StopAtBounds
         model: bookOrbit.recentSearches
 
-        delegate: Item {
+        // Inverted while pressed (see PressableRow), with a grey line below
+        delegate: PressableRow {
+            id: recentRow
             required property string modelData
             objectName: "recent " + modelData
             width: ListView.view.width
             height: Units.dp(56)
-
-            Rectangle {
-                anchors.fill: parent
-                color: "black"
-                visible: rowMouse.pressed
+            lineStartInset: Units.dp(26)
+            lineEndInset: Units.dp(26)
+            lineColor: "#7f7f7f"
+            onClicked: {
+                // Searched again, so it moves to the top. Grab the text first, since the
+                // list changes under the tap.
+                const search = modelData
+                searchField.text = search
+                bookOrbit.addRecentSearch(search)
             }
+
             Text {
                 anchors.left: parent.left
                 anchors.leftMargin: Units.dp(42)
@@ -234,30 +233,9 @@ Rectangle {
                 anchors.rightMargin: Units.dp(26)
                 anchors.verticalCenter: parent.verticalCenter
                 text: modelData
-                color: rowMouse.pressed ? "white" : "black"
+                color: recentRow.foreground
                 font.pointSize: 8
                 elide: Text.ElideRight
-            }
-            // 1px grey line, inset from both sides
-            Rectangle {
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: Units.dp(26)
-                anchors.rightMargin: Units.dp(26)
-                height: 1
-                color: "#7f7f7f"
-            }
-            TapArea {
-                id: rowMouse
-                anchors.fill: parent
-                onTapped: {
-                    // Searched again, so it moves to the top. Grab the text first, since
-                    // the list changes under the tap.
-                    const search = modelData
-                    searchField.text = search
-                    bookOrbit.addRecentSearch(search)
-                }
             }
         }
     }

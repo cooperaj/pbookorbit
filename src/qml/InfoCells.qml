@@ -13,10 +13,8 @@ Item {
     visible: cells.some(cell => cell[1] !== "")
     height: visible ? Units.dp(82) : 0
 
-    Rectangle {
+    Line {
         visible: cellRow.showTopLine
-        width: parent.width
-        height: 1
         color: "#7f7f7f"
     }
     Row {
@@ -44,11 +42,10 @@ Item {
 
                 // Divider before every cell but the first, short of the row's top and
                 // bottom
-                Rectangle {
+                Line {
                     visible: index > 0
-                    y: Units.dp(13)
-                    width: 1
-                    height: parent.height - 2 * Units.dp(13)
+                    vertical: true
+                    inset: Units.dp(13)
                     color: "#7f7f7f"
                 }
                 Column {
@@ -89,10 +86,8 @@ Item {
             }
         }
     }
-    Rectangle {
+    Line {
         anchors.bottom: parent.bottom
-        width: parent.width
-        height: 1
         color: "#7f7f7f"
     }
 }
