@@ -7,7 +7,9 @@ class Database;
 class QQuickWindow;
 
 // A small log for bug reports and tracking down slowdowns: /mnt/ext1/pbookorbit.log at the
-// root of the device's storage (./system/mnt/ext1 in the emulator). Cleared on each start.
+// root of the device's storage (./system/mnt/ext1 in the emulator). Cleared on each start,
+// except when the launcher starts the app again (PBOOKORBIT_RESTARTED), as after an update,
+// so the log before the restart is kept.
 //
 // log() always writes, for errors and startup findings. trace() only writes while
 // diagnostics logging is on, for development detail such as requests, e-ink updates and

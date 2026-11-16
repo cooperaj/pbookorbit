@@ -53,6 +53,8 @@ while :; do
     "$BINARY" "$@" >>"$LOG" 2>&1
     status=$?
     log "exited with $status"
+    # Any start after this is a restart, so the app keeps its log
+    export PBOOKORBIT_RESTARTED=1
 
     # A new version that fails as it starts is swapped for the one before. expr, as the
     # firmware's sh has no $((...)).

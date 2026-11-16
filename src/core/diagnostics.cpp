@@ -22,11 +22,18 @@ static bool tracing = false;
 static QTimer *statsTimer = nullptr;
 static QTimer *networkTimer = nullptr;
 
+// Set by the launcher when it starts the app again, after an update or a rollback
+static bool restarted()
+{
+    return qEnvironmentVariableIntValue("PBOOKORBIT_RESTARTED") != 0;
+}
+
 static QFile *logFile()
 {
     static QFile *file = [] {
         auto *f = new QFile(QString::fromUtf8(FLASHDIR "/pbookorbit.log"));
-        if (!f->open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+        const QIODevice::OpenMode keep = restarted() ? QIODevice::Append : QIODevice::Truncate;
+        if (!f->open(QIODevice::WriteOnly | keep | QIODevice::Text))
             fprintf(stderr, "pbookorbit: can't write %s\n", qPrintable(f->fileName()));
         return f;
     }();
@@ -122,7 +129,8 @@ void start(QQuickWindow *window)
     });
     setTracing(tracing);
 
-    log("started, " + processStats() + (tracing ? ", diagnostics logging on" : ""));
+    log(QString(restarted() ? "started again by the launcher, " : "started, ") + processStats()
+        + (tracing ? ", diagnostics logging on" : ""));
     log(networkState());
     log(QString("version %1, built with the %2 SDK").arg(PB_APP_VERSION, PB_SDK));
     log("firmware " + systemlibrary::firmwareVersion()

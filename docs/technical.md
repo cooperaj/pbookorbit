@@ -177,7 +177,8 @@ tile starts the script rather than the binary.
 ## Diagnostics log
 
 `pbookorbit.log` is written to the root of the device's storage
-(`build/pbookorbit/<sdk>/pc/system/mnt/ext1` in the emulator) and cleared on each start.
+(`build/pbookorbit/<sdk>/pc/system/mnt/ext1` in the emulator) and cleared on each start,
+except when the launcher starts the app again after an update, which appends to it.
 `diagnostics::log()` always writes, for errors and startup information.
 `diagnostics::trace()` only writes while diagnostics logging is on (tap the title six
 times). It records each request with status and timing, Wi-Fi connections and changes in
