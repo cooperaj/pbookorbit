@@ -1,11 +1,7 @@
 # To do
 
-- On-device detection only knows the books this app downloaded (`Downloads` records
-  where each went). Books copied on some other way could be matched against the device's
-  own library.
 - Big audiobooks (1 GB+) might want a warning, or a check for free space, before they
   download. Check on the device that the audiobook player finds them in Audio Books.
-- Views: Authors in the footer still shows the book list.
 - Cache what the views fetch, so they open at once and work offline: the collections and
   series lists, the covers, authors, formats and book ids gathered for each (a request per
   collection, and one per 20 series, on every load), and perhaps book list pages. Keep it
@@ -18,7 +14,6 @@
   Choose one when the server has several.
 - Jump rail: dragging along it, and jumping by date for the date sorts (the jump-buckets
   endpoint returns days or months for those).
-- Make the server address configurable (`DEFAULT_SERVER_URL` in `src/core/bookorbitclient.cpp`).
 - Test data for reading status: the `app` test account has no reading progress or
   statuses, so "Completed" and "N% read" can't be seen in the emulator. Add a mock, e.g. an
   environment variable that makes `decorateBook()` give books sample progress and statuses.
@@ -45,8 +40,6 @@
   (the app asks the scanner to scan; see NOTES.md for what else could be done).
 - Books with an ebook and an audiobook: once one version is downloaded, a tap opens it;
   add a way to get or open the other version.
-- Search results don't merge an ebook and its audiobook kept as separate records (a search
-  can match only one of them, e.g. by narrator); both rows show both formats instead.
 - Book menu: the system's menu also has Mark as read, Add to collection, Add to Favorites,
   Select and Open with; the Book info page has a favourite heart and CHOOSE ACTION.
 - Deleting a book asks the scanner to scan again: check on the device that the book also

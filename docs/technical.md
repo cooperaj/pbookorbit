@@ -167,7 +167,8 @@ their row:
   Authors tabs and an author's series use it.
 
 `BookRow` and `GroupRow` both extend `ListRow`, the row layout, and fill its picture with
-`Cover` (a group shows two, an author their portrait).
+`Cover` (a group shows two, an author their `AuthorPortrait`). Both draw a `CoversImage`, the
+cached cover or photo, asked for again when its download arrives.
 
 ![ListPage, what it's given, the two lists and rows that extend it, and the pages built on them](images/list-pages-components.svg)
 

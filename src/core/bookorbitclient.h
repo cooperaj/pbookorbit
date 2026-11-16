@@ -478,6 +478,11 @@ private:
     // Merges other records of the same book into a row's variants and formats. With
     // hideAudio, hides an audiobook row whose ebook is also listed.
     static void addCompanions(QVariantMap &row, const QList<QVariantMap> &companions, bool hideAudio);
+    // Hides each audiobook row in maybeHidden (row, its companions) whose ebook companion is
+    // in listedIds, and shows the rest. rows are the unmerged rows.
+    static void hideListedPairs(QVariantList &merged, const QVariantList &rows,
+                                const QList<std::pair<int, QList<QVariantMap>>> &maybeHidden,
+                                const QVariantList &listedIds);
     // Marks which rows from first to last start a section
     void updateSectionStarts(PagedBooks &list, int first, int last);
     // Letter sorts and date sorts

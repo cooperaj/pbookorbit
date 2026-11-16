@@ -3,8 +3,9 @@ import "../helpers"
 
 // Searching from the header's search button. The library has Dune and Dune Messiah, by
 // Frank Herbert in the Dune series, and Hyperion, by Dan Simmons. Online the server
-// searches, from three characters; offline the downloaded books are searched. Searches are
-// saved as recent searches when typing ends, but not when going back.
+// searches, from three characters; offline the downloaded books are searched. A book whose
+// ebook and audiobook are separate records shows once, as the ebook's row, when both match.
+// Searches are saved as recent searches when typing ends, but not when going back.
 AppTestCase {
     name: "Search"
 
@@ -94,6 +95,40 @@ AppTestCase {
 
         tryVerify(() => results() === "Dune, Dune Messiah", 5000, "the server's matches")
         compare(searches(), ["dune"], "one search, once typing pauses")
+    }
+
+    // Project Hail Mary's ebook and audiobook are separate records but one book
+    function serveHailMary(searchResults) {
+        // Every record of a result's book, then what the search matches, including for
+        // which of those records match it too
+        fakeServer.respond("POST", "/api/v1/libraries/1/books", 200, "libraries/search-hail-mary.json",
+                           {filter: {join: "OR"}})
+        fakeServer.respond("POST", "/api/v1/libraries/1/books", 200, searchResults, {q: "hail"})
+    }
+
+    function test_bookWithSeparateEbookAndAudiobookShowsOnce() {
+        openSearchLibrary()
+        serveHailMary("libraries/search-hail-mary.json")
+        openSearch()
+
+        searchFor("hail")
+
+        tryVerify(() => results() === "Project Hail Mary", 5000, "one row")
+        compare(resultRow("Project Hail Mary").book.formats, ["epub", "m4b"])
+    }
+
+    // Matched by narrator, say: the ebook isn't a result, so the audiobook's row stays
+    function test_audiobookMatchedAloneShowsBothFormats() {
+        openSearchLibrary()
+        serveHailMary("libraries/search-hail-mary-audiobook.json")
+        openSearch()
+
+        searchFor("hail")
+
+        tryVerify(() => results() === "Project Hail Mary", 5000, "the audiobook's row")
+        const row = resultRow("Project Hail Mary")
+        compare(row.book.id, 7)
+        compare(row.book.formats, ["epub", "m4b"])
     }
 
     // Until the results arrive the recent searches stay, and a spinner replaces the clear

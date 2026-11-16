@@ -532,6 +532,33 @@ static QString companionKey(const QVariantMap &book)
            + (authors.isEmpty() ? QString() : looseText(authors.first()));
 }
 
+// A filter for every record that might share a book's title and first author: titles
+// containing each word, and an author containing the first author's longest word.
+// Punctuation is dropped since records spell it differently ("Carl’s"/"Carl's");
+// companionKey() then picks the real matches.
+static QJsonObject companionsFilter(const QVariantList &books)
+{
+    QJsonArray matches;
+    for (const QVariant &value : books) {
+        const QVariantMap book = value.toMap();
+        const QString title = book.value("title").toString();
+        QJsonArray match;
+        for (const QString &word : words(title))
+            match.append(rule("title", "contains", word));
+        if (match.isEmpty())
+            match.append(rule("title", "eq", title));
+        QString authorWord;
+        for (const QString &word : words(book.value("authors").toStringList().value(0))) {
+            if (word.length() > authorWord.length())
+                authorWord = word;
+        }
+        if (!authorWord.isEmpty())
+            match.append(rule("author", "includesAny", QJsonArray{authorWord}));
+        matches.append(group("AND", match));
+    }
+    return group("OR", matches);
+}
+
 // A record's book files, primary first: those with a format and the role "primary" or
 // "content" (the same book in another format). Cover, metadata and supplement files are
 // skipped.
@@ -630,13 +657,35 @@ void BookOrbitClient::addCompanions(QVariantMap &row, const QList<QVariantMap> &
                 formats.append(format);
         }
     }
-    // Ebook versions first: a downloaded ebook opens before its audiobook
+    // Ebook versions first: a downloaded ebook opens before its audiobook. The formats
+    // follow, so an audiobook's row reads like its ebook's.
     std::stable_sort(variants.begin(), variants.end(), [](const QVariant &a, const QVariant &b) {
         return a.toMap().value("kind") == "ebook" && b.toMap().value("kind") != "ebook";
+    });
+    std::stable_sort(formats.begin(), formats.end(), [](const QString &a, const QString &b) {
+        return !isAudioFormat(a) && isAudioFormat(b);
     });
     row.insert("variants", variants);
     row.insert("formats", formats);
     row.insert("hidden", hideAudio && ownKind == "audiobook" && ebookElsewhere);
+}
+
+void BookOrbitClient::hideListedPairs(QVariantList &merged, const QVariantList &rows,
+                                      const QList<std::pair<int, QList<QVariantMap>>> &maybeHidden,
+                                      const QVariantList &listedIds)
+{
+    for (const auto &[i, companions] : maybeHidden) {
+        QList<QVariantMap> listed;
+        for (const QVariantMap &companion : companions) {
+            if (listedIds.contains(companion.value("id")))
+                listed.append(companion);
+        }
+        QVariantMap listedRow = rows.at(i).toMap();
+        addCompanions(listedRow, listed, true);
+        QVariantMap row = merged.at(i).toMap();
+        row.insert("hidden", listedRow.value("hidden"));
+        merged[i] = row;
+    }
 }
 
 QJsonObject BookOrbitClient::bookQuery(const PagedBooks &list)
@@ -948,31 +997,9 @@ void BookOrbitClient::lookUpCompanions(PagedBooks *list, const QVariantList &boo
         then(rows);
         return;
     }
-    // Every record that might share a title and first author with a book on the page,
-    // ignoring the list's filter: titles containing each word, and an author containing the
-    // first author's longest word. Punctuation is dropped since records spell it
-    // differently ("Carl’s"/"Carl's"); companionKey() then picks the real matches.
-    QJsonArray matches;
-    for (const QVariant &value : books) {
-        const QVariantMap book = value.toMap();
-        const QString title = book.value("title").toString();
-        QJsonArray match;
-        for (const QString &word : words(title))
-            match.append(rule("title", "contains", word));
-        if (match.isEmpty())
-            match.append(rule("title", "eq", title));
-        const QStringList authors = book.value("authors").toStringList();
-        QString authorWord;
-        for (const QString &word : words(authors.value(0))) {
-            if (word.length() > authorWord.length())
-                authorWord = word;
-        }
-        if (!authorWord.isEmpty())
-            match.append(rule("author", "includesAny", QJsonArray{authorWord}));
-        matches.append(group("AND", match));
-    }
+    // Every record of the books on the page, ignoring the list's filter
     const QJsonObject query{
-        {"filter", group("OR", matches)},
+        {"filter", companionsFilter(books)},
         {"pagination", QJsonObject{{"page", 0}, {"size", 4 * BOOKS_PAGE_SIZE}}},
     };
     callJson("POST", libraryBooksPath(), QJsonDocument(query),
@@ -985,6 +1012,11 @@ void BookOrbitClient::lookUpCompanions(PagedBooks *list, const QVariantList &boo
                 const QVariantMap record = item.toObject().toVariantMap();
                 byKey[companionKey(record)].append(record);
             }
+            // Rows that would be hidden if their ebook record is listed too, for lists
+            // where that isn't certain: (row, companions)
+            QList<std::pair<int, QList<QVariantMap>>> maybeHidden;
+            const bool inCollection = list == &m_booksOf && m_booksOfField == "collection"
+                                      && list->formats.isEmpty();
             for (int i = 0; i < books.size(); i++) {
                 const QVariantMap book = books.at(i).toMap();
                 QList<QVariantMap> companions;
@@ -996,21 +1028,51 @@ void BookOrbitClient::lookUpCompanions(PagedBooks *list, const QVariantList &boo
                     continue;
                 QVariantMap row = merged.at(i).toMap();
                 addCompanions(row, companions, list->mergePairs);
-                // In a collection with all formats listed, drop the audiobook row if its
-                // ebook record is in the collection too, matching the collection counts
-                if (list == &m_booksOf && m_booksOfField == "collection" && list->formats.isEmpty()) {
-                    QList<QVariantMap> inCollection;
-                    for (const QVariantMap &companion : std::as_const(companions)) {
-                        if (m_booksOfCollectionIds.contains(companion.value("id")))
-                            inCollection.append(companion);
-                    }
-                    QVariantMap inCollectionRow = merged.at(i).toMap();
-                    addCompanions(inCollectionRow, inCollection, true);
-                    row.insert("hidden", inCollectionRow.value("hidden"));
-                }
                 merged[i] = row;
+                if (inCollection || list == &m_search) {
+                    QVariantMap hiddenRow = rows.at(i).toMap();
+                    addCompanions(hiddenRow, companions, true);
+                    if (hiddenRow.value("hidden").toBool())
+                        maybeHidden.append({i, companions});
+                }
             }
-            then(merged);
+            // In a collection with all formats listed, drop the audiobook row if its ebook
+            // record is in the collection too, matching the collection counts
+            if (inCollection) {
+                hideListedPairs(merged, rows, maybeHidden, m_booksOfCollectionIds);
+                then(merged);
+                return;
+            }
+            if (list != &m_search || maybeHidden.isEmpty()) {
+                then(merged);
+                return;
+            }
+            // In the search results, drop it if its ebook record matches the search too. A
+            // search can match only the audiobook (by narrator, say), which then stays.
+            QVariantList candidates;
+            for (const auto &[i, companions] : std::as_const(maybeHidden))
+                candidates.append(books.at(i));
+            const QJsonObject searchQuery{
+                {"q", list->query.value("q")},
+                {"filter", companionsFilter(candidates)},
+                {"pagination", QJsonObject{{"page", 0}, {"size", 4 * BOOKS_PAGE_SIZE}}},
+            };
+            callJson("POST", libraryBooksPath(), QJsonDocument(searchQuery),
+                [this, list, rows, merged, maybeHidden, generation, then](const QJsonDocument &doc) {
+                    if (generation != list->queryGeneration)
+                        return;
+                    QVariantList found;
+                    for (const QJsonValue &item : doc.object().value("items").toArray())
+                        found.append(item.toObject().value("id").toVariant());
+                    QVariantList shown = merged;
+                    hideListedPairs(shown, rows, maybeHidden, found);
+                    then(shown);
+                },
+                // Both rows, rather than none
+                [list, merged, generation, then](const QString &) {
+                    if (generation == list->queryGeneration)
+                        then(merged);
+                });
         },
         // Unmerged, rather than not at all
         [list, rows, generation, then](const QString &) {
