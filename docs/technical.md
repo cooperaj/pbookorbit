@@ -149,13 +149,17 @@ the task manager picks names and icons.
 "Check for updates" in the header menu, signed in or out, asks GitHub for the app's
 releases (`api.github.com/repos/cooperaj/pbookorbit/releases`, one request, connecting
 Wi-Fi first) and says whether there's a newer one. Changelog opens the release's GitHub
-page in the browser. See `src/core/updater.h`.
+page in the browser. Update downloads the release's zip, checks it against the SHA-256
+GitHub lists for it, and unpacks it (`src/core/zipreader.h`, zlib, since Qt's zip reader is
+private API): the new launcher straight over `applications/pbookorbit.app`, and the binary
+into `pbookorbit/update/`. Restart now quits and has the launcher start the new version;
+Later leaves it for the next start. See `src/core/updater.h`.
 
 - **Versions** are the build's `git describe` (the kit's `PB_APP_VERSION`), compared as
   semantic versions with release tags such as `0.9.0-beta`. A build made after a tag
   counts as that tag. Drafts are ignored, and pre-releases count until the app is 1.0.
 - **Release files** are `pbookorbit-<version>-<sdk>.zip`, one per SDK, e.g.
-  `pbookorbit-1.0.0-B300-6.10.zip`. The app takes the file for its own build's chip
+  `pbookorbit-1.0.0-B300-6.10.zip`, made by `make release`. The app takes the file for its own build's chip
   (B300 from the kit's `PB_SDK`) with the newest firmware no newer than the device's.
   B288 and B300 devices get 6.11 firmware before there's a 6.11 SDK for them, so they keep
   taking 6.10 builds until a 6.11 one is released. A newer release with no file for the
@@ -165,7 +169,8 @@ The app runs from `applications/pbookorbit/pbookorbit`, started by
 `applications/pbookorbit.app`, a shell script (`src/launcher.sh`, modelled on KOReader's
 launcher). After the app exits, the script installs a binary left at
 `pbookorbit/update/pbookorbit` (keeping the old one as `pbookorbit.old`), and starts the
-app again if it left a `pbookorbit/restart` file. It logs to `pbookorbit-launcher.log`,
+app again if it left a `pbookorbit/restart` file. If a new binary fails within 30 seconds
+of starting, it puts the old one back. It logs to `pbookorbit-launcher.log`,
 with the app's output, and passes its own path in `PBOOKORBIT_LAUNCHER` so the home screen
 tile starts the script rather than the binary.
 

@@ -3,6 +3,8 @@
 CONFIG += c++17 testcase
 QT += quick network testlib
 INCLUDEPATH += $$PWD/../src
+# tests/fixtures, for files the tests read
+DEFINES += FIXTURES_DIR=\\\"$$clean_path($$PWD/fixtures)\\\"
 
 # appcore first, so the linker resolves its references in the kit's libraries after it. The
 # build tree mirrors this folder, so the path from the test's build folder back up to

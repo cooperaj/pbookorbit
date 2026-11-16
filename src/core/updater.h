@@ -2,6 +2,7 @@
 
 #include <QJsonArray>
 #include <QNetworkAccessManager>
+#include <QNetworkRequest>
 #include <QObject>
 #include <QPointer>
 
@@ -45,50 +46,79 @@ Choice choose(const QJsonArray &releases, const QString &installed, const QStrin
 
 }
 
-// Checks GitHub for a newer release of the app, when the user asks.
+// Checks GitHub for a newer release of the app, when the user asks, and installs it.
+//
+// The app runs from applications/pbookorbit/pbookorbit, started by the launcher script
+// applications/pbookorbit.app (src/launcher.sh). Installing downloads the release's zip,
+// checks it against GitHub's SHA-256, replaces the launcher (which runs from a copy in
+// /tmp) and leaves the new binary in pbookorbit/update/. The launcher swaps it in when the
+// app next starts: at once after restart(), which asks it to start the app again, or the
+// next time the user opens it.
 class Updater : public QObject
 {
     Q_OBJECT
     // This build's version (git describe), e.g. "0.9.0-beta"
     Q_PROPERTY(QString version READ version CONSTANT)
-    // "" until checked, then "checking", "upToDate", "available", "noBuild" or "failed"
+    // "" until checked, then "checking", "upToDate", "available", "noBuild" or "failed";
+    // installing, "downloading", then "ready" or "installFailed"
     Q_PROPERTY(QString state READ state NOTIFY changed)
     // The release found: its version, and its GitHub page, which has the changelog
     Q_PROPERTY(QString latestVersion READ latestVersion NOTIFY changed)
     Q_PROPERTY(QString releaseUrl READ releaseUrl NOTIFY changed)
-    // Why the check failed
+    // Why the check or install failed
     Q_PROPERTY(QString error READ error NOTIFY changed)
+    // Download progress, 0-100, in whole percent so the screen redraws rarely
+    Q_PROPERTY(int percent READ percent NOTIFY changed)
+    // Whether the app was started by the launcher, which installing needs
+    Q_PROPERTY(bool canInstall READ canInstall CONSTANT)
 
 public:
     static inline const QString GITHUB_RELEASES =
         QStringLiteral("https://api.github.com/repos/cooperaj/pbookorbit/releases");
 
-    // For this build: GITHUB_RELEASES, its version, and the SDK it was built with
-    // (PB_APP_VERSION and PB_SDK). Tests give their own.
+    // For this build: GITHUB_RELEASES, its version, the SDK it was built with (PB_APP_VERSION
+    // and PB_SDK), and the launcher that started it (PBOOKORBIT_LAUNCHER, empty if none).
+    // Tests give their own.
     Updater(const QString &releasesUrl, const QString &version, const QString &sdk,
-            QObject *parent = nullptr);
+            const QString &launcher, QObject *parent = nullptr);
 
     QString version() const { return m_version; }
     QString state() const { return m_state; }
     QString latestVersion() const { return m_choice.version; }
     QString releaseUrl() const { return m_choice.pageUrl; }
     QString error() const { return m_error; }
+    int percent() const { return m_percent; }
+    bool canInstall() const { return !m_launcher.isEmpty(); }
 
     // Connects Wi-Fi if needed, then asks GitHub for its releases
     Q_INVOKABLE void check();
+    // Downloads and installs the available release
+    Q_INVOKABLE void install();
+    // Stops checking or downloading
     Q_INVOKABLE void cancel();
+    // Once ready: asks the launcher to start the app again after it quits. The caller quits.
+    Q_INVOKABLE bool restart();
 
 signals:
     void changed();
 
 private:
     void finish(const QString &state, const QString &error = QString());
+    // Unpacks the downloaded zip into place; returns why it couldn't
+    QString unpack(const QByteArray &archive);
+    QNetworkRequest request(const QString &url) const;
+    // Sends it, as the current request
+    QNetworkReply *get(const QNetworkRequest &request);
+    // applications/pbookorbit, beside the launcher
+    QString appDir() const;
 
     QString m_releasesUrl;
     QString m_version;
     QString m_sdk;
+    QString m_launcher;
     QString m_state;
     QString m_error;
+    int m_percent = 0;
     updates::Choice m_choice;
     // Made on the first check, as most starts never check
     QNetworkAccessManager *m_nam = nullptr;

@@ -792,6 +792,8 @@ Window {
         id: updateDialog
         objectName: "updateDialog"
         anchors.fill: parent
+        // The launcher starts the app again, with the update
+        onRestartRequested: Qt.quit()
     }
     // Shown when tapping the title six times turns diagnostics logging on or off
     SystemDialog {

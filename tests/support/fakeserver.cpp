@@ -43,7 +43,8 @@ void FakeServer::setReachable(bool reachable)
 void FakeServer::respond(const QString &method, const QString &path, int status, const QString &fixture,
                          const QVariant &match)
 {
-    const QByteArray body = fixture.isEmpty() ? QByteArray() : fixtureBytes(fixture);
+    // {server} in a fixture is this server, for addresses it gives out, such as downloads
+    const QByteArray body = fixture.isEmpty() ? QByteArray() : fixtureBytes(fixture).replace("{server}", url().toUtf8());
     // A JavaScript object arrives wrapped, and QJsonValue only reads plain maps and lists
     const QVariant plain = match.metaType() == QMetaType::fromType<QJSValue>() ? match.value<QJSValue>().toVariant()
                                                                               : match;

@@ -14,9 +14,9 @@
       },
       {
         "name": "pbookorbit-0.10.0-B300-6.10.zip",
-        "size": 836333,
-        "digest": "sha256:b251880b67fe35d155debf74e2fc212e1278ba2abfa4c631d0ace0bbef54b4dc",
-        "browser_download_url": "https://github.com/cooperaj/pbookorbit/releases/download/0.10.0/pbookorbit-0.10.0-B300-6.10.zip"
+        "size": 421,
+        "digest": "sha256:7c1c73b6e2fcfc3bc5582d0ba239c19fadbe98d759353e26b8da2280fd5e1c8b",
+        "browser_download_url": "{server}/download/pbookorbit-0.10.0-B300-6.10.zip"
       }
     ]
   },

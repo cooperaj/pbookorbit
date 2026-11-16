@@ -5,4 +5,3 @@ QT += gui-private
 INCLUDEPATH += $$PWD
 HEADERS += $$PWD/fakeinkview.h $$PWD/fakekeyboard.h $$PWD/fakeserver.h
 SOURCES += $$PWD/fakeinkview.cpp $$PWD/fakekeyboard.cpp $$PWD/fakeserver.cpp
-DEFINES += FIXTURES_DIR=\\\"$$clean_path($$PWD/../fixtures)\\\"

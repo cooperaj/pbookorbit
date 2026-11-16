@@ -39,15 +39,26 @@ echo $$ >"$PID_FILE"
 export GLIBC_TUNABLES="${GLIBC_TUNABLES}${GLIBC_TUNABLES:+:}glibc.rtld.execstack=2"
 
 while :; do
+    updated=
     if [ -f "$UPDATE" ]; then
-        mv -f "$BINARY" "$BINARY.old" && mv -f "$UPDATE" "$BINARY" && sync
+        mv -f "$BINARY" "$BINARY.old" && mv -f "$UPDATE" "$BINARY" && sync && updated=1
         log "installed update: $(ls -l "$BINARY")"
     fi
 
     log "running $BINARY"
+    started=$(date +%s)
     "$BINARY" "$@" >>"$LOG" 2>&1
     status=$?
     log "exited with $status"
+
+    # A new version that fails as it starts is swapped for the one before
+    if [ -n "$updated" ] && [ "$status" -ne 0 ] && [ $(($(date +%s) - started)) -lt 30 ] \
+            && [ -f "$BINARY.old" ]; then
+        mv -f "$BINARY.old" "$BINARY" && sync
+        rm -f "$RESTART"
+        log "update failed to start, going back to the version before"
+        continue
+    fi
 
     [ -f "$RESTART" ] || break
     rm -f "$RESTART"

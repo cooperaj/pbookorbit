@@ -86,6 +86,8 @@ public:
     //   files: names of book files there that the app hasn't recorded, as though copied
     //          onto the device another way
     //   firmware: the firmware's version, e.g. "U700k3.6.10.2359"; none by default
+    //   noLauncher: the app wasn't started by its launcher script, so it can't install
+    //               updates. Otherwise the launcher is applications/pbookorbit.app.
     //   opened: when the system's reader last opened book files there, or its player last
     //           played audiobook files, by name, e.g. {"dune.epub": "2026-11-14T10:00:00Z"},
     //           in the system's library and audiobook databases. Without it there are none.
@@ -134,7 +136,9 @@ private:
         objects->browser = std::make_unique<Browser>();
         // GitHub's releases come from the fake server too, at /releases. The build is
         // 0.9.0 for an Era Color (B300); the firmware option says what it runs.
-        objects->updater = std::make_unique<Updater>(m_server->url() + "/releases", "0.9.0", "B300-6.10");
+        const QString launcher = options.value("noLauncher").toBool() ? QString()
+                                 : QString::fromUtf8(FLASHDIR "/applications/pbookorbit.app");
+        objects->updater = std::make_unique<Updater>(m_server->url() + "/releases", "0.9.0", "B300-6.10", launcher);
         objects->eink = std::make_unique<Eink>();
         objects->eink->followNightMode();
         objects->launcherTile = std::make_unique<LauncherTile>();

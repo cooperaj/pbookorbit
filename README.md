@@ -42,18 +42,22 @@ So far it has only been tested on an Era Color running firmware 6.10, and 6.10 i
 only firmware it's built for. It may work on other 6.10 devices. Your BookOrbit account
 will need permission to download books.
 
-1. Download `pbookorbit.app` from a release, or build it yourself (see below).
-2. Plug the PocketBook into your computer and copy `pbookorbit.app` into its
-   `applications` folder.
+1. Download the zip for your device from a release: `B300` for the Era Color and InkPad
+   Color 2, `B288` for the others. Or build it yourself (see below).
+2. Plug the PocketBook into your computer and unzip it into the device's `applications`
+   folder. That gives `applications/pbookorbit.app` and `applications/pbookorbit/`.
 3. Eject it, go to Applications and open `pbookorbit`.
 4. On first run it adds a PBookOrbit tile to the applications screen. The tile won't show
    up until the device restarts, so it'll offer to do that for you.
 5. Sign in with your server address (`books.example.com`, say), username and password.
    It uses https unless you type `http://` in front.
 
-To update, copy the new `pbookorbit.app` over the old one.
+To update, choose Check for updates in the menu. It looks for a newer release on GitHub,
+and can download and install it and restart the app. Or unzip a new release over the old
+one.
 
-To uninstall, delete `applications/pbookorbit.app` and the two icons in
+To uninstall, delete `applications/pbookorbit.app`, the `applications/pbookorbit` folder,
+`pbookorbit-launcher.log` and `pbookorbit.log`, and the two icons in
 `applications/icons` (`pbookorbit.bmp` and `pbookorbit_f.bmp`). You can remove the tile
 from the device itself. Before adding the tile the app saved the original launcher config
 as `system/config/desktop/view.json.before-pbookorbit`, so you can also rename that back to
@@ -82,8 +86,11 @@ test` runs the tests in `tests/`. Set `PBOOKORBIT_DB=<file>` to point the app at
 different database, which keeps tests away from your own sign-in; for `make run`, pass it
 through the kit as `PB_ENV="PBOOKORBIT_DB=<file>"`.
 
-If you're handing the app to people who all use the same server, you can build it with
-the server already filled in. They can still change it.
+`make release` builds a release's files, a zip per SDK in `build/release`, named
+`pbookorbit-<version>-<sdk>.zip` from `git describe`. Tag the commit first (e.g. `0.10.0`
+or `0.10.0-beta`) and attach the zips to a GitHub release of that tag, as Check for updates
+looks for them there. If you're handing the app to people who all use the same server, you
+can build it with the server already filled in. They can still change it.
 
 ```sh
 make release SERVER=books.example.com

@@ -3,12 +3,18 @@
 #include "core/bookorbitclient.h"
 #include "core/diagnostics.h"
 #include "core/systemlibrary.h"
+#include "core/zipreader.h"
+#include <QCryptographicHash>
+#include <QDir>
+#include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkReply>
 #include <QRegularExpression>
+#include <QSaveFile>
 #include <QVersionNumber>
 #include <optional>
+#include <unistd.h>
 
 namespace updates {
 namespace {
@@ -154,35 +160,33 @@ Choice choose(const QJsonArray &releases, const QString &installed, const QStrin
 
 }
 
-Updater::Updater(const QString &releasesUrl, const QString &version, const QString &sdk, QObject *parent)
-    : QObject(parent), m_releasesUrl(releasesUrl), m_version(version), m_sdk(sdk)
+Updater::Updater(const QString &releasesUrl, const QString &version, const QString &sdk,
+                 const QString &launcher, QObject *parent)
+    : QObject(parent), m_releasesUrl(releasesUrl), m_version(version), m_sdk(sdk), m_launcher(launcher)
 {
 }
 
+static const QString NO_NETWORK = QStringLiteral("There's no network connection. Connect to Wi-Fi and try again.");
+
 void Updater::check()
 {
-    if (m_state == "checking")
+    if (m_state == "checking" || m_state == "downloading")
         return;
     m_choice = {};
     m_state = "checking";
     m_error.clear();
     emit changed();
     if (!BookOrbitClient::ensureNetwork()) {
-        finish("failed", "There's no network connection. Connect to Wi-Fi and try again.");
+        finish("failed", NO_NETWORK);
         return;
     }
 
-    if (!m_nam)
-        m_nam = new QNetworkAccessManager(this);
     // GitHub lists the newest first
-    QNetworkRequest request(QUrl(m_releasesUrl + "?per_page=20"));
+    QNetworkRequest request = this->request(m_releasesUrl + "?per_page=20");
     request.setRawHeader("Accept", "application/vnd.github+json");
     request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
-    request.setHeader(QNetworkRequest::UserAgentHeader, "PBookOrbit/" + m_version);
     request.setTransferTimeout(30000);
-    diagnostics::trace("GET " + request.url().toString());
-    QNetworkReply *reply = m_nam->get(request);
-    m_reply = reply;
+    QNetworkReply *reply = get(request);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
         if (reply != m_reply)
@@ -212,15 +216,134 @@ void Updater::check()
     });
 }
 
+void Updater::install()
+{
+    if ((m_state != "available" && m_state != "installFailed") || !canInstall())
+        return;
+    m_percent = 0;
+    m_state = "downloading";
+    m_error.clear();
+    emit changed();
+    if (m_choice.asset.sha256.isEmpty()) {
+        finish("installFailed", "GitHub gave no checksum for this release, so it can't be checked."
+                                " Get it from its GitHub page instead.");
+        return;
+    }
+    if (!BookOrbitClient::ensureNetwork()) {
+        finish("installFailed", NO_NETWORK);
+        return;
+    }
+
+    // GitHub redirects to where the file is stored
+    QNetworkRequest request = this->request(m_choice.asset.url);
+    request.setRawHeader("Accept", "application/octet-stream");
+    request.setTransferTimeout(60000);
+    QNetworkReply *reply = get(request);
+    connect(reply, &QNetworkReply::downloadProgress, this, [this](qint64 received, qint64 total) {
+        const int percent = total > 0 ? int(received * 100 / total) : 0;
+        if (percent != m_percent) {
+            m_percent = percent;
+            emit changed();
+        }
+    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        if (reply != m_reply)
+            return;   // cancelled
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const QByteArray archive = reply->readAll();
+        diagnostics::log(QString("update download %1 -> %2, %3 bytes")
+                             .arg(m_choice.asset.name, status ? QString::number(status) : reply->errorString())
+                             .arg(archive.size()));
+        if (reply->error() != QNetworkReply::NoError) {
+            finish("installFailed", status ? QString("GitHub couldn't send the update (HTTP %1).").arg(status)
+                                           : "The download stopped. Check your connection and try again.");
+            return;
+        }
+        if (archive.size() != m_choice.asset.size
+                || QCryptographicHash::hash(archive, QCryptographicHash::Sha256).toHex() != m_choice.asset.sha256.toLatin1()) {
+            finish("installFailed", "The download was damaged. Try again.");
+            return;
+        }
+
+        const QString problem = unpack(archive);
+        diagnostics::log(problem.isEmpty() ? "update " + m_choice.version + " ready" : "update failed: " + problem);
+        finish(problem.isEmpty() ? "ready" : "installFailed", problem);
+    });
+}
+
+QString Updater::unpack(const QByteArray &archive)
+{
+    // The release zip as it unpacks into applications/
+    static const QString LAUNCHER = QStringLiteral("pbookorbit.app");
+    static const QString BINARY = QStringLiteral("pbookorbit/pbookorbit");
+    const QHash<QString, QByteArray> files = zip::read(archive, {LAUNCHER, BINARY});
+    if (files.size() != 2)
+        return "The download isn't a PBookOrbit release.";
+
+    const auto save = [](const QString &path, const QByteArray &bytes) {
+        QSaveFile file(path);
+        if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit())
+            return "Can't write " + path + ": " + file.errorString();
+        QFile::setPermissions(path, QFile::permissions(path) | QFile::ExeOwner | QFile::ExeGroup | QFile::ExeOther);
+        return QString();
+    };
+    const QString updateDir = appDir() + "/update";
+    if (!QDir().mkpath(updateDir))
+        return "Can't create " + updateDir;
+    QString problem = save(updateDir + "/pbookorbit", files[BINARY]);
+    if (problem.isEmpty())
+        problem = save(m_launcher, files[LAUNCHER]);
+    // The device may be switched off before the cache is written
+    sync();
+    return problem;
+}
+
 void Updater::cancel()
 {
-    if (m_state != "checking")
+    if (m_state != "checking" && m_state != "downloading")
         return;
     QNetworkReply *reply = m_reply;
     m_reply = nullptr;
     if (reply)
         reply->abort();
-    finish("");
+    // A cancelled download leaves the release on offer
+    finish(m_state == "downloading" ? "available" : "");
+}
+
+bool Updater::restart()
+{
+    if (m_state != "ready")
+        return false;
+    QFile marker(appDir() + "/restart");
+    const bool marked = marker.open(QIODevice::WriteOnly);
+    marker.close();
+    sync();
+    diagnostics::log(marked ? "restarting for update " + m_choice.version
+                            : "can't ask the launcher to restart: " + marker.errorString());
+    return marked;
+}
+
+QNetworkRequest Updater::request(const QString &url) const
+{
+    QNetworkRequest request{QUrl(url)};
+    request.setHeader(QNetworkRequest::UserAgentHeader, "PBookOrbit/" + m_version);
+    return request;
+}
+
+QNetworkReply *Updater::get(const QNetworkRequest &request)
+{
+    if (!m_nam)
+        m_nam = new QNetworkAccessManager(this);
+    diagnostics::trace("GET " + request.url().toString());
+    QNetworkReply *reply = m_nam->get(request);
+    m_reply = reply;
+    return reply;
+}
+
+QString Updater::appDir() const
+{
+    return QFileInfo(m_launcher).absolutePath() + "/pbookorbit";
 }
 
 void Updater::finish(const QString &state, const QString &error)

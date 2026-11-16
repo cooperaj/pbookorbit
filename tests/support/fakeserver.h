@@ -33,7 +33,7 @@ public:
     // the body from tests/fixtures/<fixture>, or none if fixture is empty. With match, only
     // for requests whose body has those fields, e.g. {sort: [{field: "author"}]}. Objects
     // and arrays in match need only be part of the body's. The latest that matches wins,
-    // and one without match answers the rest.
+    // and one without match answers the rest. {server} in the fixture becomes url.
     Q_INVOKABLE void respond(const QString &method, const QString &path, int status,
                              const QString &fixture = QString(), const QVariant &match = QVariant());
     // A file download for GET path: the bytes of tests/fixtures/<fixture>, named fileName
