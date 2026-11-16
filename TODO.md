@@ -43,9 +43,6 @@
   Select and Open with; the Book info page has a favourite heart and CHOOSE ACTION.
 - Deleting a book asks the scanner to scan again: check on the device that the book also
   leaves the system library. KOReader's `.sdr` folder beside the book is left in place.
-- Once the app's UI is settled, delete the device screenshots in the repo root
-  (`scr0001.bmp`...) and their entry in `.gitignore`. Code comments refer to them by number,
-  e.g. "screenshot 9".
 - Home screen tile: check it in night mode (the icons are black on white). Other devices
   will want other icon sizes (106x64 on a PB629).
 - Check the log's "Qt ..., QML compiled for ..." line on the device: if the firmware's Qt

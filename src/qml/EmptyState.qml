@@ -3,7 +3,7 @@ import "units.js" as Units
 
 // What a page shows when it has nothing to list, or couldn't load: a light title with a
 // short explanation under it, centred a little above the middle, as the system apps do
-// (the Audiobooks app's "No audiobooks", screenshot 20). Fill the space below the page's
+// (the Audiobooks app's "No audiobooks"). Fill the space below the page's
 // toolbars with it. Anything inside it, such as a button, goes under the explanation.
 Item {
     id: state

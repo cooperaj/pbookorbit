@@ -2,16 +2,15 @@ import QtQuick
 import "units.js" as Units
 import "books.js" as Books
 
-// A book's menu, modelled on the system library's (screenshot 12). Holding a row for two
+// A book's menu, modelled on the system library's. Holding a row for two
 // seconds frames it briefly (BookRow's focused), then everything but that row fades and the
 // menu opens to its right with an arrow pointing at it, level with the row if it fits or
 // moved up to stay on screen. Tapping outside closes it. The list can't scroll meanwhile,
 // and the fade leaves a gap that follows the row, so the row itself stays unfaded.
 //
 // Items: Book info, All books of author, All books of series (if in one), Delete (if on the
-// device) and Open with, which expands in place to list the system's apps for the format
-// (screenshot 16). The system menu also has Mark as read, Add to collection, Add to
-// Favorites and Select.
+// device) and Open with, which expands in place to list the system's apps for the format.
+// The system menu also has Mark as read, Add to collection, Add to Favorites and Select.
 Item {
     id: bookMenu
     // The book's list entry

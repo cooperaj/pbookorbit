@@ -720,7 +720,7 @@ Window {
         onOpenWithChosen: (target, app) => root.openWith(target, app)
     }
 
-    // Confirms deleting a book from the device, as the system library does (screenshot 13).
+    // Confirms deleting a book from the device, as the system library does.
     // With an ebook and an audiobook on the device it asks which, as DownloadDialog does.
     SystemDialog {
         id: deleteDialog

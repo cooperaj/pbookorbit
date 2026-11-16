@@ -2,7 +2,7 @@ import QtQuick
 import "units.js" as Units
 import "night.js" as Night
 
-// A row in a list, modelled on the Era Color system library (screenshots 9 and 10), for
+// A row in a list, modelled on the Era Color system library, for
 // BookRow and GroupRow: a picture in a cover's space, then the title, a second line, and
 // a line of details in italics split by an upright grey bar ("Completed | Dune - 1"). A
 // section's first row has a floating box at its left edge: a short label (a letter or

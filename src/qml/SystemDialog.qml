@@ -39,7 +39,7 @@ Item {
 
     Panel {
         id: panel
-        // Near the bottom of the screen, like the system's dialogs (screenshot 13)
+        // Near the bottom of the screen, like the system's dialogs
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Units.dp(60)

@@ -2,8 +2,7 @@ import QtQuick
 
 // A menu's Open with row (BookMenu, the book info page's actions), shown when there's
 // something to open with (see Books.openWithTarget). Tapping it expands it in place, as in
-// the system library (screenshot 16): put a Repeater of subItem PopupMenuItems over apps
-// after it.
+// the system library: put a Repeater of subItem PopupMenuItems over apps after it.
 PopupMenuItem {
     id: item
     // What Open with opens, or null

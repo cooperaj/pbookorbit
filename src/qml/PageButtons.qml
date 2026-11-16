@@ -2,7 +2,7 @@ import QtQuick
 import "units.js" as Units
 
 // Page buttons over the bottom corners of a list or an info page's Flickable, as in the
-// system library (screenshot 9): up on the left, down on the right, each scrolling a
+// system library: up on the left, down on the right, each scrolling a
 // screenful. Paging suits e-ink better than flicking, with one clean redraw per page. The
 // buttons are half-white, fading the rows behind (black shows as 128 grey), with a 1px line
 // along the top and inner side, rounded where they meet. Place in the list's parent with

@@ -2,7 +2,7 @@ import QtQuick
 import "units.js" as Units
 
 // Toolbar for pages opened over the book list, modelled on the system library's Book info
-// page (screenshot 11): back chevron on the left, centred capitalised title (e.g. "BOOK
+// page: back chevron on the left, centred capitalised title (e.g. "BOOK
 // INFO / 99 BOTTLES OF OOP"), and a 1px line below.
 Rectangle {
     id: header

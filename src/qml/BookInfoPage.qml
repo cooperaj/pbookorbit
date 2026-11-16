@@ -3,7 +3,7 @@ import "units.js" as Units
 import "books.js" as Books
 import "format.js" as Format
 
-// A book's details, laid out like the system library's Book info page (screenshot 11):
+// A book's details, laid out like the system library's Book info page:
 // cover on the left with title, author, series and file path beside it, then ADDED, SIZE
 // and FORMAT. Author and series link to all their books, like the book menu's "All books
 // of" items. Below that come the extra details from BookOrbit (published, pages or length,
@@ -15,7 +15,7 @@ import "format.js" as Format
 // device at first, else the ebook.
 //
 // CHOOSE ACTION at the bottom opens a menu in the middle of the page, as on the system's
-// page (screenshots 21 and 22), for the chosen version: Download, Open with, Delete, and
+// page, for the chosen version: Download, Open with, Delete, and
 // Open book where there's no Open with (audiobooks).
 //
 // The system's page also has a favourite heart, and Add to Collection in its menu.

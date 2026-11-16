@@ -5,7 +5,7 @@ import "units.js" as Units
 // fill with white icon and label (see PressableRow). A grey line separates it from the next
 // row. Measured from the library and Sudoku apps on an Era Color.
 //
-// A row that expands a submenu in place, like the library's Open with (screenshot 16), has
+// A row that expands a submenu in place, like the library's Open with, has
 // an arrow on the right. Its submenu rows below are subItems: no icon, with indented label
 // and line.
 PressableRow {

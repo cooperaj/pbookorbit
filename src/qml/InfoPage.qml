@@ -2,7 +2,7 @@ import QtQuick
 import "units.js" as Units
 
 // A page of details opened over the views (BookInfoPage, AuthorInfoPage), laid out like the
-// system library's Book info page (screenshot 11): a toolbar with a back button and the
+// system library's Book info page: a toolbar with a back button and the
 // title, then a column with that page's margins, which scrolls when it's long, with a
 // scrollbar and page buttons like the lists. Children go in the column; overlay is for
 // what sits over it all, such as a menu.
