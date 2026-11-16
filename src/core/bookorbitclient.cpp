@@ -532,24 +532,33 @@ static QString companionKey(const QVariantMap &book)
            + (authors.isEmpty() ? QString() : looseText(authors.first()));
 }
 
-// A record's versions of the book, at most one ebook and one audiobook: [{bookId, fileId,
-// format, sizeBytes, kind: "ebook" | "audiobook", book}], where book is the record to
-// download from. Primary file first; "content" files are the same book in other formats.
-// Cover, metadata and supplement files are skipped.
+// A record's book files, primary first: those with a format and the role "primary" or
+// "content" (the same book in another format). Cover, metadata and supplement files are
+// skipped.
+static QList<QVariantMap> bookFiles(const QVariantMap &book)
+{
+    QList<QVariantMap> files;
+    for (const QVariant &value : book.value("files").toList()) {
+        const QVariantMap file = value.toMap();
+        const QString role = file.value("role").toString();
+        if (!file.value("format").toString().isEmpty() && (role == "primary" || role == "content"))
+            files.append(file);
+    }
+    std::stable_sort(files.begin(), files.end(), [](const QVariantMap &a, const QVariantMap &b) {
+        return a.value("role") == "primary" && b.value("role") != "primary";
+    });
+    return files;
+}
+
+// A record's versions of the book, at most one ebook and one audiobook, from its first
+// file of each kind: [{bookId, fileId, format, sizeBytes, kind: "ebook" | "audiobook",
+// book}], where book is the record to download from
 static QVariantList ownVariants(const QVariantMap &book)
 {
     QVariantList variants;
     QStringList kinds;
-    QVariantList files = book.value("files").toList();
-    std::stable_sort(files.begin(), files.end(), [](const QVariant &a, const QVariant &b) {
-        return a.toMap().value("role") == "primary" && b.toMap().value("role") != "primary";
-    });
-    for (const QVariant &value : std::as_const(files)) {
-        const QVariantMap file = value.toMap();
-        const QString role = file.value("role").toString();
+    for (const QVariantMap &file : bookFiles(book)) {
         const QString format = file.value("format").toString();
-        if (format.isEmpty() || (role != "primary" && role != "content"))
-            continue;
         const QString kind = mediaKind(format);
         if (kinds.contains(kind))
             continue;
@@ -570,18 +579,30 @@ static QVariantList ownVariants(const QVariantMap &book)
 static QStringList ownFormats(const QVariantMap &book)
 {
     QStringList formats;
-    for (const QVariant &value : book.value("files").toList()) {
-        const QVariantMap file = value.toMap();
-        const QString role = file.value("role").toString();
+    for (const QVariantMap &file : bookFiles(book)) {
         const QString format = file.value("format").toString().toLower();
-        if (format.isEmpty() || (role != "primary" && role != "content") || formats.contains(format))
-            continue;
-        if (role == "primary")
-            formats.prepend(format);
-        else
+        if (!formats.contains(format))
             formats.append(format);
     }
     return formats;
+}
+
+QVariantList BookOrbitClient::formatFiles(const QVariantMap &book) const
+{
+    QVariantList files;
+    QStringList formats;
+    for (const QVariantMap &file : bookFiles(book)) {
+        const QString format = file.value("format").toString().toLower();
+        if (formats.contains(format))
+            continue;
+        formats.append(format);
+        files.append(QVariantMap{
+            {"format", format},
+            {"sizeBytes", file.value("sizeBytes", 0)},
+            {"kind", mediaKind(format)},
+        });
+    }
+    return files;
 }
 
 void BookOrbitClient::addCompanions(QVariantMap &row, const QList<QVariantMap> &companions, bool hideAudio)

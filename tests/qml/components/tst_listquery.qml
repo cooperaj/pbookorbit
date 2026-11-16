@@ -93,6 +93,13 @@ UiTestCase {
         compare(query.filterName, "All titles")
         compare(query.formats, [])
 
+        query.chooseFilter(1)
+
+        compare(query.filterName, "Ebooks")
+        verify(query.formats.indexOf("epub") >= 0, "ebook formats")
+        verify(query.formats.indexOf("cbz") >= 0, "comics too")
+        verify(query.formats.indexOf("m4b") < 0, "not audiobook ones")
+
         query.chooseFilter(2)
 
         compare(query.filterName, "Audiobooks")

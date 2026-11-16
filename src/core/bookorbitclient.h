@@ -228,6 +228,9 @@ public:
     Q_INVOKABLE void setAuthorSeriesSort(const QString &field, bool descending);
     // The author's unfiltered row from authorsList, or empty if not listed
     Q_INVOKABLE QVariantMap authorRow(int authorId) const;
+    // A record's book files, one per format, primary first: [{format, sizeBytes, kind}],
+    // with the format in lower case and kind "ebook" or "audiobook"
+    Q_INVOKABLE QVariantList formatFiles(const QVariantMap &book) const;
     // Placeholder for a missing author photo, as BookOrbit draws it: initials ("AT" for
     // "Adrian Tchaikovsky") on a gradient chosen from the name, near the accent hue.
     // Returns {initials, from, to, color}, saturated for e-ink.

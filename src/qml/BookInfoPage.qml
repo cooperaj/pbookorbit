@@ -96,17 +96,14 @@ InfoPage {
     // What Open with opens (see Books.openWithTarget), for the chosen version
     readonly property var openWithTarget: version === null || downloads.revision < 0 ? null
                                           : Books.openWithTarget(book, downloads, hasKinds ? kind : "")
-    // One file per format, in the row's order: [{format, sizeBytes}]. Only the chosen
-    // version's when there's a choice.
+    // One file per format, each record's primary first (see bookOrbit.formatFiles()). Only
+    // the chosen version's when there's a choice.
     readonly property var files: {
         const files = []
         for (const record of records) {
-            for (const file of record.files || []) {
-                const format = (file.format || "").toLowerCase()
-                if (format !== "" && (file.role === "primary" || file.role === "content")
-                        && (!hasKinds || downloads.kindOf(format) === kind)
-                        && files.every(f => f.format !== format))
-                    files.push({ format: format, sizeBytes: file.sizeBytes || 0 })
+            for (const file of bookOrbit.formatFiles(record)) {
+                if ((!hasKinds || file.kind === kind) && files.every(f => f.format !== file.format))
+                    files.push(file)
             }
         }
         return files

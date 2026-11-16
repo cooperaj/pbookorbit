@@ -118,6 +118,11 @@ QString Downloads::kindOf(const QString &format) const
     return mediaKind(format);
 }
 
+QStringList Downloads::formatsOf(const QString &kind) const
+{
+    return kind == "audiobook" ? audioFormats() : ebookFormats();
+}
+
 QStringList Downloads::pathsOnDevice(int bookId) const
 {
     QStringList paths;

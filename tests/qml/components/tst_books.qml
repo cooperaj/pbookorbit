@@ -61,6 +61,21 @@ UiTestCase {
         verify(!Books.versionOnDevice({bookId: 7, kind: ""}, downloads))
     }
 
+    // A record's book files for the info page: one per format, primary first, no covers
+    function test_formatFiles() {
+        const files = bookOrbit.formatFiles({id: 5, files: [
+            {id: 51, format: "PDF", role: "content", sizeBytes: 300},
+            {id: 50, format: "EPUB", role: "primary", sizeBytes: 100},
+            {id: 52, format: "jpg", role: "cover", sizeBytes: 9},
+            {id: 53, format: "epub", role: "content", sizeBytes: 200},
+            {id: 54, format: "M4B", role: "content", sizeBytes: 900},
+        ]})
+
+        compare(files.map(f => f.format), ["epub", "pdf", "m4b"])
+        compare(files.map(f => f.sizeBytes), [100, 300, 900])
+        compare(files.map(f => f.kind), ["ebook", "ebook", "audiobook"])
+    }
+
     // The variants, or else the file a download would pick, as a version with no kind
     function test_versions() {
         compare(Books.versions({id: 2, variants: [ebook, audiobook]}, downloads).length, 2)

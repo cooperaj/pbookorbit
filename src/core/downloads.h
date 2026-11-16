@@ -48,6 +48,8 @@ public:
     Q_INVOKABLE QStringList kindsOnDevice(int bookId) const;
     // "ebook" or "audiobook", for a format such as "epub"
     Q_INVOKABLE QString kindOf(const QString &format) const;
+    // The formats of a kind, "ebook" or "audiobook" (see formats.h)
+    Q_INVOKABLE QStringList formatsOf(const QString &kind) const;
     // Downloaded books' list entries as saved at download time, plus downloadedFormats
     Q_INVOKABLE QVariantList downloadedBooks() const;
     // The file a download would fetch, {id, format, sizeBytes, folder} where folder is

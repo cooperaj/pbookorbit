@@ -13,14 +13,9 @@ QtObject {
     readonly property string sortField: sorts.length > 0 ? sorts[sortIndex].field : ""
     // Whether the view has the filter button (content type and downloaded only)
     property bool hasFilter: true
-    // The content types, as filterIndex counts them, and their file formats (BookOrbit's
-    // EBOOK_FORMAT_LIST and AUDIO_FORMAT_LIST; none for all)
+    // The content types, as filterIndex counts them, and their file formats (none for all)
     readonly property var filterOptions: ["All titles", "Ebooks", "Audiobooks"]
-    readonly property var filterFormats: [
-        [],
-        ["epub", "kepub", "mobi", "azw3", "azw", "fb2", "pdf", "djvu"],
-        ["m4b", "mp3", "m4a", "opus", "ogg", "flac"]
-    ]
+    readonly property var filterFormats: [[], downloads.formatsOf("ebook"), downloads.formatsOf("audiobook")]
     // The chosen content type's name and formats
     readonly property string filterName: filterOptions[filterIndex]
     readonly property var formats: filterFormats[filterIndex]

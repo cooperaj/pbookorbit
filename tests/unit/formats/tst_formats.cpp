@@ -48,6 +48,16 @@ private slots:
         QCOMPARE(::isBookFormat(format), book);
         QCOMPARE(::isAudioFormat(format), audio);
     }
+
+    // The content type filter's lists: every format is one kind or the other
+    void eachListedFormatHasItsKind()
+    {
+        for (const QString &format : ::ebookFormats())
+            QCOMPARE(::mediaKind(format), QString("ebook"));
+        for (const QString &format : ::audioFormats())
+            QCOMPARE(::mediaKind(format), QString("audiobook"));
+        QVERIFY(::ebookFormats().contains("cbr"));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestFormats)
