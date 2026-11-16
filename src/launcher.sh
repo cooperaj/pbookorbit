@@ -18,12 +18,15 @@ log() {
 # sh reads a script as it runs it, so run a copy, leaving this one free to be replaced
 if [ "$(dirname "$0")" != /tmp ]; then
     : >"$LOG"
+    # Its own errors too, such as a failed exec
+    exec 2>>"$LOG"
     log "started as $0 $*"
     cp -f "$0" /tmp/pbookorbit.app && chmod 755 /tmp/pbookorbit.app
     # For the app's tile, which would otherwise start the app without this
     export PBOOKORBIT_LAUNCHER="$0"
     exec /tmp/pbookorbit.app "$@"
 fi
+log "running from /tmp"
 
 # Already running: bring it to the front instead
 running=$(cat "$PID_FILE" 2>/dev/null)
@@ -51,8 +54,10 @@ while :; do
     status=$?
     log "exited with $status"
 
-    # A new version that fails as it starts is swapped for the one before
-    if [ -n "$updated" ] && [ "$status" -ne 0 ] && [ $(($(date +%s) - started)) -lt 30 ] \
+    # A new version that fails as it starts is swapped for the one before. expr, as the
+    # firmware's sh has no $((...)).
+    # shellcheck disable=SC2003
+    if [ -n "$updated" ] && [ "$status" -ne 0 ] && [ "$(expr "$(date +%s)" - "$started")" -lt 30 ] \
             && [ -f "$BINARY.old" ]; then
         mv -f "$BINARY.old" "$BINARY" && sync
         rm -f "$RESTART"
