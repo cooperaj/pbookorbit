@@ -170,7 +170,8 @@ The app runs from `applications/pbookorbit/pbookorbit`, started by
 launcher). After the app exits, the script installs a binary left at
 `pbookorbit/update/pbookorbit` (keeping the old one as `pbookorbit.old`), and starts the
 app again if it left a `pbookorbit/restart` file. If a new binary fails within 30 seconds
-of starting, it puts the old one back. It logs to `pbookorbit-launcher.log`,
+of starting, it puts the old one back; otherwise it deletes the old one once the new one has
+run. It logs to `pbookorbit-launcher.log`,
 with the app's output, and passes its own path in `PBOOKORBIT_LAUNCHER` so the home screen
 tile starts the script rather than the binary.
 

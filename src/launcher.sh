@@ -58,12 +58,18 @@ while :; do
     # Any start after this is a restart, so the app keeps its log
     export PBOOKORBIT_RESTARTED=1
 
+    # A new version that fails as it starts is swapped for the one before
     # shellcheck disable=SC2003
     if [ -n "$updated" ] && [ "$status" -ne 0 ] && [ "$(expr "$(date +%s)" - "$started")" -lt 30 ]; then
         mv -f "$BINARY.old" "$BINARY" && sync
         rm -f "$RESTART"
         log "update failed to start, going back to the version before"
         continue
+    fi
+    # The new version started, so the one before isn't needed
+    if [ -n "$updated" ]; then
+        rm -f "$BINARY.old"
+        log "removed the version before"
     fi
 
     [ -f "$RESTART" ] || break
