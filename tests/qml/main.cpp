@@ -17,6 +17,7 @@
 #include "core/database.h"
 #include "core/diagnostics.h"
 #include "core/downloads.h"
+#include "core/updater.h"
 #include "core/formats.h"
 #include "fakeinkview.h"
 #include "fakekeyboard.h"
@@ -39,8 +40,8 @@ class TestApp : public QObject
     Q_PROPERTY(bool offline READ offline WRITE setOffline)
 
 public:
-    TestApp(QQmlEngine *engine, FakeInkview *inkview, FakeKeyboard *keyboard)
-        : QObject(engine), m_engine(engine), m_inkview(inkview), m_keyboard(keyboard)
+    TestApp(QQmlEngine *engine, FakeServer *server, FakeInkview *inkview, FakeKeyboard *keyboard)
+        : QObject(engine), m_engine(engine), m_server(server), m_inkview(inkview), m_keyboard(keyboard)
     {
         reset();
     }
@@ -131,6 +132,9 @@ private:
         connect(objects->client.get(), &BookOrbitClient::savedBooksChanged, objects->downloads.get(),
                 &Downloads::entriesChanged);
         objects->browser = std::make_unique<Browser>();
+        // GitHub's releases come from the fake server too, at /releases. The build is
+        // 0.9.0 for an Era Color (B300); the firmware option says what it runs.
+        objects->updater = std::make_unique<Updater>(m_server->url() + "/releases", "0.9.0", "B300-6.10");
         objects->eink = std::make_unique<Eink>();
         objects->eink->followNightMode();
         objects->launcherTile = std::make_unique<LauncherTile>();
@@ -141,6 +145,7 @@ private:
         context->setContextProperty("downloads", objects->downloads.get());
         context->setContextProperty("bookFinder", objects->bookFinder.get());
         context->setContextProperty("browser", objects->browser.get());
+        context->setContextProperty("updater", objects->updater.get());
         context->setContextProperty("eink", objects->eink.get());
         context->setContextProperty("diagnostics", objects->log.get());
         context->setContextProperty("launcherTile", objects->launcherTile.get());
@@ -244,11 +249,13 @@ private:
         std::unique_ptr<Downloads> downloads;
         std::unique_ptr<BookFinder> bookFinder;
         std::unique_ptr<Browser> browser;
+        std::unique_ptr<Updater> updater;
         std::unique_ptr<Eink> eink;
         std::unique_ptr<LauncherTile> launcherTile;
     };
 
     QQmlEngine *m_engine;
+    FakeServer *m_server;
     FakeInkview *m_inkview;
     FakeKeyboard *m_keyboard;
     std::unique_ptr<Objects> m_objects;
@@ -279,13 +286,14 @@ public slots:
         context->setContextProperty("dpScale", 1.0);
         context->setContextProperty("screenWidth", 600);
         context->setContextProperty("windowHeight", 800);
-        context->setContextProperty("fakeServer", new FakeServer(engine));
+        auto *server = new FakeServer(engine);
+        context->setContextProperty("fakeServer", server);
         auto *inkview = new FakeInkview(engine);
         context->setContextProperty("inkview", inkview);
         // Not measured from the device: tall enough to cover the sign-in form's password field
         auto *keyboard = new FakeKeyboard(QSizeF(600, 800), 440, engine);
         context->setContextProperty("keyboard", keyboard);
-        context->setContextProperty("testApp", new TestApp(engine, inkview, keyboard));
+        context->setContextProperty("testApp", new TestApp(engine, server, inkview, keyboard));
     }
 };
 

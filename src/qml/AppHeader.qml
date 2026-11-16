@@ -2,7 +2,7 @@ import QtQuick
 import "units.js" as Units
 import "night.js" as Night
 
-// Top toolbar: home button, title, optional search and menu buttons, and a 1px line below.
+// Top toolbar: home button, title, optional search button, menu button, and a 1px line below.
 // Offline, a small crossed-out Wi-Fi icon follows the title.
 // As in the system apps, home goes to the dashboard. The title is tappable too; six quick
 // taps emit secretTapped(). Follows AppHeader.qml from the SDK's qml_test: theme icons at
@@ -13,7 +13,6 @@ Rectangle {
     property bool menuOpen: false
     property bool showSearch: false
     property bool offline: false
-    property bool showMenu: true
     signal homeClicked()
     signal titleClicked()
     signal secretTapped()
@@ -112,7 +111,6 @@ Rectangle {
         IconButton {
             id: menuButton
             objectName: "menuButton"
-            visible: header.showMenu
             // bw_menu_close_b is the inverted look, shown while pressed or while the menu
             // is open
             icon: header.menuOpen ? "bw_menu_close_b" : "bw_menu_open_b"

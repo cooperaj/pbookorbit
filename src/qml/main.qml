@@ -98,8 +98,6 @@ Window {
         menuOpen: menu.visible
         offline: bookOrbit.signedIn && !bookOrbit.online
         showSearch: bookOrbit.signedIn
-        // Only has Sign out
-        showMenu: bookOrbit.signedIn
         onHomeClicked: Qt.quit()
         onTitleClicked: root.backToTop()
         onSecretTapped: {
@@ -618,6 +616,15 @@ Window {
                 findBooksDialog.search()
             }
         }
+        // Signed out too, in case an update is what signing in needs
+        PopupMenuItem {
+            objectName: "checkForUpdates"
+            text: "Check for updates"
+            onClicked: {
+                menu.visible = false
+                updateDialog.check()
+            }
+        }
         PopupMenuItem {
             objectName: "signOut"
             visible: bookOrbit.signedIn
@@ -779,6 +786,11 @@ Window {
     FindBooksDialog {
         id: findBooksDialog
         objectName: "findBooksDialog"
+        anchors.fill: parent
+    }
+    UpdateDialog {
+        id: updateDialog
+        objectName: "updateDialog"
         anchors.fill: parent
     }
     // Shown when tapping the title six times turns diagnostics logging on or off

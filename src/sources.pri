@@ -9,6 +9,7 @@ SOURCES += \
     $$PWD/core/diagnostics.cpp \
     $$PWD/core/downloads.cpp \
     $$PWD/core/systemlibrary.cpp \
+    $$PWD/core/updater.cpp \
     $$PWD/ui/accents.cpp \
     $$PWD/ui/covers.cpp \
     $$PWD/ui/eink.cpp \
@@ -26,6 +27,7 @@ HEADERS += \
     $$PWD/core/downloads.h \
     $$PWD/core/formats.h \
     $$PWD/core/systemlibrary.h \
+    $$PWD/core/updater.h \
     $$PWD/ui/accents.h \
     $$PWD/ui/covers.h \
     $$PWD/ui/eink.h \

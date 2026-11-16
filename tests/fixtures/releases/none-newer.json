@@ -1,0 +1,44 @@
+[
+  {
+    "tag_name": "0.9.0",
+    "name": "0.9.0",
+    "draft": false,
+    "prerelease": true,
+    "html_url": "https://github.com/cooperaj/pbookorbit/releases/tag/0.9.0",
+    "assets": [
+      {
+        "name": "pbookorbit-0.9.0-B288-6.10.zip",
+        "size": 836333,
+        "digest": "sha256:b251880b67fe35d155debf74e2fc212e1278ba2abfa4c631d0ace0bbef54b4dc",
+        "browser_download_url": "https://github.com/cooperaj/pbookorbit/releases/download/0.9.0/pbookorbit-0.9.0-B288-6.10.zip"
+      },
+      {
+        "name": "pbookorbit-0.9.0-B300-6.10.zip",
+        "size": 836333,
+        "digest": "sha256:b251880b67fe35d155debf74e2fc212e1278ba2abfa4c631d0ace0bbef54b4dc",
+        "browser_download_url": "https://github.com/cooperaj/pbookorbit/releases/download/0.9.0/pbookorbit-0.9.0-B300-6.10.zip"
+      }
+    ]
+  },
+  {
+    "tag_name": "0.8.0",
+    "name": "0.8.0",
+    "draft": false,
+    "prerelease": true,
+    "html_url": "https://github.com/cooperaj/pbookorbit/releases/tag/0.8.0",
+    "assets": [
+      {
+        "name": "pbookorbit-0.8.0-B288-6.10.zip",
+        "size": 836333,
+        "digest": "sha256:b251880b67fe35d155debf74e2fc212e1278ba2abfa4c631d0ace0bbef54b4dc",
+        "browser_download_url": "https://github.com/cooperaj/pbookorbit/releases/download/0.8.0/pbookorbit-0.8.0-B288-6.10.zip"
+      },
+      {
+        "name": "pbookorbit-0.8.0-B300-6.10.zip",
+        "size": 836333,
+        "digest": "sha256:b251880b67fe35d155debf74e2fc212e1278ba2abfa4c631d0ace0bbef54b4dc",
+        "browser_download_url": "https://github.com/cooperaj/pbookorbit/releases/download/0.8.0/pbookorbit-0.8.0-B300-6.10.zip"
+      }
+    ]
+  }
+]

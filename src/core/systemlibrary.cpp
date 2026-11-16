@@ -24,12 +24,16 @@ QString firmwareVersion()
     return version ? QString::fromUtf8(version) : QString();
 }
 
-bool supported()
+QString firmwareRelease()
 {
     // "U700k3.6.10.2359": model, then major.minor.build
-    static const QRegularExpression release(R"((\d+)\.(\d+)\.\d+$)");
-    const QRegularExpressionMatch match = release.match(firmwareVersion());
-    return match.hasMatch() && CHECKED_FIRMWARE.contains(match.captured(1) + "." + match.captured(2));
+    static const QRegularExpression release(R"((\d+\.\d+)\.\d+$)");
+    return release.match(firmwareVersion()).captured(1);
+}
+
+bool supported()
+{
+    return CHECKED_FIRMWARE.contains(firmwareRelease());
 }
 
 // Each ebook file on the device's storage (storage 1; cloud copies have no folder), as its

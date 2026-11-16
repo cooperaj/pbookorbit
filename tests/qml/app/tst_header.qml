@@ -20,13 +20,17 @@ AppTestCase {
         compare(homeTaps.count, 1)
     }
 
-    // Home works signed out too, unlike search and the menu
-    function test_signedOutHasOnlyHome() {
+    // Home and the menu work signed out too, unlike search. The menu only checks for
+    // updates then.
+    function test_signedOutHasHomeAndTheMenu() {
         open()
 
         verify(find("homeButton").visible, "home")
         verify(!find("searchButton").visible, "no search")
-        verify(!find("menuButton").visible, "no menu")
+        tap("menuButton")
+        verify(find("checkForUpdates").visible, "Check for updates")
+        verify(!find("findBooks").visible, "no Find books")
+        verify(!find("signOut").visible, "no Sign out")
     }
 
     function test_titleScrollsBackToTheTop() {

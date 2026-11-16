@@ -170,6 +170,9 @@ public:
     Q_INVOKABLE void signOut();
     // Asks the system to connect Wi-Fi (its own dialog), then checks the server is there
     Q_INVOKABLE void goOnline();
+    // On the device, connects Wi-Fi if needed, with the system's dialog. Returns whether it's
+    // connected. For requests the user asked for, as it blocks while connecting.
+    static bool ensureNetwork();
 
     // Sets the book list's sort and filter, and reloads it.
     //   sortField   addedAt, title, author or lastReadAt
@@ -416,9 +419,6 @@ private:
     // PBOOKORBIT_OFFLINE=1: no network, and every request fails. Read each time, so tests
     // can turn it off.
     static bool simulatingOffline();
-    // On the device, connects Wi-Fi if needed, with the system's dialog. Returns whether it's
-    // connected.
-    bool ensureNetwork();
     // On the device, connects Wi-Fi silently if needed, then calls then(connected). That takes
     // seconds, so it's done on another thread and the app carries on drawing. Calls made
     // meanwhile wait for the same connection.

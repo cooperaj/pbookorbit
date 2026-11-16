@@ -15,6 +15,9 @@ namespace systemlibrary {
 // The firmware's version, e.g. "U700k3.6.10.2359"
 QString firmwareVersion();
 
+// Its release, major.minor, e.g. "6.10". Empty if the version doesn't say.
+QString firmwareRelease();
+
 // Whether the schema is known for this firmware, so reading it can be tried
 bool supported();
 
