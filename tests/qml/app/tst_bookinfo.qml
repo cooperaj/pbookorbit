@@ -12,7 +12,6 @@ AppTestCase {
     readonly property var dune: ({id: 1, title: "Dune", authors: ["Frank Herbert"], formats: ["epub"]})
     readonly property var hailMary: ({id: 5, title: "Project Hail Mary", authors: ["Andy Weir"],
                                       formats: ["epub", "m4b"]})
-    readonly property string audiobookPlayer: "/ebrmain/bin/audio_books.app"
 
     function onDevice(book, file, extra) {
         return Object.assign({}, book, {file: file}, extra || {})
@@ -37,10 +36,7 @@ AppTestCase {
 
     // Opens the book's info page from its menu, and returns it
     function openInfo(title) {
-        const menu = find("bookMenu")
-        menu.open(bookRow(title))
-        menu.show()
-        tap("bookInfo", menu)
+        tap("bookInfo", holdBook(title))
         const info = find("bookInfoPage")
         verify(info.visible, "the info page shows")
         return info
@@ -235,7 +231,7 @@ AppTestCase {
         verify(dialog.visible, "the delete dialog shows")
         compare(find("message", dialog).text,
                 "Are you sure you want to delete the audiobook of Project Hail Mary from your device?")
-        tapButton("Yes", dialog)
+        tapText("Yes", dialog)
         compare(testApp.filesIn("Audio Books"), [], "the audiobook is gone")
         compare(testApp.filesIn("Books"), ["Project Hail Mary.epub"], "the ebook stays")
     }
@@ -250,9 +246,7 @@ AppTestCase {
         tap("openBook", actions)
 
         verify(!actions.visible, "the menu closes")
-        compare(inkview.openedTasks.length, 1, "one app started")
-        compare(inkview.openedTasks[0].app, audiobookPlayer)
-        verify(inkview.openedTasks[0].args[1].endsWith("/Audio Books/The Martian.m4b"))
+        expectOpenedInPlayer("/Audio Books/The Martian.m4b")
     }
 
     // Lines go between items, never under the last
@@ -272,7 +266,7 @@ AppTestCase {
 
         tap("ebookHalf", info)
         tap("deleteBook", chooseAction(info))
-        tapButton("Yes", find("deleteDialog"))
+        tapText("Yes", find("deleteDialog"))
         actions = chooseAction(info)
         compare(menuLines(actions), "download-, openWith", "the ebook, deleted")
     }
@@ -296,8 +290,6 @@ AppTestCase {
         tap("PB Reader", actions)
 
         verify(!actions.visible, "the menu closes")
-        compare(inkview.openedBooks.length, 1, "one book opened")
-        verify(inkview.openedBooks[0].path.endsWith("/Books/Dune.epub"))
-        compare(inkview.openedBooks[0].app, "eink-reader.app", "in PB Reader")
+        expectOpenedInReader("/Books/Dune.epub", "eink-reader.app")
     }
 }

@@ -42,29 +42,59 @@ TestCase {
         mouseClick(item)
     }
 
-    // A dialog's button by its label, e.g. "Download"
-    function findButton(label, under) {
+    // The text items under root, or under another item, that show exactly this text on
+    // screen: visible, and inside the window and any list they're in. Matches the text as
+    // set, so a button drawn in capitals is still "Download".
+    function textItems(text, under) {
+        const start = under || root
+        const window = root.contentItem || root
+        const found = []
         const walk = (item) => {
-            if (item.objectName && item.objectName.endsWith("Button") && item.modelData
-                    && item.modelData[0] === label)
-                return item
-            for (const child of item.children) {
-                const found = walk(child)
-                if (found)
-                    return found
-            }
-            return null
+            if (!item.visible)
+                return
+            if (item.font !== undefined && item.text === text && onScreen(item, window))
+                found.push(item)
+            for (const child of item.children || [])
+                walk(child)
         }
-        const button = walk(under || root)
-        verify(button, "no button " + label)
-        return button
+        walk(start.contentItem || start)
+        return found
     }
 
-    // Waits for the buttons to be laid out first, as tap() does
-    function tapButton(label, under) {
-        const button = findButton(label, under)
-        waitForItemPolished(button.parent)
-        mouseClick(button)
+    // Whether any of the item shows inside the window and each list it's in
+    function onScreen(item, window) {
+        const overlaps = (area) => {
+            const at = item.mapToItem(area, 0, 0)
+            return at.x < area.width && at.x + item.width > 0 && at.y < area.height && at.y + item.height > 0
+        }
+        if (!overlaps(window))
+            return false
+        for (let above = item.parent; above && above !== window; above = above.parent) {
+            if (above.contentY !== undefined && !overlaps(above))
+                return false
+        }
+        return true
+    }
+
+    // Waits for the text to show
+    function expectText(text, under) {
+        tryVerify(() => textItems(text, under).length > 0, 5000, "\"" + text + "\" shows")
+    }
+
+    // Waits for the text to go, if it shows
+    function expectNoText(text, under) {
+        tryVerify(() => textItems(text, under).length === 0, 5000, "\"" + text + "\" doesn't show")
+    }
+
+    // Taps the one place the text shows, e.g. a dialog's "Download" or a menu's "Delete".
+    // Waits for it to show, and for what it's in to be laid out, as tap() does.
+    function tapText(text, under) {
+        expectText(text, under)
+        const items = textItems(text, under)
+        verify(items.length === 1, "\"" + text + "\" shows " + items.length + " times")
+        for (let above = items[0].parent; above; above = above.parent)
+            waitForItemPolished(above)
+        mouseClick(items[0])
     }
 
     // Taps the field and types into it, a key at a time

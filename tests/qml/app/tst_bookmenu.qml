@@ -23,27 +23,6 @@ AppTestCase {
         openLibrary("libraries/menu.json", "libraries/menu-jump-buckets.json", options)
     }
 
-    // Opens the book's menu, and returns it. Holding the row takes over a second, for the
-    // hold and then the frame on the row, so this opens it as the hold would and skips the
-    // wait; test_holdingABookOpensItsMenu holds for real.
-    function holdBook(title) {
-        const menu = find("bookMenu")
-        menu.open(bookRow(title))
-        menu.show()
-        verify(menu.visible, "the menu opens")
-        return menu
-    }
-
-    function titlesIn(list) {
-        const titles = []
-        for (let i = 0; i < list.count; i++) {
-            const row = list.itemAtIndex(i)
-            if (row && row.visible)
-                titles.push(row.book.title)
-        }
-        return titles.join(", ")
-    }
-
     function test_holdingABookOpensItsMenu() {
         openMenuLibrary()
         const row = bookRow("Dune")
@@ -141,9 +120,7 @@ AppTestCase {
         tap("PB Reader", menu)
 
         verify(!menu.visible, "the menu closes")
-        compare(inkview.openedBooks.length, 1, "one book opened")
-        verify(inkview.openedBooks[0].path.endsWith("/Books/Dune.epub"), "Dune")
-        compare(inkview.openedBooks[0].app, "eink-reader.app", "in PB Reader")
+        expectOpenedInReader("/Books/Dune.epub", "eink-reader.app")
     }
 
     // A book not on the device downloads first, then opens in the app chosen
@@ -158,10 +135,9 @@ AppTestCase {
         const dialog = find("downloadDialog")
         verify(dialog.visible, "the download dialog shows")
         compare(dialog.message, "Download EPUB, 1.9 MB to the Books folder and open it in KOReader?")
-        tapButton("Download", dialog)
+        tapText("Download", dialog)
         tryVerify(() => !dialog.visible, 5000, "downloaded")
-        compare(inkview.openedBooks.length, 1, "one book opened")
-        compare(inkview.openedBooks[0].app, "koreader.app", "in KOReader")
+        expectOpenedInReader("/Books/Dune - Frank Herbert.epub", "koreader.app")
     }
 
     function test_noOpenWithWithoutAnAppForTheFormat() {

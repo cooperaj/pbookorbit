@@ -46,28 +46,7 @@ AppTestCase {
 
     // The results' titles, top to bottom
     function results() {
-        const list = find("searchResults")
-        const titles = []
-        for (let i = 0; i < list.count; i++) {
-            const row = list.itemAtIndex(i)
-            if (row && row.visible && row.book.title)
-                titles.push(row.book.title)
-        }
-        return titles.join(", ")
-    }
-
-    function resultRow(title) {
-        const list = find("searchResults")
-        let found = null
-        tryVerify(() => {
-            for (let i = 0; i < list.count; i++) {
-                const row = list.itemAtIndex(i)
-                if (row && row.visible && row.book.title === title)
-                    found = row
-            }
-            return found !== null
-        }, 5000, "a result for " + title)
-        return found
+        return titlesIn(find("searchResults"))
     }
 
     // A recent search's row, once the list has made it
@@ -114,7 +93,7 @@ AppTestCase {
         searchFor("hail")
 
         tryVerify(() => results() === "Project Hail Mary", 5000, "one row")
-        compare(resultRow("Project Hail Mary").book.formats, ["epub", "m4b"])
+        compare(bookRow("Project Hail Mary", "searchResults").book.formats, ["epub", "m4b"])
     }
 
     // Matched by narrator, say: the ebook isn't a result, so the audiobook's row stays
@@ -126,7 +105,7 @@ AppTestCase {
         searchFor("hail")
 
         tryVerify(() => results() === "Project Hail Mary", 5000, "the audiobook's row")
-        const row = resultRow("Project Hail Mary")
+        const row = bookRow("Project Hail Mary", "searchResults")
         compare(row.book.id, 7)
         compare(row.book.formats, ["epub", "m4b"])
     }
@@ -266,10 +245,9 @@ AppTestCase {
         openSearch()
         searchFor("dune")
 
-        mouseClick(resultRow("Dune Messiah"))
+        mouseClick(bookRow("Dune Messiah", "searchResults"))
 
-        compare(inkview.openedBooks.length, 1, "one book opened")
-        verify(inkview.openedBooks[0].path.endsWith("/Books/Dune Messiah.epub"), "Dune Messiah")
+        expectOpenedInReader("/Books/Dune Messiah.epub")
         compare(bookOrbit.recentSearches, ["dune"])
     }
 
@@ -278,7 +256,7 @@ AppTestCase {
         openSearch()
         searchFor("dune")
 
-        mouseClick(resultRow("Dune Messiah"))
+        mouseClick(bookRow("Dune Messiah", "searchResults"))
 
         const dialog = find("downloadDialog")
         verify(dialog.visible, "the download dialog shows")
@@ -293,7 +271,7 @@ AppTestCase {
         searchFor("dune")
         const menu = find("bookMenu")
 
-        resultRow("Dune Messiah").held()
+        bookRow("Dune Messiah", "searchResults").held()
 
         tryVerify(() => menu.visible, 3000, "the menu opens")
         compare(menu.book.title, "Dune Messiah", "for that book")

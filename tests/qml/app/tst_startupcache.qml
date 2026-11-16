@@ -11,18 +11,6 @@ AppTestCase {
     readonly property string books: "/api/v1/libraries/1/books"
     readonly property string refresh: "/api/v1/auth/refresh"
 
-    // The library's titles, top to bottom, "" for a row still loading
-    function titles() {
-        const list = find("bookList")
-        const shown = []
-        for (let i = 0; i < list.count; i++) {
-            const row = list.itemAtIndex(i)
-            if (row && row.visible)
-                shown.push(row.book.loaded ? row.book.title : "")
-        }
-        return shown.join(", ")
-    }
-
     // Requests for the library's pages. Not the lookups for each page's other versions (an
     // ebook's audiobook), which filter by title.
     function libraryRequests() {
@@ -42,12 +30,12 @@ AppTestCase {
 
         reopen()
 
-        tryVerify(() => titles() === "Dune, Hyperion, Neuromancer", 5000, "the saved rows")
+        tryVerify(() => titlesIn(find("bookList")) === "Dune, Hyperion, Neuromancer", 5000, "the saved rows")
         compare(libraryRequests(), 1, "before the server is asked, past the first start's")
 
         serveLibrary("libraries/mixed.json")
         fakeServer.release("POST", refresh)
-        tryVerify(() => titles() === "Dune, Neuromancer, The Martian", 5000, "the server's rows replace them")
+        tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer, The Martian", 5000, "the server's rows replace them")
     }
 
     // The saved rows keep the list's length and its A-Z sections, so the rail works and the
@@ -71,10 +59,10 @@ AppTestCase {
     function test_otherSortIsntShownAtStart() {
         fakeServer.respond("POST", books, 200, "libraries/mixed-by-author.json", {sort: [{field: "author"}]})
         openLibrary("libraries/mixed.json", "libraries/mixed-jump-buckets.json")
-        tryVerify(() => titles() === "Dune, Neuromancer, The Martian", 5000)
+        tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer, The Martian", 5000)
         tap("sortButton", find("bookList"))
         tap("Author", find("sortMenu"))
-        tryVerify(() => titles() === "Neuromancer, Dune, The Martian", 5000, "by author")
+        tryVerify(() => titlesIn(find("bookList")) === "Neuromancer, Dune, The Martian", 5000, "by author")
         wait(2500)
         fakeServer.hold("POST", refresh)
 

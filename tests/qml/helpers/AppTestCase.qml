@@ -30,9 +30,12 @@ UiTestCase {
         open(savedSession, options)
     }
 
-    // The library's row for a title, once it has loaded
-    function bookRow(title) {
-        const list = find("bookList")
+    readonly property string audiobookPlayer: "/ebrmain/bin/audio_books.app"
+
+    // A list's row for a title, once it has loaded: the library's unless another list's name
+    // is given, e.g. "searchResults"
+    function bookRow(title, listName) {
+        const list = find(listName || "bookList")
         let row = null
         tryVerify(() => {
             for (let i = 0; i < list.count; i++) {
@@ -45,6 +48,56 @@ UiTestCase {
             return false
         }, 5000, "a row for " + title)
         return row
+    }
+
+    // The titles of a list's rows made so far, top to bottom, "" for a row still loading:
+    // "Dune, Dune Messiah"
+    function titlesIn(list) {
+        const titles = []
+        for (let i = 0; i < list.count; i++) {
+            const row = list.itemAtIndex(i)
+            if (row && row.visible)
+                titles.push(row.book.loaded === false ? "" : row.book.title)
+        }
+        return titles.join(", ")
+    }
+
+    // Opens a book's menu as holding its row would, and returns it. A real hold takes over a
+    // second, for the hold and then the frame on the row, so this skips the wait;
+    // tst_bookmenu's test_holdingABookOpensItsMenu holds for real.
+    function holdBook(title, listName) {
+        const menu = find("bookMenu")
+        menu.open(bookRow(title, listName))
+        menu.show()
+        verify(menu.visible, "the menu opens")
+        return menu
+    }
+
+    // Waits for the book's row to be marked as on the device, or not
+    function expectOnDevice(title) {
+        tryVerify(() => find("onDevicePill", bookRow(title)).visible, 5000, title + " is marked on the device")
+    }
+
+    function expectNotOnDevice(title) {
+        tryVerify(() => !find("onDevicePill", bookRow(title)).visible, 5000, title + " isn't marked on the device")
+    }
+
+    // Checks the one thing opened was the book at a path ending with file, in the system's
+    // reader or the app given
+    function expectOpenedInReader(file, app) {
+        compare(inkview.openedBooks.length, 1, "one book opened")
+        verify(inkview.openedBooks[0].path.endsWith(file), inkview.openedBooks[0].path + " is " + file)
+        compare(inkview.openedBooks[0].app, app || "", app ? "in " + app : "in the system's reader")
+        compare(inkview.openedTasks.length, 0, "no other app started")
+    }
+
+    // Checks the one thing opened was the audiobook player, on a path ending with file
+    function expectOpenedInPlayer(file) {
+        compare(inkview.openedTasks.length, 1, "one app started")
+        compare(inkview.openedTasks[0].app, audiobookPlayer, "the audiobook player")
+        compare(inkview.openedTasks[0].args[0], "--bookPlay")
+        verify(inkview.openedTasks[0].args[1].endsWith(file), inkview.openedTasks[0].args[1] + " is " + file)
+        compare(inkview.openedBooks.length, 0, "no book opened in the reader")
     }
 
     // Closes the app and opens it again on the same database, as when the device starts it

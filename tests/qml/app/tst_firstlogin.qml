@@ -50,9 +50,9 @@ AppTestCase {
         compare(dialog.message, "Found 1 book from your BookOrbit library, now listed as downloaded.")
         verify(downloads.isOnDevice(1), "Dune is recorded as downloaded")
         verify(!downloads.isOnDevice(2), "Hyperion isn't")
-        tryVerify(() => find("onDevicePill", bookRow("Dune")).visible, 5000, "Dune is marked on the device")
-        verify(!find("onDevicePill", bookRow("Hyperion")).visible, "Hyperion isn't marked")
-        verify(!find("onDevicePill", bookRow("Neuromancer")).visible, "Neuromancer isn't marked")
+        expectOnDevice("Dune")
+        expectNotOnDevice("Hyperion")
+        expectNotOnDevice("Neuromancer")
     }
 
     // Books not in the library are counted after the found ones

@@ -26,10 +26,7 @@ AppTestCase {
 
     // Chooses Delete in the book's menu, and returns the dialog it opens
     function deleteBook(title) {
-        const menu = find("bookMenu")
-        menu.open(bookRow(title))
-        menu.show()
-        tap("deleteBook", menu)
+        tap("deleteBook", holdBook(title))
         const dialog = find("deleteDialog")
         verify(dialog.visible, "the delete dialog shows")
         return dialog
@@ -40,12 +37,12 @@ AppTestCase {
         const dialog = deleteBook("Dune")
         compare(message(dialog), "Are you sure you want to delete Dune from your device?")
 
-        tapButton("Yes", dialog)
+        tapText("Yes", dialog)
 
         verify(!dialog.visible, "the dialog closes")
         compare(testApp.filesIn("Books"), [], "the file is gone")
         verify(!downloads.isOnDevice(1), "no longer recorded as downloaded")
-        tryVerify(() => !find("onDevicePill", bookRow("Dune")).visible, 5000, "unmarked in the list")
+        expectNotOnDevice("Dune")
         compare(inkview.libraryScans, 1, "the system library is asked to drop it")
     }
 
@@ -53,7 +50,7 @@ AppTestCase {
         openDownloadsLibrary({books: [onDevice(dune, "Dune.epub")]})
         const dialog = deleteBook("Dune")
 
-        tapButton("No", dialog)
+        tapText("No", dialog)
 
         verify(!dialog.visible, "the dialog closes")
         compare(testApp.filesIn("Books"), ["Dune.epub"])
@@ -68,7 +65,7 @@ AppTestCase {
                                                 formats: ["m4b"]}, "The Martian.m4b")],
                               files: ["Copied.epub"]})
 
-        tapButton("Yes", deleteBook("Dune"))
+        tapText("Yes", deleteBook("Dune"))
 
         compare(testApp.filesIn("Books"), ["Copied.epub"])
         compare(testApp.filesIn("Audio Books"), ["The Martian.m4b"])
@@ -82,13 +79,13 @@ AppTestCase {
         const dialog = deleteBook("Project Hail Mary")
         compare(message(dialog), "Delete the ebook or the audiobook of Project Hail Mary from your device?")
 
-        tapButton("audiobook", dialog)
+        tapText("audiobook", dialog)
 
         verify(!dialog.visible, "the dialog closes")
         compare(testApp.filesIn("Audio Books"), [], "the audiobook is gone")
         compare(testApp.filesIn("Books"), ["Project Hail Mary.epub"], "the ebook stays")
         compare(downloads.kindsOnDevice(5), ["ebook"])
-        verify(find("onDevicePill", bookRow("Project Hail Mary")).visible, "still marked in the list")
+        expectOnDevice("Project Hail Mary")
     }
 
     function test_cancelKeepsBothVersions() {
@@ -96,7 +93,7 @@ AppTestCase {
                                       onDevice(hailMary, "Project Hail Mary.m4b")]})
         const dialog = deleteBook("Project Hail Mary")
 
-        tapButton("Cancel", dialog)
+        tapText("Cancel", dialog)
 
         verify(!dialog.visible)
         compare(downloads.kindsOnDevice(5), ["ebook", "audiobook"])
@@ -108,7 +105,7 @@ AppTestCase {
         const dialog = deleteBook("Project Hail Mary")
         compare(message(dialog), "Are you sure you want to delete Project Hail Mary from your device?")
 
-        tapButton("Yes", dialog)
+        tapText("Yes", dialog)
 
         compare(testApp.filesIn("Audio Books"), [])
         verify(!downloads.isOnDevice(5))
@@ -118,12 +115,12 @@ AppTestCase {
         openDownloadsLibrary({books: [onDevice(dune, "Dune.epub", {undeletable: true})]})
         const dialog = deleteBook("Dune")
 
-        tapButton("Yes", dialog)
+        tapText("Yes", dialog)
 
         verify(dialog.visible, "the dialog stays")
         compare(message(dialog), "Couldn't delete Dune from your device.")
         verify(downloads.isOnDevice(1), "still recorded as downloaded")
-        tapButton("Close", dialog)
+        tapText("Close", dialog)
         verify(!dialog.visible)
     }
 }

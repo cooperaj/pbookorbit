@@ -26,24 +26,10 @@ AppTestCase {
     // Opens the books of Dune's author or series ("authorBooks", "seriesBooks") from its
     // menu, and returns the page
     function openBooksOf(item) {
-        const menu = find("bookMenu")
-        menu.open(bookRow("Dune"))
-        menu.show()
-        tap(item, menu)
+        tap(item, holdBook("Dune"))
         const page = find("booksOfPage")
         verify(page.visible, "the books show")
         return page
-    }
-
-    function titles(page) {
-        const list = page.list
-        const shown = []
-        for (let i = 0; i < list.count; i++) {
-            const row = list.itemAtIndex(i)
-            if (row && row.visible)
-                shown.push(row.book.title)
-        }
-        return shown.join(", ")
     }
 
     function asked(match) {
@@ -66,7 +52,7 @@ AppTestCase {
         const page = openBooksOf("authorBooks")
 
         compare(page.kind, "Author")
-        tryVerify(() => titles(page) === "Dune, Dune Messiah", 5000)
+        tryVerify(() => titlesIn(page.list) === "Dune, Dune Messiah", 5000)
         compare(asked("Frank Herbert")[0].body.sort[0].field, "title")
         compare(sortText(page), "By Title")
         const rail = find("jumpRail", page)
@@ -80,7 +66,7 @@ AppTestCase {
         const page = openBooksOf("seriesBooks")
 
         compare(page.kind, "Series")
-        tryVerify(() => titles(page) === "Dune, Dune Messiah", 5000)
+        tryVerify(() => titlesIn(page.list) === "Dune, Dune Messiah", 5000)
         compare(asked("\"Dune\"")[0].body.sort[0].field, "seriesIndex")
         compare(sortText(page), "By Series order")
         const rail = find("jumpRail", page)
@@ -128,7 +114,7 @@ AppTestCase {
     function test_downloadedOnlyWithoutDownloadsSaysSo() {
         openMenuLibrary()
         const page = openBooksOf("authorBooks")
-        tryVerify(() => titles(page) !== "", 5000)
+        tryVerify(() => titlesIn(page.list) !== "", 5000)
 
         tap("filterButton", page)
         tap("downloadedOnly", find("filterMenu"))
@@ -155,7 +141,7 @@ AppTestCase {
     function test_errorOverItsBooks() {
         openMenuLibrary()
         const page = openBooksOf("authorBooks")
-        tryVerify(() => titles(page) === "Dune, Dune Messiah", 5000)
+        tryVerify(() => titlesIn(page.list) === "Dune, Dune Messiah", 5000)
         fakeServer.respond("POST", books, 500, "server-error.json", {sort: [{field: "author"}]})
 
         tap("sortButton", page)
@@ -164,14 +150,14 @@ AppTestCase {
         const error = find("errorLine", page)
         tryVerify(() => error.visible, 5000, "the error shows")
         compare(error.text, "Internal server error (HTTP 500)")
-        compare(titles(page), "Dune, Dune Messiah", "over the books")
+        compare(titlesIn(page.list), "Dune, Dune Messiah", "over the books")
     }
 
     // Each list has its own error, cleared when it loads again. Tested here for them all.
     function test_errorGoesWhenItLoadsAgain() {
         openMenuLibrary()
         const page = openBooksOf("authorBooks")
-        tryVerify(() => titles(page) === "Dune, Dune Messiah", 5000)
+        tryVerify(() => titlesIn(page.list) === "Dune, Dune Messiah", 5000)
         fakeServer.respond("POST", books, 500, "server-error.json", {sort: [{field: "author"}]})
         tap("sortButton", page)
         tap("Author", find("sortMenu"))
@@ -207,7 +193,7 @@ AppTestCase {
 
         const page = openBooksOf("authorBooks")
 
-        tryVerify(() => titles(page) === "Dune", 5000, "only Dune: " + titles(page))
+        tryVerify(() => titlesIn(page.list) === "Dune", 5000, "only Dune: " + titlesIn(page.list))
         compare(fakeServer.requests.length, 0)
     }
 }

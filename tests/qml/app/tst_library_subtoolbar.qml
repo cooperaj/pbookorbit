@@ -19,18 +19,6 @@ AppTestCase {
         openLibrary("libraries/mixed.json", "libraries/mixed-jump-buckets.json", options)
     }
 
-    // The titles listed, top to bottom
-    function titles() {
-        const list = find("bookList")
-        const shown = []
-        for (let i = 0; i < list.count; i++) {
-            const row = list.itemAtIndex(i)
-            if (row && row.visible)
-                shown.push(row.book.title)
-        }
-        return shown.join(", ")
-    }
-
     function chooseFilter(option) {
         tap("filterButton", find("bookList"))
         tap(option, find("filterMenu"))
@@ -43,59 +31,59 @@ AppTestCase {
 
     function test_audiobooksFilterListsOnlyAudiobooks() {
         openMixedLibrary()
-        tryVerify(() => titles() === "Dune, Neuromancer, The Martian", 5000, "the whole library")
+        tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer, The Martian", 5000, "the whole library")
 
         chooseFilter("Audiobooks")
 
-        tryVerify(() => titles() === "The Martian", 5000, "only The Martian")
+        tryVerify(() => titlesIn(find("bookList")) === "The Martian", 5000, "only The Martian")
         compare(find("filterButton", find("bookList")).text, "Audiobooks")
     }
 
     function test_ebooksFilterListsOnlyEbooks() {
         openMixedLibrary()
-        tryVerify(() => titles() === "Dune, Neuromancer, The Martian", 5000, "the whole library")
+        tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer, The Martian", 5000, "the whole library")
 
         chooseFilter("Ebooks")
 
-        tryVerify(() => titles() === "Dune, Neuromancer", 5000, "only the ebooks")
+        tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer", 5000, "only the ebooks")
         compare(find("filterButton", find("bookList")).text, "Ebooks")
     }
 
     function test_sortByAuthor() {
         openMixedLibrary()
-        tryVerify(() => titles() === "Dune, Neuromancer, The Martian", 5000, "by title first")
+        tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer, The Martian", 5000, "by title first")
 
         chooseSort("Author")
 
-        tryVerify(() => titles() === "Neuromancer, Dune, The Martian", 5000, "Gibson, Herbert, Weir")
+        tryVerify(() => titlesIn(find("bookList")) === "Neuromancer, Dune, The Martian", 5000, "Gibson, Herbert, Weir")
         compare(find("sortButton", find("bookList")).text, "By Author")
     }
 
     // A reversed sort asks the server for that direction
     function test_reversedSortAsksTheServer() {
         openMixedLibrary()
-        tryVerify(() => titles() === "Dune, Neuromancer, The Martian", 5000, "A to Z first")
+        tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer, The Martian", 5000, "A to Z first")
 
         tap("iconButton", find("sortButton", find("bookList")))
 
-        tryVerify(() => titles() === "The Martian, Neuromancer, Dune", 5000, "Z to A")
+        tryVerify(() => titlesIn(find("bookList")) === "The Martian, Neuromancer, Dune", 5000, "Z to A")
     }
 
     function test_downloadedOnlyListsJustDownloads() {
         openMixedLibrary({books: [{id: 1, title: "Dune", authors: ["Frank Herbert"], formats: ["epub"],
                                    file: "Dune.epub"}]})
-        tryVerify(() => titles() === "Dune, Neuromancer, The Martian", 5000, "the whole library")
+        tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer, The Martian", 5000, "the whole library")
 
         tap("filterButton", find("bookList"))
         tap("downloadedOnly", find("filterMenu"))
 
-        tryVerify(() => titles() === "Dune", 5000, "only Dune")
+        tryVerify(() => titlesIn(find("bookList")) === "Dune", 5000, "only Dune")
         verify(find("downloadedOnly", find("filterMenu")).checked, "the switch is on")
     }
 
     function test_noDownloadsSaysSo() {
         openMixedLibrary()
-        tryVerify(() => titles() === "Dune, Neuromancer, The Martian", 5000, "the whole library")
+        tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer, The Martian", 5000, "the whole library")
 
         tap("filterButton", find("bookList"))
         tap("downloadedOnly", find("filterMenu"))
@@ -120,7 +108,7 @@ AppTestCase {
         tap("menuButton")
         tap("reconnect")
 
-        tryVerify(() => titles() === "Dune, Neuromancer, The Martian", 5000, "the server's books are back")
+        tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer, The Martian", 5000, "the server's books are back")
         verify(!downloadedOnly.checked, "off again")
         verify(downloadedOnly.enabled, "and can be changed")
     }

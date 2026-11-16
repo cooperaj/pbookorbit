@@ -3,7 +3,7 @@
 PB_KIT ?= kit
 PB := $(if $(wildcard $(PB_KIT)/pb.sh),$(PB_KIT)/pb.sh,pb)
 
-.PHONY: setup run run-offline pc arm release test shell clean icons
+.PHONY: setup run run-offline pc arm release test test-map shell clean icons
 
 # Fetch the kit, its SDK and the container image
 setup:
@@ -36,6 +36,10 @@ release:
 # Build and run the tests in tests/; see Tests in docs/technical.md
 test:
 	$(PB) test .
+
+# What the tests cover, as Markdown: each file's tests' names as sentences. Needs python3.
+test-map:
+	@python3 tests/map.py
 
 # Render the icons built into the app (src/icons/*.bmp) from their SVG sources: the
 # launcher tiles as 110x110 8-bit grey BMPs, the Era Color's theme icon size, and the

@@ -226,6 +226,11 @@ and exits non-zero if any failed. Everything is under `tests/`:
 - `tests/appcore/` builds everything in `src/sources.pri`, the app without `main.cpp`,
   as a static library the tests link against.
 
+`make test-map` prints what the tests cover, from their names: each file's tests as
+sentences, under the first sentence of its opening comment. A test's name is the sentence
+it's listed as, so `test_failedDownloadCanBeTriedAgain` reads "Failed download can be tried
+again".
+
 `tests/qml/main.cpp` sets up the globals the QML expects, as the app's `main.cpp` does,
 with the app's real objects and image providers. `testApp.reset(settings, options)`
 replaces the objects with new ones on a new database, in a new temporary folder that is
@@ -236,7 +241,10 @@ inkview.
 
 Tests build on two types in `tests/qml/helpers/`. `UiTestCase` finds items by `objectName`
 under its `root`, or under another item, with `find(name, under)`, and has `tap(name,
-under)`, `type(name, text)` and `signIn(server, username, password)`. `AppTestCase` adds
+under)`, `type(name, text)` and `signIn(server, username, password)`. It also works by the
+text on screen: `tapText(text, under)` taps the one visible, on-screen place a text shows,
+such as a dialog's "Download", and `expectText(text, under)` and `expectNoText` wait for
+one to show or go. `AppTestCase` adds
 `open(settings, options)`, which resets `testApp`, opens `main.qml` as `root` in a window
 of its own, and once it's drawn calls `bookOrbit.start()` as `main.cpp` does. `options`
 can have `offline: true`, to start with no network as `PBOOKORBIT_OFFLINE=1` does
@@ -252,7 +260,11 @@ e.g. `{"dune.epub": "2026-11-14T10:00:00Z"}`, made into the system's library and
 audiobook databases with the tables the app reads. `savedSession` is a signed-in user of `fakeServer`,
 `serveLibrary(books, jumpBuckets)` has the server answer for the library with those
 fixtures (three books by default), and `openLibrary(books, jumpBuckets, options)` does
-both and opens the app on the library. A test typically opens the app or page, says what
+both and opens the app on the library. For the books in a list, `bookRow(title, listName)`
+finds a row, `titlesIn(list)` reads the titles, and `holdBook(title)` opens a row's menu
+without the second-long hold (`tst_bookmenu` holds for real once). `expectOnDevice(title)`
+and `expectNotOnDevice` check a row's on-device mark, and `expectOpenedInReader(file, app)`
+and `expectOpenedInPlayer(file)` check what the app asked the system to open. A test typically opens the app or page, says what
 the server replies with `fakeServer.respond(method, path, status, fixture, match)`, taps
 and types, then waits for the result with `tryCompare` or `tryVerify`. With `match`, a
 reply is only for requests whose body has those fields, e.g. `{sort: [{field:

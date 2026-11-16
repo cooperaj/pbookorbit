@@ -9,24 +9,6 @@ AppTestCase {
     name: "Downloading"
 
     readonly property string duneDownload: "/api/v1/books/files/11/download"
-    readonly property string audiobookPlayer: "/ebrmain/bin/audio_books.app"
-
-    // Checks the book at a path ending with this was opened in the reader, and nothing else
-    function verifyOpenedInReader(file) {
-        compare(inkview.openedBooks.length, 1, "one book opened")
-        verify(inkview.openedBooks[0].path.endsWith(file), inkview.openedBooks[0].path + " is " + file)
-        compare(inkview.openedBooks[0].app, "", "in the system's reader")
-        compare(inkview.openedTasks.length, 0, "no other app started")
-    }
-
-    // Checks the audiobook player was started on a path ending with this, and nothing else
-    function verifyOpenedInAudiobookPlayer(file) {
-        compare(inkview.openedTasks.length, 1, "one app started")
-        compare(inkview.openedTasks[0].app, audiobookPlayer, "the audiobook player")
-        compare(inkview.openedTasks[0].args[0], "--bookPlay")
-        verify(inkview.openedTasks[0].args[1].endsWith(file), inkview.openedTasks[0].args[1] + " is " + file)
-        compare(inkview.openedBooks.length, 0, "no book opened in the reader")
-    }
 
     function openDownloadsLibrary(options) {
         openLibrary("libraries/downloads.json", "libraries/downloads-jump-buckets.json", options)
@@ -46,8 +28,8 @@ AppTestCase {
         const dialog = tapBook("Dune")
 
         compare(dialog.message, "Download EPUB, 1.9 MB to the Books folder and open it?")
-        findButton("Download", dialog)
-        findButton("Cancel", dialog)
+        expectText("Download", dialog)
+        expectText("Cancel", dialog)
     }
 
     function test_downloadSavesTheBookAndMarksIt() {
@@ -55,13 +37,13 @@ AppTestCase {
         fakeServer.respondFile(duneDownload, "files/book.epub", "Dune - Frank Herbert.epub")
         const dialog = tapBook("Dune")
 
-        tapButton("Download", dialog)
+        tapText("Download", dialog)
 
         tryVerify(() => !dialog.visible, 5000, "the dialog closes to open the book")
         compare(testApp.filesIn("Books"), ["Dune - Frank Herbert.epub"], "saved under the server's name")
         verify(downloads.isOnDevice(1), "recorded as downloaded")
-        tryVerify(() => find("onDevicePill", bookRow("Dune")).visible, 5000, "marked in the list")
-        verifyOpenedInReader("/Books/Dune - Frank Herbert.epub")
+        expectOnDevice("Dune")
+        expectOpenedInReader("/Books/Dune - Frank Herbert.epub")
         compare(inkview.libraryScans, 1, "the system library is asked to find it")
     }
 
@@ -71,12 +53,12 @@ AppTestCase {
         const dialog = tapBook("The Martian")
         compare(dialog.message, "Download M4B, 591.3 MB to the Audio Books folder and open it?")
 
-        tapButton("Download", dialog)
+        tapText("Download", dialog)
 
         tryVerify(() => !dialog.visible, 5000, "the dialog closes")
         compare(testApp.filesIn("Audio Books"), ["The Martian.m4b"])
         compare(testApp.filesIn("Books"), [], "nothing in Books")
-        verifyOpenedInAudiobookPlayer("/Audio Books/The Martian.m4b")
+        expectOpenedInPlayer("/Audio Books/The Martian.m4b")
     }
 
     // A book with an ebook and an audiobook asks which, and downloads only that one
@@ -87,13 +69,13 @@ AppTestCase {
         compare(dialog.message,
                 "Download the ebook (EPUB, 2.3 MB) or the audiobook (M4B, 1.1 GB) and open it?")
 
-        tapButton("audiobook", dialog)
+        tapText("audiobook", dialog)
 
         tryVerify(() => !dialog.visible, 5000, "the dialog closes")
         compare(testApp.filesIn("Audio Books"), ["Project Hail Mary.m4b"])
         compare(testApp.filesIn("Books"), [], "not the ebook")
         compare(downloads.kindsOnDevice(5), ["audiobook"])
-        verifyOpenedInAudiobookPlayer("/Audio Books/Project Hail Mary.m4b")
+        expectOpenedInPlayer("/Audio Books/Project Hail Mary.m4b")
     }
 
     // Another book's file of the same name stays as it was
@@ -102,7 +84,7 @@ AppTestCase {
         fakeServer.respondFile(duneDownload, "files/book.epub", "Dune - Frank Herbert.epub")
         const dialog = tapBook("Dune")
 
-        tapButton("Download", dialog)
+        tapText("Download", dialog)
 
         tryVerify(() => !dialog.visible, 5000, "the dialog closes")
         compare(testApp.filesIn("Books"), ["Dune - Frank Herbert (2).epub", "Dune - Frank Herbert.epub"])
@@ -116,7 +98,7 @@ AppTestCase {
         fakeServer.respond("GET", duneDownload, 500, "server-error.json")
         const dialog = tapBook("Dune")
 
-        tapButton("Download", dialog)
+        tapText("Download", dialog)
 
         tryCompare(dialog, "message", "The server couldn't send the book (HTTP 500)")
         compare(testApp.filesIn("Books"), [], "no part file left")
@@ -124,11 +106,11 @@ AppTestCase {
         compare(inkview.openedBooks.length, 0, "nothing opened")
 
         fakeServer.respondFile(duneDownload, "files/book.epub", "Dune - Frank Herbert.epub")
-        tapButton("Try again", dialog)
+        tapText("Try again", dialog)
 
         tryVerify(() => !dialog.visible, 5000, "the second try opens the book")
         compare(testApp.filesIn("Books"), ["Dune - Frank Herbert.epub"])
-        verifyOpenedInReader("/Books/Dune - Frank Herbert.epub")
+        expectOpenedInReader("/Books/Dune - Frank Herbert.epub")
     }
 
     function test_cancellingStopsTheDownload() {
@@ -136,10 +118,10 @@ AppTestCase {
         fakeServer.respondFile(duneDownload, "files/book.epub", "Dune - Frank Herbert.epub")
         fakeServer.hold("GET", duneDownload)
         const dialog = tapBook("Dune")
-        tapButton("Download", dialog)
+        tapText("Download", dialog)
         tryVerify(() => dialog.downloading, 5000, "downloading")
 
-        tapButton("Cancel", dialog)
+        tapText("Cancel", dialog)
         fakeServer.release("GET", duneDownload)
         wait(300)
 
@@ -158,7 +140,7 @@ AppTestCase {
         mouseClick(bookRow("Dune"))
 
         verify(!find("downloadDialog").visible, "no download dialog")
-        verifyOpenedInReader("/Books/Dune.epub")
+        expectOpenedInReader("/Books/Dune.epub")
     }
 
     function test_downloadedAudiobookOpensWithoutAsking() {
@@ -168,7 +150,7 @@ AppTestCase {
         mouseClick(bookRow("The Martian"))
 
         verify(!find("downloadDialog").visible, "no download dialog")
-        verifyOpenedInAudiobookPlayer("/Audio Books/The Martian.m4b")
+        expectOpenedInPlayer("/Audio Books/The Martian.m4b")
     }
 
     // Having one version of a book is enough: it doesn't offer the other
@@ -179,6 +161,6 @@ AppTestCase {
         mouseClick(bookRow("Project Hail Mary"))
 
         verify(!find("downloadDialog").visible, "no download dialog")
-        verifyOpenedInAudiobookPlayer("/Audio Books/Project Hail Mary.m4b")
+        expectOpenedInPlayer("/Audio Books/Project Hail Mary.m4b")
     }
 }

@@ -103,9 +103,7 @@ AppTestCase {
     function test_pageKeysWaitForAMenuToClose() {
         openLongLibrary()
         const list = find("bookList")
-        const menu = find("bookMenu")
-        menu.open(bookRow("A Book 2"))
-        menu.show()
+        const menu = holdBook("A Book 2")
         const top = list.contentY
 
         keyClick(Qt.Key_PageDown)
