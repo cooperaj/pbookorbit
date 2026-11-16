@@ -136,6 +136,7 @@ Item {
                 }
                 IconButton {
                     id: forget
+                    objectName: "forgetServer"
                     anchors.right: parent.right
                     anchors.rightMargin: Units.dp(4)
                     anchors.verticalCenter: parent.verticalCenter

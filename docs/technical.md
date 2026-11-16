@@ -236,8 +236,11 @@ with the app's real objects and image providers. `testApp.reset(settings, option
 replaces the objects with new ones on a new database, in a new temporary folder that is
 also the working directory. `settings` go in the database first, as though the app had
 been used before: `{serverUrl, username}` is a signed-out user, and a `refreshToken` as
-well makes a saved session. `fakeServer` is the fake server, and `inkview` the fake
-inkview.
+well makes a saved session. `fakeServer` is the fake server, `inkview` the fake
+inkview, and `keyboard` the on-screen keyboard: `FakeKeyboard` (`tests/support/`) takes the
+place of the offscreen platform's input context, which has none, so a text field's tap
+brings it up over the bottom of the window, as on the device, and `Qt.inputMethod` reports
+it. `keyboard.visible` and `keyboard.rect` say whether it's up and where.
 
 Tests build on two types in `tests/qml/helpers/`. `UiTestCase` finds items by `objectName`
 under its `root`, or under another item, with `find(name, under)`, and has `tap(name,

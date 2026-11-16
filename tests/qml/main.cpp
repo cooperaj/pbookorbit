@@ -19,6 +19,7 @@
 #include "core/downloads.h"
 #include "core/formats.h"
 #include "fakeinkview.h"
+#include "fakekeyboard.h"
 #include "fakeserver.h"
 #include "ui/covers.h"
 #include "ui/eink.h"
@@ -38,7 +39,8 @@ class TestApp : public QObject
     Q_PROPERTY(bool offline READ offline WRITE setOffline)
 
 public:
-    TestApp(QQmlEngine *engine, FakeInkview *inkview) : QObject(engine), m_engine(engine), m_inkview(inkview)
+    TestApp(QQmlEngine *engine, FakeInkview *inkview, FakeKeyboard *keyboard)
+        : QObject(engine), m_engine(engine), m_inkview(inkview), m_keyboard(keyboard)
     {
         reset();
     }
@@ -116,6 +118,7 @@ private:
         setOffline(options.value("offline").toBool());
         m_inkview->reset(options.value("apps").toMap(), options.value("nightMode").toBool(),
                          options.value("firmware").toString());
+        m_keyboard->reset();
         objects->log = std::make_unique<diagnostics::Log>(objects->database.get());
         objects->client = std::make_unique<BookOrbitClient>(objects->database.get());
         objects->covers = std::make_unique<Covers>(objects->client.get(), objects->dir->filePath("covers"));
@@ -247,12 +250,14 @@ private:
 
     QQmlEngine *m_engine;
     FakeInkview *m_inkview;
+    FakeKeyboard *m_keyboard;
     std::unique_ptr<Objects> m_objects;
 };
 
 // The app's components read globals that main.cpp puts in the root context. The tests get
 // the screen size, the image providers and the app's real objects (see TestApp), a fake
-// server, and inkview, which says what the app asked of the device (see FakeInkview).
+// server, inkview, which says what the app asked of the device (see FakeInkview), and
+// keyboard, the on-screen keyboard (see FakeKeyboard).
 class Setup : public QObject
 {
     Q_OBJECT
@@ -277,7 +282,10 @@ public slots:
         context->setContextProperty("fakeServer", new FakeServer(engine));
         auto *inkview = new FakeInkview(engine);
         context->setContextProperty("inkview", inkview);
-        context->setContextProperty("testApp", new TestApp(engine, inkview));
+        // Not measured from the device: tall enough to cover the sign-in form's password field
+        auto *keyboard = new FakeKeyboard(QSizeF(600, 800), 440, engine);
+        context->setContextProperty("keyboard", keyboard);
+        context->setContextProperty("testApp", new TestApp(engine, inkview, keyboard));
     }
 };
 
