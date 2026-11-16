@@ -6,7 +6,7 @@
 
 // Stand-ins for the inkview calls the app makes that would reach the device or the system:
 // opening books and tasks, the library scan, the apps for each format, the theme's icons,
-// night mode and the task manager. fakeinkview.cpp defines them, and a test program that
+// night mode, the firmware version and the task manager. fakeinkview.cpp defines them, and a test program that
 // links it uses them in place of libinkview's; every other inkview call is still the real
 // one. One of these, as inkview in QML, says what the app asked for and sets what it's told.
 class FakeInkview : public QObject
@@ -29,8 +29,8 @@ public:
 
     // Forgets what the app asked for, for a newly started app. apps lists the system's
     // apps for each format, {epub: [{app: "koreader.app", name: "KOReader"}]}; nightMode is
-    // the system's.
-    void reset(const QVariantMap &apps, bool nightMode);
+    // the system's, and firmware its version, e.g. "U700k3.6.10.2359".
+    void reset(const QVariantMap &apps, bool nightMode, const QString &firmware);
 
     QVariantList openedBooks() const { return m_openedBooks; }
     QVariantList openedTasks() const { return m_openedTasks; }
@@ -45,6 +45,7 @@ public:
     QHash<QByteArray, QByteArray> langTexts;   // "@koreader" -> "KOReader"
     QHash<QByteArray, QString> fileHandlers;   // path -> app, from SetFileHandler()
     bool nightMode = false;
+    QByteArray firmware;
     int appCapabilities = 0;
     void bookOpened(const QString &path, const QString &app);
     void taskOpened(const QString &app, const QStringList &args);

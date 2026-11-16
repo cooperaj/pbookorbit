@@ -78,16 +78,20 @@ QVariantList Downloads::downloadedBooks() const
 {
     QVariantList books;
     for (const Database::Book &record : m_database->booksWithFiles()) {
-        // Formats on the device, e.g. ["epub"], for the content type filter
+        // Formats on the device, e.g. ["epub"], for the content type filter, and their files
         QStringList formats;
+        QStringList paths;
         for (const QString &path : record.files) {
-            if (QFileInfo::exists(path))
+            if (QFileInfo::exists(path)) {
                 formats.append(QFileInfo(path).suffix().toLower());
+                paths.append(path);
+            }
         }
         if (formats.isEmpty())
             continue;
         QVariantMap book = record.entry;
         book.insert("downloadedFormats", formats);
+        book.insert("devicePaths", paths);
         books.append(book);
     }
     return books;

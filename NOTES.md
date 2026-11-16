@@ -17,7 +17,8 @@ The SDK has no documented call to add a book to the system library. What we foun
   `EVT_SCANPROGRESS` (213), `EVT_STOPSCAN` (214), and `USERSCANNER` / `SYSTEMSCANNER`
   (`scanner.app`).
 - **`reader_db_manager.h`** has `addBook(...)`, writing the reader's database directly.
-  Avoided: internal, and easy to get wrong.
+  Avoided: internal, and easy to get wrong. (Reading the database is fine; see "The
+  system's library database".)
 
 What other apps do:
 
@@ -105,6 +106,37 @@ command line (`DataManager::parseArguments`, a `QCommandLineParser`) takes:
 `argv`, or, if it is already running, sends the arguments to it and brings it to the
 front. Both work on the Era Color (25 October 2026): `OpenTask` returns 0 when it started
 the app, 1 when the app was already running and switched to the new book.
+
+## The system's library database
+
+The system library keeps its books in SQLite, `/mnt/ext1/system/explorer-3/explorer-3.db`
+(`version` 39 on firmware `U700k3.6.10.2359`, Era Color, 16 November 2026), in WAL mode
+while the system runs; a read-only connection works alongside it. What the app reads:
+
+- `folders(id, storageid, name)`: `name` is the full folder path, e.g. `/mnt/ext1/Books`.
+- `files(id, storageid, folder_id, book_id, filename, ...)`: storage 1 is the device
+  (`storages`); storage 2 is PocketBook Cloud, whose files have a folder with an empty
+  name and repeat the device's with a hash in the name.
+- `books_settings(bookid, profileid, position, opentime, completed, cpage, npage, ...)`:
+  per profile (`profiles`, 1 is `default`). `opentime` is the Unix time the reader last
+  opened the book; `completed` and `cpage`/`npage` are its own progress.
+
+Audiobooks are in the player's own database,
+`/mnt/ext1/system/config/audiobooks/audiobooks.db` (`version` 2, also WAL), which the app
+reads the same way:
+
+- `folders(id, storageid, name)`: as above, e.g. `/mnt/ext1/Audio Books`.
+- `files(id, book_id, filename, folder_id, duration)`: one row per file of the book.
+- `audiobooks(id, type, title, artist, genre, duration, added_timestamp)`.
+- `book_state(id, book_id, read_position, read_percents, last_read_ts)`: `read_position`
+  is the file and position, e.g. `/mnt/ext1/Audio Books/Day of Ascension (2022).m4b:#loc(33)`,
+  in seconds. `last_read_ts` is set when playing starts, not when it stops: a book played
+  for 33 seconds kept the time it started (16 November 2026). The player also keeps the
+  last book's position in `audiobooks/audiobooks.cfg`.
+
+The firmware version string, from `GetSoftwareVersion()`, is the model then
+major.minor.build, e.g. `U700k3.6.10.2359` (also in several files in
+`/mnt/ext1/system/config`).
 
 ## The home screen tile
 

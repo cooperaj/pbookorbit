@@ -27,7 +27,7 @@ FakeInkview *FakeInkview::instance()
     return current;
 }
 
-void FakeInkview::reset(const QVariantMap &apps, bool night)
+void FakeInkview::reset(const QVariantMap &apps, bool night, const QString &version)
 {
     fileTypes.clear();
     langTexts.clear();
@@ -45,6 +45,7 @@ void FakeInkview::reset(const QVariantMap &apps, bool night)
         fileTypes.append({it.key().toUtf8(), programs.join(',').toUtf8()});
     }
     nightMode = night;
+    firmware = version.toUtf8();
     appCapabilities = 0;
     m_openedBooks.clear();
     m_openedTasks.clear();
@@ -156,7 +157,15 @@ void IvSetAppCapability(int caps)
     FakeInkview::instance()->appCapabilities = caps;
 }
 
-// The device and its task manager
+// The device, its firmware and its task manager
+
+// The firmware option's, or empty
+char *GetSoftwareVersion()
+{
+    static QByteArray version;
+    version = FakeInkview::instance()->firmware;
+    return version.data();
+}
 
 char *GetDeviceModel()
 {

@@ -79,19 +79,69 @@ AppTestCase {
         compare(sectionsTo(3), "2026/11 0, 2025/12 2")
     }
 
-    // The downloaded books have no last read date, so they're listed by title, unsectioned
-    function test_recentlyReadOfflineListsByTitle() {
-        const books = ["Tide", "Acorn", "Maple"].map((title, i) => ({
+    // Offline, the downloaded books Tide, Acorn, Maple and Birch sorted by Recently read
+    function sortDownloadedByRecentlyRead(options) {
+        const books = ["Tide", "Acorn", "Maple", "Birch"].map((title, i) => ({
             id: i + 1, title: title, authors: ["A. Writer"], formats: ["epub"], file: title + ".epub"}))
-        open(savedSession, {offline: true, books: books})
-        tryCompare(find("bookList"), "count", 3)
+        open(savedSession, Object.assign({offline: true, books: books}, options))
+        tryCompare(find("bookList"), "count", 4)
+        tap("sortButton", find("bookList"))
+        tap("Recently read", find("sortMenu"))
+    }
 
+    function titles() {
+        const list = find("bookList")
+        const shown = []
+        for (let i = 0; i < list.count; i++) {
+            list.positionViewAtIndex(i, ListView.Contain)
+            shown.push(list.itemAtIndex(i).book.title)
+        }
+        return shown.join(", ")
+    }
+
+    // BookOrbit has no last read date per book, so downloaded books go by when the system's
+    // reader last opened them, from its library on firmware it was checked on. Books never
+    // opened come last, by title.
+    function test_recentlyReadDownloadedByLastOpened() {
+        sortDownloadedByRecentlyRead({firmware: "U700k3.6.10.2359",
+                                      opened: {"Maple.epub": "2026-11-02T12:00:00Z",
+                                               "Tide.epub": "2026-11-14T12:00:00Z"}})
+
+        tryVerify(() => titles() === "Tide, Maple, Acorn, Birch", 5000, "newest first: " + titles())
+        compare(sectionsTo(3), "2026/11/14 0, 2026/11/02 1, Never 2")
+    }
+
+    // Audiobooks go by when the system's player last played them, among the ebooks
+    function test_recentlyReadDownloadedAudiobooksByLastPlayed() {
+        const books = [{id: 1, title: "Tide", authors: ["A. Writer"], formats: ["epub"], file: "Tide.epub"},
+                       {id: 2, title: "Ascension", authors: ["A. Writer"], formats: ["m4b"], file: "Ascension.m4b"},
+                       {id: 3, title: "Maple", authors: ["A. Writer"], formats: ["epub"], file: "Maple.epub"}]
+        open(savedSession, {offline: true, books: books, firmware: "U700k3.6.10.2359",
+                            opened: {"Maple.epub": "2026-11-02T12:00:00Z",
+                                     "Ascension.m4b": "2026-11-10T12:00:00Z",
+                                     "Tide.epub": "2026-11-14T12:00:00Z"}})
+        tryCompare(find("bookList"), "count", 3)
         tap("sortButton", find("bookList"))
         tap("Recently read", find("sortMenu"))
 
-        tryVerify(() => find("bookList").itemAtIndex(0).book.title === "Acorn", 5000, "by title")
-        compare([1, 2].map(i => find("bookList").itemAtIndex(i).book.title).join(", "), "Maple, Tide")
-        compare(sectionsTo(2), "", "no sections")
+        tryVerify(() => titles() === "Tide, Ascension, Maple", 5000, "newest first: " + titles())
+        compare(sectionsTo(2), "2026/11/14 0, 2026/11/10 1, 2026/11/02 2")
+    }
+
+    // Without the system's library, or on firmware it wasn't checked on, by title, unsectioned
+    function test_recentlyReadDownloadedByTitleWithoutTheSystemLibrary() {
+        sortDownloadedByRecentlyRead()
+
+        tryVerify(() => titles() === "Acorn, Birch, Maple, Tide", 5000, "by title: " + titles())
+        compare(sectionsTo(3), "", "no sections")
+    }
+
+    function test_recentlyReadDownloadedByTitleOnOtherFirmware() {
+        sortDownloadedByRecentlyRead({firmware: "U700k3.6.11.100",
+                                      opened: {"Tide.epub": "2026-11-14T12:00:00Z"}})
+
+        tryVerify(() => titles() === "Acorn, Birch, Maple, Tide", 5000, "by title: " + titles())
+        compare(sectionsTo(3), "", "no sections")
     }
 
     // Offline the sections come from the downloaded books, not the server

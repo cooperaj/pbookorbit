@@ -1,6 +1,7 @@
 #include "core/diagnostics.h"
 
 #include "core/database.h"
+#include "core/systemlibrary.h"
 #include <inkview.h>
 #include <QDateTime>
 #include <QFile>
@@ -122,6 +123,8 @@ void start(QQuickWindow *window)
 
     log("started, " + processStats() + (tracing ? ", diagnostics logging on" : ""));
     log(networkState());
+    log("firmware " + systemlibrary::firmwareVersion()
+        + (systemlibrary::supported() ? "" : ", system library not read on this version"));
     // QML is compiled at build time for this exact Qt version. Any other version ignores it
     // and compiles from source on every launch.
     log(QString("Qt %1, QML compiled for %2%3")

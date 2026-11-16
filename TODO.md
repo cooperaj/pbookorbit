@@ -17,11 +17,8 @@
 - Test data for reading status: the `app` test account has no reading progress or
   statuses, so "Completed" and "N% read" can't be seen in the emulator. Add a mock, e.g. an
   environment variable that makes `decorateBook()` give books sample progress and statuses.
-- Recently read for the downloaded list (and offline): BookOrbit gives no last read date
-  per book (only its sort and jump buckets use it), so these list by title with no
-  sections. Sort and section them by when the device last opened each file instead, from
-  the system library. Find where the firmware keeps that (the reader's database, see
-  NOTES.md) and whether it can be read without the internal `reader_db_manager.h`.
+- Check the system library's schema on firmware 6.11 and add it to `CHECKED_FIRMWARE` in
+  `src/core/systemlibrary.cpp` if it's the same.
 - Opening a downloaded book in the emulator froze the app until it was force-quit (seen
   offline, 28 October 2026). Try the same book online to see whether offline matters.
 - Find books: review unsure matches in a list. Since any title match is now offered, a

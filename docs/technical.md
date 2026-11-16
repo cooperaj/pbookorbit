@@ -86,6 +86,17 @@ Offline, a cover or photo not cached at the size wanted is scaled from the large
 copy, of whatever version, and saved under that version's name, so the current version is
 still fetched once online.
 
+### The system's library
+
+BookOrbit's list entries have no last read date, so for downloaded books the Recently read
+sort uses when the system's reader last opened each book's files, or its audiobook player
+last played them, newest first, sectioned by day, then the books never opened by title.
+It comes from the firmware's library database, `/mnt/ext1/system/explorer-3/explorer-3.db`,
+and the player's, `/mnt/ext1/system/config/audiobooks/audiobooks.db`, read only, and only
+on firmware whose schemas have been checked (6.10, by `GetSoftwareVersion()`; see
+`src/core/systemlibrary.h`). Either database is used if the other can't be read; with
+neither, or on other firmware, the sort is by title with no sections. The firmware version is in the log at startup. NOTES.md has the schema.
+
 ## Downloads and existing books
 
 Ebooks download to `/mnt/ext1/Books` and audiobooks to `/mnt/ext1/Audio Books`. After
@@ -233,8 +244,12 @@ can have `offline: true`, to start with no network as `PBOOKORBIT_OFFLINE=1` doe
 the database first, where a book with a `file`, e.g. `"dune.epub"`, is downloaded, the
 file made in `Books`, or `Audio Books` for an audiobook; `files`, book files there the app
 hasn't recorded, for "Find books"; `apps`, the system's apps for each format, e.g. `{epub:
-[{app: "koreader.app", name: "KOReader"}]}`, for Open with; and `nightMode: true`, to
-start with the system in night mode. `savedSession` is a signed-in user of `fakeServer`,
+[{app: "koreader.app", name: "KOReader"}]}`, for Open with; `nightMode: true`, to
+start with the system in night mode; `firmware`, the version `GetSoftwareVersion()` gives,
+e.g. `"U700k3.6.10.2359"` (none by default); and `opened`, when the system's reader last
+opened book files in `Books`, or its player last played files in `Audio Books`, by name,
+e.g. `{"dune.epub": "2026-11-14T10:00:00Z"}`, made into the system's library and
+audiobook databases with the tables the app reads. `savedSession` is a signed-in user of `fakeServer`,
 `serveLibrary(books, jumpBuckets)` has the server answer for the library with those
 fixtures (three books by default), and `openLibrary(books, jumpBuckets, options)` does
 both and opens the app on the library. A test typically opens the app or page, says what
@@ -273,6 +288,7 @@ libinkview's; every other inkview call is the real one. They're compiled against
   be tapped.
 - Night mode (`IvGetScreenModeInversion()` and the app capabilities): from the
   `nightMode` option.
+- The firmware version (`GetSoftwareVersion()`): from the `firmware` option.
 - The device model and the task manager (`GetDeviceModel()`, `GetCurrentTask()`,
   `GetTaskInfo()`, `SetTaskParameters()`, `SetSubtaskInfo()`).
 - `QueryNetwork()`: connected unless `testApp.offline`. The client's network calls are

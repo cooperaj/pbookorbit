@@ -1,3 +1,4 @@
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -8,6 +9,7 @@
 #include <QtQuickTest>
 #include <inkview.h>
 #include <memory>
+#include <sqlite3.h>
 
 #include "core/bookfinder.h"
 #include "core/bookorbitclient.h"
@@ -80,6 +82,10 @@ public:
     //          details as GET /books/:id gave them, saved for offline.
     //   files: names of book files there that the app hasn't recorded, as though copied
     //          onto the device another way
+    //   firmware: the firmware's version, e.g. "U700k3.6.10.2359"; none by default
+    //   opened: when the system's reader last opened book files there, or its player last
+    //           played audiobook files, by name, e.g. {"dune.epub": "2026-11-14T10:00:00Z"},
+    //           in the system's library and audiobook databases. Without it there are none.
     Q_INVOKABLE void reset(const QVariantMap &settings = {}, const QVariantMap &options = {})
     {
         start(std::make_shared<QTemporaryDir>(), settings, options);
@@ -105,8 +111,11 @@ private:
             saveBook(objects->database.get(), value.toMap());
         for (const QVariant &file : options.value("files").toList())
             makeBookFile(file.toString());
+        if (options.contains("opened"))
+            makeSystemLibrary(options.value("opened").toMap());
         setOffline(options.value("offline").toBool());
-        m_inkview->reset(options.value("apps").toMap(), options.value("nightMode").toBool());
+        m_inkview->reset(options.value("apps").toMap(), options.value("nightMode").toBool(),
+                         options.value("firmware").toString());
         objects->log = std::make_unique<diagnostics::Log>(objects->database.get());
         objects->client = std::make_unique<BookOrbitClient>(objects->database.get());
         objects->covers = std::make_unique<Covers>(objects->client.get(), objects->dir->filePath("covers"));
@@ -147,6 +156,60 @@ private:
             database->saveBookDetails(id, details);
         if (!file.isEmpty())
             database->addBookFile(id, makeBookFile(file, undeletable));
+    }
+
+    // The system's library database, explorer-3.db, and the audiobook player's,
+    // audiobooks.db, with the tables and columns the app reads, as on firmware 6.10: each
+    // named ebook in storage 1 with the default profile's open time, and each audiobook with
+    // the time it was last played
+    static void makeSystemLibrary(const QVariantMap &opened)
+    {
+        QStringList books{
+            "CREATE TABLE folders(id INTEGER PRIMARY KEY AUTOINCREMENT, storageid INTEGER, name TEXT)",
+            "CREATE TABLE files(id INTEGER PRIMARY KEY AUTOINCREMENT, storageid INTEGER, folder_id INTEGER,"
+            " book_id INTEGER, filename TEXT)",
+            "CREATE TABLE books_settings(bookid INTEGER, profileid INTEGER, opentime INTEGER,"
+            " PRIMARY KEY(bookid, profileid))",
+        };
+        QStringList audiobooks{
+            "CREATE TABLE folders(id INTEGER PRIMARY KEY AUTOINCREMENT, storageid INTEGER, name TEXT)",
+            "CREATE TABLE files(id INTEGER PRIMARY KEY AUTOINCREMENT, book_id INTEGER, filename TEXT,"
+            " folder_id INTEGER)",
+            "CREATE TABLE book_state(id INTEGER PRIMARY KEY AUTOINCREMENT, book_id INTEGER,"
+            " last_read_ts INTEGER)",
+        };
+
+        int id = 0;
+        for (auto it = opened.begin(); it != opened.end(); ++it) {
+            id++;
+            const QString name = QString(it.key()).replace("'", "''");
+            const qint64 time = QDateTime::fromString(it.value().toString(), Qt::ISODate).toSecsSinceEpoch();
+            if (isAudioFormat(QFileInfo(it.key()).suffix())) {
+                audiobooks << QString("INSERT INTO folders VALUES(%1, 1, '%2')").arg(id).arg(AUDIOBOOKS_DEFAULT_PATH)
+                           << QString("INSERT INTO files VALUES(%1, %1, '%2', %1)").arg(id).arg(name)
+                           << QString("INSERT INTO book_state VALUES(%1, %1, %2)").arg(id).arg(time);
+            } else {
+                books << QString("INSERT INTO folders VALUES(%1, 1, '%2')").arg(id).arg(FLASHDIR "/Books")
+                      << QString("INSERT INTO files VALUES(%1, 1, %1, %1, '%2')").arg(id).arg(name)
+                      << QString("INSERT INTO books_settings VALUES(%1, 1, %2)").arg(id).arg(time);
+            }
+        }
+
+        makeDatabase(QString::fromUtf8(USERDATA "/explorer-3/explorer-3.db"), books);
+        makeDatabase(QString::fromUtf8(CONFIGPATH "/audiobooks/audiobooks.db"), audiobooks);
+    }
+
+    static void makeDatabase(const QString &file, const QStringList &sql)
+    {
+        QDir().mkpath(QFileInfo(file).path());
+        sqlite3 *db = nullptr;
+        if (sqlite3_open(qPrintable(file), &db) != SQLITE_OK)
+            qFatal("TestApp: can't make %s", qPrintable(file));
+        for (const QString &statement : sql) {
+            if (sqlite3_exec(db, qPrintable(statement), nullptr, nullptr, nullptr) != SQLITE_OK)
+                qFatal("TestApp: %s", sqlite3_errmsg(db));
+        }
+        sqlite3_close(db);
     }
 
     // Makes a book file where Downloads puts it, and returns its path. Relative on the PC
