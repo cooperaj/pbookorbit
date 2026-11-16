@@ -1225,8 +1225,8 @@ void BookOrbitClient::loadCollections()
         return;
     }
     restoreGroups(m_collections);
-    // [{id, mediaType, name, icon, displayOrder, bookCount, ...}]: the user's collections
-    // and others' public ones, in the user's order
+    // [{id, name, icon, displayOrder, bookCount, ...}]: the user's collections and others'
+    // public ones, in the user's order
     callJson("GET", "/collections", QJsonDocument(), [this, generation](const QJsonDocument &doc) {
         if (generation != m_collections.generation)
             return;
@@ -1235,8 +1235,6 @@ void BookOrbitClient::loadCollections()
         QList<QVariantMap> entries;
         for (const QJsonValue &value : doc.array()) {
             QVariantMap row = value.toObject().toVariantMap();
-            if (row.value("mediaType").toString() != "books")
-                continue;   // podcast collections
             entries.append(row);
             row.insert("covers", QVariantList());
             row.insert("authors", QStringList());

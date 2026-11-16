@@ -347,7 +347,7 @@ On a 401 the client refreshes and retries the request once.
 ### Collections
 
 - `GET /collections` returns the user's collections and other users' public ones, in the
-  user's order: `[{id, mediaType, name, icon, displayOrder, bookCount, ...}]`.
+  user's order: `[{id, name, icon, displayOrder, bookCount, ...}]`.
 - `POST /collections/:id/books/query` and `.../jump-buckets` work like the library
   equivalents, with an extra `collectionOrder` sort.
 

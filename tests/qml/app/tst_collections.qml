@@ -2,10 +2,10 @@ import QtQuick
 import "../helpers"
 
 // The Collections tab. The server has Classics (Dune, and Project Hail Mary as an ebook and
-// a separate audiobook), Space Opera (Hyperion), an empty Empty Shelf, and a podcast
-// collection, which isn't shown. Each row's authors, formats and book count come from the
-// collection's books, a book with an ebook and audiobook counting once. The list reloads
-// each time the tab opens, and offline shows the collections with downloaded books.
+// a separate audiobook), Space Opera (Hyperion) and an empty Empty Shelf. Each row's
+// authors, formats and book count come from the collection's books, a book with an ebook
+// and audiobook counting once. The list reloads each time the tab opens, and offline shows
+// the collections with downloaded books.
 //
 // The page itself is tested in components/tst_grouplistpage.qml, and what every group list
 // shares in tst_series.qml.
@@ -66,7 +66,7 @@ AppTestCase {
         openCollections()
 
         tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000,
-                  "book collections A-Z, not the podcasts: " + rows())
+                  "the collections A-Z: " + rows())
     }
 
     // Project Hail Mary's ebook and audiobook are separate records but one book
