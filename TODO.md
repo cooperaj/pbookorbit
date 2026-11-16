@@ -52,14 +52,16 @@
   the first book list takes to fill on the device; if it's slow, start with `BookRow` and
   `GroupRow` (typed functions, required properties, then typed units and singletons).
 - Firmware 6.11 on B288/B300 devices (Era, Verse Pro, InkPad 4 and others since October
-  2026; there is no 6.11 SDK for them, so they would run the 6.10 build): check the app
-  starts. KOReader's launcher (`applications/koreader.app`) works around "firmware
-  6.11.1480 rejecting executable-stack system libraries" (koreader/koreader#15720) by
-  exporting `GLIBC_TUNABLES="${GLIBC_TUNABLES}${GLIBC_TUNABLES:+:}glibc.rtld.execstack=2"`
-  before it starts. The app itself has a non-executable stack, but the 6.10 SDK's
-  `libinkview` and `libhwconfig` are marked executable-stack (`readelf -lW`, GNU_STACK
-  RWE), so the firmware's may be too. If the app fails to start there, give it a small
-  shell launcher that sets that variable and then runs the binary, as KOReader's does.
+  2026; there is no 6.11 SDK for them, so they run the 6.10 build): check the app starts.
+  The launcher sets `GLIBC_TUNABLES=...glibc.rtld.execstack=2`, KOReader's workaround for
+  "firmware 6.11.1480 rejecting executable-stack system libraries" (koreader/koreader#15720),
+  as the 6.10 SDK's `libinkview` and `libhwconfig` are marked executable-stack.
+- InkPad One (PB1030, RK3566, firmware 6.11): build and release it. PR 1 has what it needs:
+  armhf, software rendering (`QSG_RHI_BACKEND=software`, `QT_QUICK_BACKEND=software`) and
+  `/ebrmain/plugins/platforms` and `/ebrmain/lib` on the plugin and library paths, set by
+  the launcher for that build only; and its firmware's Qt is 6.10.3, so the QML compiled
+  for the SDK's 6.8.2 is ignored (see Compiled QML in NOTES.md). Then add RK3566-6.11 to
+  `RELEASE_SDKS` in the Makefile.
 - Search: test what a failed search shows. If it hides the error (it likely says "No books
   found"), make it say "Something went wrong" like the other lists.
 - Server errors: revisit the messages and how they show. The line above a list (library,

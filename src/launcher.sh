@@ -36,6 +36,8 @@ log "running from /tmp"
 
 # Firmware 6.11 refuses system libraries marked executable-stack without this
 export GLIBC_TUNABLES="${GLIBC_TUNABLES}${GLIBC_TUNABLES:+:}glibc.rtld.execstack=2"
+# The firmware starts apps in the C locale, which Qt warns about; KOReader sets this too
+export LC_ALL="en_US.UTF-8"
 
 while :; do
     # The old binary is kept, to go back to if the new one fails to start
@@ -43,6 +45,7 @@ while :; do
     if [ -f "$UPDATE" ] && mv -f "$BINARY" "$BINARY.old"; then
         if mv -f "$UPDATE" "$BINARY"; then
             updated=1
+            rmdir "$(dirname "$UPDATE")"
             log "installed update: $(ls -l "$BINARY")"
         else
             mv -f "$BINARY.old" "$BINARY"
