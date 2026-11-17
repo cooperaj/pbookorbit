@@ -11,6 +11,7 @@
 #include <QFileInfo>
 #include <QNetworkReply>
 #include <QRegularExpression>
+#include <QStorageInfo>
 #include <QUrl>
 
 // Download folders: ebooks to Books, audiobooks to Audio Books (where the audiobook player
@@ -54,10 +55,14 @@ static QString dispositionFileName(const QByteArray &header)
     return match.hasMatch() ? match.captured(1) : QString();
 }
 
-Downloads::Downloads(BookOrbitClient *client, Database *database, QObject *parent)
+Downloads::Downloads(BookOrbitClient *client, Database *database, std::function<qint64()> freeSpace,
+                     QObject *parent)
     : QObject(parent)
     , m_client(client)
     , m_database(database)
+    , m_freeSpace(freeSpace ? std::move(freeSpace) : [] {
+        return QStorageInfo(QString::fromUtf8(FLASHDIR)).bytesAvailable();
+    })
 {
     // Logs the scanner's replies to requestLibraryScan()
     if (auto *platform = pocketbook::utilities::einkPlatform()) {

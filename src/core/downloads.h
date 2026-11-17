@@ -8,6 +8,8 @@
 #include <QStringList>
 #include <QVariantMap>
 
+#include <functional>
+
 class BookOrbitClient;
 class Database;
 class QNetworkReply;
@@ -34,7 +36,9 @@ class Downloads : public QObject
     Q_PROPERTY(int revision READ revision NOTIFY changed)
 
 public:
-    Downloads(BookOrbitClient *client, Database *database, QObject *parent = nullptr);
+    // freeSpace gives the bytes free on the device's storage; the real figure by default
+    Downloads(BookOrbitClient *client, Database *database, std::function<qint64()> freeSpace = {},
+              QObject *parent = nullptr);
 
     int bookId() const { return m_bookId; }
     int percent() const { return m_percent; }
@@ -55,6 +59,8 @@ public:
     // The file a download would fetch, {id, format, sizeBytes, folder} where folder is
     // "Books" or "Audio Books". The primary file, or fileId's. Empty if none.
     Q_INVOKABLE QVariantMap fileToDownload(const QVariantMap &book, int fileId = -1) const;
+    // Bytes free on the device's storage, where Books and Audio Books are
+    Q_INVOKABLE qint64 freeSpace() const { return m_freeSpace(); }
     // Downloads the primary file, or fileId's. Emits downloaded(bookId), or sets error.
     Q_INVOKABLE void download(const QVariantMap &book, int fileId = -1);
     Q_INVOKABLE void cancel();
@@ -101,6 +107,7 @@ private:
 
     BookOrbitClient *m_client;
     Database *m_database;
+    std::function<qint64()> m_freeSpace;
     int m_bookId = -1;
     int m_percent = 0;
     QString m_error;

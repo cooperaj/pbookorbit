@@ -4,13 +4,13 @@ import "../helpers"
 // Getting a book onto the device. Tapping a book that isn't on it offers to download it,
 // and once downloaded it opens: an ebook in the system's reader, an audiobook in its
 // audiobook player. The server has Dune (an ebook), The Martian (an audiobook) and Project
-// Hail Mary (both). inkview records what's opened, and the library scans asked for,
-// instead of doing them.
+// Hail Mary (both). The device has 8 GB free unless a test says otherwise. inkview records
+// what's opened, and the library scans asked for, instead of doing them.
 AppTestCase {
     name: "GettingBooks"
 
     readonly property string duneDownload: "/api/v1/books/files/11/download"
-    readonly property string duneOffer: "Download EPUB, 1.9 MB to the Books folder and open it?"
+    readonly property string duneOffer: "Download EPUB, 1.9 MB to the Books folder and open it?\n\n8.0 GB free"
 
     function openDownloadsLibrary(options) {
         openLibrary("libraries/downloads.json", "libraries/downloads-jump-buckets.json", options)
@@ -41,7 +41,7 @@ AppTestCase {
     function test_anAudiobookDownloadsToTheAudioBooksFolderAndPlays() {
         openDownloadsLibrary()
         fakeServer.respondFile("/api/v1/books/files/41/download", "files/book.m4b", "The Martian.m4b")
-        const offer = "Download M4B, 591.3 MB to the Audio Books folder and open it?"
+        const offer = "Download M4B, 591.3 MB to the Audio Books folder and open it?\n\n8.0 GB free"
 
         mouseClick(bookRow("The Martian"))
         expectText(offer)
@@ -57,7 +57,7 @@ AppTestCase {
     function test_aBookWithBothVersionsDownloadsTheOneChosen() {
         openDownloadsLibrary()
         fakeServer.respondFile("/api/v1/books/files/52/download", "files/book.m4b", "Project Hail Mary.m4b")
-        const offer = "Download the ebook (EPUB, 2.3 MB) or the audiobook (M4B, 1.1 GB) and open it?"
+        const offer = "Download the ebook (EPUB, 2.3 MB) or the audiobook (M4B, 1.1 GB) and open it?\n\n8.0 GB free"
 
         mouseClick(bookRow("Project Hail Mary"))
         expectText(offer)
@@ -75,7 +75,7 @@ AppTestCase {
         openDownloadsLibrary({apps: {epub: [{app: "koreader.app", name: "KOReader"},
                                             {app: "eink-reader.app", name: "PB Reader"}]}})
         serveDune()
-        const offer = "Download EPUB, 1.9 MB to the Books folder and open it in PB Reader?"
+        const offer = "Download EPUB, 1.9 MB to the Books folder and open it in PB Reader?\n\n8.0 GB free"
 
         const menu = holdBook("Dune")
         tapText("Open with", menu)
@@ -143,5 +143,44 @@ AppTestCase {
         expectNotOnDevice("Dune")
         compare(inkview.openedBooks.length, 0, "nothing opened")
         compare(inkview.libraryScans, 0, "no library scan")
+    }
+
+    function martianRequests() {
+        return fakeServer.requests.filter(r => r.path === "/api/v1/books/files/41/download").length
+    }
+
+    // A book bigger than the space left isn't downloaded
+    function test_aBookThatWontFitIsntDownloaded() {
+        openDownloadsLibrary({freeSpace: 512 * 1024 * 1024})
+
+        mouseClick(bookRow("The Martian"))
+        expectText("M4B, 591.3 MB won't fit in the Audio Books folder.\n\n512.0 MB free")
+        expectNoText("Download")
+        tapText("Close")
+
+        expectNoText(/won't fit/)
+        compare(martianRequests(), 0, "not asked for")
+        compare(testApp.filesIn("Audio Books"), [], "nothing saved")
+        expectNotOnDevice("The Martian")
+    }
+
+    // With both versions, the one that fits can still be had
+    function test_onlyTheVersionThatFitsDownloads() {
+        openDownloadsLibrary({freeSpace: 100 * 1024 * 1024})
+        fakeServer.respondFile("/api/v1/books/files/51/download", "files/book.epub", "Project Hail Mary.epub")
+        const offer = "Download the ebook (EPUB, 2.3 MB) or the audiobook (M4B, 1.1 GB) and open it?"
+                      + "\n\n100.0 MB free"
+
+        mouseClick(bookRow("Project Hail Mary"))
+        tapText("audiobook")
+        expectText("M4B, 1.1 GB won't fit in the Audio Books folder.\n\n100.0 MB free")
+        tapText("Close")
+
+        mouseClick(bookRow("Project Hail Mary"))
+        expectText(offer)
+        tapText("ebook")
+
+        expectOpenedInReader("/Books/Project Hail Mary.epub")
+        compare(testApp.filesIn("Audio Books"), [], "not the audiobook")
     }
 }

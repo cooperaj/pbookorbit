@@ -5,7 +5,8 @@ import "format.js" as Format
 
 // Offers to download a book that isn't on the device, shows progress, then opens it (in the
 // app picked from Open with, if that's where it came from). Asks which version for books
-// with an ebook and an audiobook.
+// with an ebook and an audiobook. Says how much space the device has, and won't download a
+// version that doesn't fit.
 SystemDialog {
     id: dialog
     // The book on offer, as a list entry
@@ -23,11 +24,15 @@ SystemDialog {
     property string error: ""
     // App to open it in, {app, name} from downloads.appsFor(), or null for the default
     property var app: null
+    // Bytes free on the device when the dialog opened, or -1 if unknown
+    property real freeBytes: -1
+    // The chosen version is bigger than the space left
+    readonly property bool tooBig: chosen !== null && !downloading && !fits(chosen)
 
     // format is the downloaded file's
     signal opened(int bookId, string format, var app)
 
-    icon: error !== "" || !hasFile ? "icon_error" : "icon_question"
+    icon: error !== "" || !hasFile || tooBig ? "icon_error" : "icon_question"
     percent: downloading ? downloads.percent : -1
     onPressed: (action) => press(action)
 
@@ -40,6 +45,7 @@ SystemDialog {
         options = versions && versions.length > 0 ? versions : Books.versions(newBook, downloads)
         chosenIndex = options.length === 1 ? 0 : -1
         error = ""
+        freeBytes = downloads.freeSpace()
         visible = true
     }
 
@@ -54,6 +60,14 @@ SystemDialog {
         return option.format.toUpperCase() + ", " + Format.fileSize(option.sizeBytes || 0)
     }
 
+    // Unknown sizes and free space count as fitting
+    function fits(option) {
+        return freeBytes < 0 || !option.sizeBytes || option.sizeBytes <= freeBytes
+    }
+
+    // A line of its own under the question: "3.2 GB free"
+    readonly property string freeText: freeBytes < 0 ? "" : "\n\n" + Format.fileSize(freeBytes) + " free"
+
     function folderOf(option) {
         return downloads.fileToDownload(option.book, option.fileId).folder
     }
@@ -66,18 +80,20 @@ SystemDialog {
             return "This book has no file to download."
         if (downloading)
             return "Downloading " + fileText(chosen) + "…  " + downloads.percent + "%"
+        if (tooBig)
+            return fileText(chosen) + " won't fit in the " + folderOf(chosen) + " folder." + freeText
         if (chosen === null) {
             // "Download the ebook (EPUB, 1.9 MB) or the audiobook (M4B, 1.1 GB) and open it?"
             return "Download the " + options.map(o => o.kind + " (" + fileText(o) + ")").join(" or the ")
-                   + " and open it?"
+                   + " and open it?" + freeText
         }
         return "Download " + fileText(chosen) + " to the " + folderOf(chosen) + " folder and open it"
-               + (app ? " in " + app.name : "") + "?"
+               + (app ? " in " + app.name : "") + "?" + freeText
     }
 
     // Buttons left to right, as [label, action]; an option's index downloads it
     buttons: downloading ? [["Cancel", "close"]]
-             : !hasFile ? [["Close", "close"]]
+             : !hasFile || tooBig ? [["Close", "close"]]
              : error !== "" ? [["Try again", chosenIndex], ["Cancel", "close"]]
              : chosen === null ? options.map((o, i) => [o.kind, i]).concat([["Cancel", "close"]])
              : [["Download", 0], ["Cancel", "close"]]
@@ -89,7 +105,8 @@ SystemDialog {
         }
         error = ""
         chosenIndex = action
-        downloads.download(chosen.book, chosen.fileId)
+        if (fits(chosen))
+            downloads.download(chosen.book, chosen.fileId)
     }
 
     Connections {

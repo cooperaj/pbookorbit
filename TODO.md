@@ -1,7 +1,7 @@
 # To do
 
-- Big audiobooks (1 GB+) might want a warning, or a check for free space, before they
-  download. Check on the device that the audiobook player finds them in Audio Books.
+- Check on the device that the audiobook player finds big audiobooks (1 GB+) in Audio
+  Books, and that the download dialog's free space matches the system's.
 - Cache what the views fetch, so they open at once and work offline: the collections and
   series lists, the covers, authors, formats and book ids gathered for each (a request per
   collection, and one per 20 series, on every load), and perhaps book list pages. Keep it

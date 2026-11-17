@@ -92,6 +92,7 @@ public:
     //          details as GET /books/:id gave them, saved for offline.
     //   files: names of book files there that the app hasn't recorded, as though copied
     //          onto the device another way
+    //   freeSpace: bytes free on the device's storage, 8 GB by default
     //   firmware: the firmware's version, e.g. "U700k3.6.10.2359"; none by default
     //   noLauncher: the app wasn't started by its launcher script, so it can't install
     //               updates. Otherwise the launcher is applications/pbookorbit.app.
@@ -132,7 +133,9 @@ private:
         objects->log = std::make_unique<diagnostics::Log>(objects->database.get());
         objects->client = std::make_unique<BookOrbitClient>(objects->database.get());
         objects->covers = std::make_unique<Covers>(objects->client.get(), objects->dir->filePath("covers"));
-        objects->downloads = std::make_unique<Downloads>(objects->client.get(), objects->database.get());
+        const qint64 freeSpace = options.value("freeSpace", 8LL * 1024 * 1024 * 1024).toLongLong();
+        objects->downloads = std::make_unique<Downloads>(objects->client.get(), objects->database.get(),
+                                                         [freeSpace] { return freeSpace; });
         objects->bookFinder = std::make_unique<BookFinder>(objects->client.get(), objects->downloads.get(),
                                                            objects->database.get());
         // As in the app's main.cpp

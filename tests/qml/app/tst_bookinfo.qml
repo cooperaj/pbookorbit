@@ -242,7 +242,7 @@ AppTestCase {
         verify(!actions.visible, "the menu closes")
         const dialog = find("downloadDialog")
         verify(dialog.visible, "the download dialog shows")
-        compare(dialog.message, "Download M4B, 1.1 GB to the Audio Books folder and open it?")
+        compare(dialog.message, "Download M4B, 1.1 GB to the Audio Books folder and open it?\n\n8.0 GB free")
     }
 
     // Choose action deletes the version shown, and leaves the other
