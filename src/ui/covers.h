@@ -1,11 +1,11 @@
 #pragma once
 
-#include <QHash>
 #include <QList>
 #include <QObject>
 #include <QSet>
 #include <QSize>
 #include <QString>
+#include <QStringList>
 
 class BookOrbitClient;
 
@@ -15,10 +15,13 @@ class BookOrbitClient;
 // made from that: scaled (photos cropped to fill, as BookOrbit does), its colours adjusted
 // for the screen (einkcolors.h), and cached as a PNG.
 //
+// Only one version of each is kept: downloading a new one deletes the old one's files.
+//
 // QML calls source() or authorPhoto() (see CoversImage.qml). If the image hasn't been
 // downloaded, it returns empty, starts a download and emits ready(id, photo) when done.
-// Offline it doesn't download, and emits ready() once back online so QML asks again. Meanwhile it uses a download of another version, or rescales a copy cached at
-// another size, if any.
+// Offline it doesn't download, and emits ready() once back online so QML asks again.
+// Meanwhile it uses a download of another version, or rescales a copy cached at another
+// size, if any.
 class Covers : public QObject
 {
     Q_OBJECT
@@ -27,7 +30,8 @@ public:
     Covers(BookOrbitClient *client, const QString &cacheDir, QObject *parent = nullptr);
 
     // File URL of the cached cover, or "" while downloading. version is the book's
-    // coverVersion, so changed covers are fetched again.
+    // coverVersion, so changed covers are fetched again. Without one (the series list
+    // has none), whichever version was downloaded is used.
     Q_INVOKABLE QString source(int bookId, const QString &version, int width, int height);
     // Same for an author's photo. imageUrl comes from the authors list and includes the
     // path and version, e.g. "/api/v1/authors/7/thumbnail?t=1788298235776"
@@ -44,24 +48,33 @@ private:
         bool photo;
         QString path;
         QSize size;
-        QString name;   // see cacheFile()
-        QString file;
-        QString source;   // see sourceFile()
+        QString name;   // see folder()
+        // shortHash() of the version, or empty for whichever was downloaded
+        QString hash;
     };
 
-    // name is "<bookId>" for a cover or "author-<authorId>" for a photo, and versionHash
-    // is versionHash()'s
-    QString cacheFile(const QString &name, const QString &versionHash, const QSize &size) const;
-    // The download, as it came (JPEG or PNG)
-    QString sourceFile(const QString &name, const QString &versionHash) const;
+    // The folder for a cover or photo's files: name is "<bookId>" for a cover or
+    // "author-<authorId>" for a photo. Each name has one of 256, by its hash.
+    QString folder(const QString &name) const;
+    // A size made for the screen, "<name>-<version hash>-<width>x<height>.png"
+    QString cacheFile(const Request &request) const;
+    // The download, as it came (JPEG or PNG), "<name>-<version hash>-source"
+    QString sourceFile(const Request &request) const;
+    // The name's files in its folder, newest first, without the "<name>-"
+    QStringList files(const QString &name) const;
+    // The version hash of the name's download, or "" if there's none
+    QString downloadedHash(const QString &name) const;
     // Makes the request's size from a download. Returns the file, or "" if it failed.
     QString sizeFrom(const Request &request, const QString &source);
-    // Offline: the request's size, made from a download of any version or rescaled from
-    // the largest copy cached, or "" if there's neither
+    // Offline: the request's size, made from a download of another version or rescaled
+    // from the largest copy cached, or "" if there's neither
     QString localCopy(const Request &request);
     // Cached file URL, or "" while downloading
-    QString fetch(const Request &request);
+    QString fetch(Request request);
     void startDownloads();
+    // Saves a download and deletes the files of any other version. Returns whether it can
+    // be asked for again.
+    bool save(const Request &request, const QByteArray &data);
     // Notes a cover or photo to ask for again once online
     void missed(const Request &request);
 
@@ -73,9 +86,8 @@ private:
     int m_running = 0;
     // Wanted while offline, as {id, photo}
     QSet<std::pair<int, bool>> m_missed;
-    // Cached sizes and downloads by name (see cacheFile and sourceFile), read from the
-    // folder when first needed offline and again after each time online
-    QHash<QString, QStringList> m_cached;
-    QHash<QString, QStringList> m_sources;
-    bool m_cachedRead = false;
+    // Versions deleted this session for a newer download, as "<name>/<version hash>". A
+    // list loaded before the change still asks for them, and gets the newer one, rather
+    // than fetching it again and deleting the newer one in turn.
+    QSet<QString> m_replaced;
 };

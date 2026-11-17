@@ -80,11 +80,20 @@ Only downloaded books are cached at the moment. Their entries are replaced whene
 appear in a list fetched from the server, so status and progress stay current. Deleting a book's files leaves its cache
 entry in place.
 
-Covers and author photos are cached as PNGs in `/mnt/ext1/system/cache/pbookorbit-covers`,
-named `<book id>` or `author-<author id>`, then a hash of the version and the size drawn.
-Offline, a cover or photo not cached at the size wanted is scaled from the largest cached
-copy, of whatever version, and saved under that version's name, so the current version is
-still fetched once online.
+Covers and author photos are cached in `/mnt/ext1/system/cache/pbookorbit-covers`, named
+`<book id>` or `author-<author id>`: the download as it came, `<name>-<version hash>-source`,
+and a PNG for each size drawn, `<name>-<version hash>-<width>x<height>.png`. Each name's
+files go in one of 256 folders, `00` to `ff`, from a hash of the name, so no folder holds
+too many files and a cover's versions are in one place.
+Only one version is kept: a new download deletes the other version's files. A cover asked
+for without a version (the series list has none) uses whichever version was downloaded, and
+a download without a version never replaces one with. A version deleted during the session
+but still asked for by a list not yet refreshed is served from the newer download, so two
+lists can't keep fetching it from each other. Offline, a cover or photo not cached at the
+size wanted is scaled from the download, or the largest cached copy, of whatever version,
+and saved under that version's name, so the current version is still fetched once online.
+
+![What asks for a cover or photo, how Covers answers, and how a download reaches the screen](images/cover-cache.svg)
 
 ### The system's library
 

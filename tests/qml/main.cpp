@@ -1,5 +1,6 @@
 #include <QDateTime>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QQmlComponent>
@@ -61,6 +62,18 @@ public:
     Q_INVOKABLE QStringList filesIn(const QString &folder) const
     {
         return QDir(QString::fromUtf8(FLASHDIR "/") + folder).entryList(QDir::Files | QDir::Hidden, QDir::Name);
+    }
+
+    // The files cached for a cover or photo, by name: "7" for book 7's cover, "author-7"
+    // for author 7's photo
+    Q_INVOKABLE QStringList coverFiles(const QString &name) const
+    {
+        QStringList files;
+        QDirIterator it(m_objects->dir->filePath("covers"), {name + "-*"}, QDir::Files, QDirIterator::Subdirectories);
+        while (it.hasNext())
+            files.append(it.nextFileInfo().fileName());
+        files.sort();
+        return files;
     }
 
     // What a file on the device's storage holds, as text, e.g. "applications/pbookorbit.app"

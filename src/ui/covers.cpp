@@ -2,6 +2,7 @@
 
 #include "core/bookorbitclient.h"
 #include "core/diagnostics.h"
+#include "core/savefile.h"
 #include "ui/einkcolors.h"
 
 #include <QBuffer>
@@ -22,12 +23,9 @@ Covers::Covers(BookOrbitClient *client, const QString &cacheDir, QObject *parent
     , m_client(client)
     , m_cacheDir(cacheDir)
 {
-    QDir().mkpath(m_cacheDir);
     connect(m_client, &BookOrbitClient::onlineChanged, this, [this]() {
-        if (!m_client->online()) {
-            m_cachedRead = false;
+        if (!m_client->online())
             return;
-        }
         for (const auto &[id, photo] : std::exchange(m_missed, {}))
             emit ready(id, photo);
     });
@@ -38,27 +36,51 @@ void Covers::missed(const Request &request)
     m_missed.insert({request.id, request.photo});
 }
 
-static QString versionHash(const QString &version)
+static QString shortHash(const QString &text)
 {
-    return QString::fromLatin1(QCryptographicHash::hash(version.toUtf8(), QCryptographicHash::Sha1).toHex().left(12));
+    return QString::fromLatin1(QCryptographicHash::hash(text.toUtf8(), QCryptographicHash::Sha1).toHex().left(12));
 }
 
-QString Covers::cacheFile(const QString &name, const QString &versionHash, const QSize &size) const
+QString Covers::folder(const QString &name) const
+{
+    // 256 folders, so none holds too many files, nor only one or two
+    return m_cacheDir + '/' + shortHash(name).left(2);
+}
+
+QString Covers::cacheFile(const Request &request) const
 {
     // PNG, since JPEG would smear the dithering
-    return QString("%1/%2-%3-%4x%5.png").arg(m_cacheDir, name, versionHash)
-        .arg(size.width()).arg(size.height());
+    return QString("%1/%2-%3-%4x%5.png").arg(folder(request.name), request.name, request.hash)
+        .arg(request.size.width()).arg(request.size.height());
 }
 
-QString Covers::sourceFile(const QString &name, const QString &versionHash) const
+QString Covers::sourceFile(const Request &request) const
 {
-    return QString("%1/%2-%3-source").arg(m_cacheDir, name, versionHash);
+    return QString("%1/%2-%3-source").arg(folder(request.name), request.name, request.hash);
 }
 
-// The parts of a cache file name, "<name>-<version hash>-<width>x<height>.png", and of a
-// download's, "<name>-<version hash>-source"
-static const QRegularExpression cacheName(R"(^(.+)-([0-9a-f]{12})-(\d+)x(\d+)\.png$)");
-static const QRegularExpression sourceName(R"(^(.+)-([0-9a-f]{12})-source$)");
+// What follows "<name>-" in a cached size's file name, "<version hash>-<width>x<height>.png",
+// and in a download's, "<version hash>-source"
+static const QRegularExpression cacheName(R"(^([0-9a-f]{12})-(\d+)x(\d+)\.png$)");
+static const QRegularExpression sourceName(R"(^([0-9a-f]{12})-source$)");
+
+QStringList Covers::files(const QString &name) const
+{
+    QStringList files = QDir(folder(name)).entryList({name + "-*"}, QDir::Files, QDir::Time);
+    for (QString &file : files)
+        file.remove(0, name.size() + 1);
+    return files;
+}
+
+QString Covers::downloadedHash(const QString &name) const
+{
+    // Only one is kept, but the newest wins should a deletion have failed
+    for (const QString &file : files(name)) {
+        if (const QRegularExpressionMatch match = sourceName.match(file); match.hasMatch())
+            return match.captured(1);
+    }
+    return QString();
+}
 
 // Scaled to its display size: photos fill their space like BookOrbit's portraits
 // (object-fit: cover; object-position: 50% 26%), cropping the sides equally and the top
@@ -75,11 +97,8 @@ static QImage fitted(const QImage &image, const QSize &size, bool photo)
 
 QString Covers::source(int bookId, const QString &version, int width, int height)
 {
-    const QSize size(width, height);
-    const QString name = QString::number(bookId);
-    const QString hash = versionHash(version);
-    return fetch({bookId, false, QString("/books/%1/thumbnail").arg(bookId), size, name,
-                  cacheFile(name, hash, size), sourceFile(name, hash)});
+    return fetch({bookId, false, QString("/books/%1/thumbnail").arg(bookId), QSize(width, height),
+                  QString::number(bookId), version.isEmpty() ? QString() : shortHash(version)});
 }
 
 QString Covers::authorPhoto(int authorId, const QString &imageUrl, int width, int height)
@@ -88,12 +107,8 @@ QString Covers::authorPhoto(int authorId, const QString &imageUrl, int width, in
     static const QString apiPrefix = "/api/v1";
     if (!imageUrl.startsWith(apiPrefix))
         return QString();
-    const QString path = imageUrl.mid(apiPrefix.size());
-    const QString version = QUrl(imageUrl).query();
-    const QSize size(width, height);
-    const QString name = QString("author-%1").arg(authorId);
-    const QString hash = versionHash(version);
-    return fetch({authorId, true, path, size, name, cacheFile(name, hash, size), sourceFile(name, hash)});
+    return fetch({authorId, true, imageUrl.mid(apiPrefix.size()), QSize(width, height),
+                  QString("author-%1").arg(authorId), shortHash(QUrl(imageUrl).query())});
 }
 
 QString Covers::sizeFrom(const Request &request, const QString &source)
@@ -108,87 +123,102 @@ QString Covers::sizeFrom(const Request &request, const QString &source)
     image = fitted(image, request.size, request.photo);
     // Adjust for the colour screen, as the system library does for covers
     adjustForEink(image);
-    if (!image.save(request.file, "PNG"))
-        return QString();
-    if (m_cachedRead)
-        m_cached[request.name].append(QFileInfo(request.file).fileName());
-    return request.file;
+    const QString file = cacheFile(request);
+    return image.save(file, "PNG") ? file : QString();
 }
 
 QString Covers::localCopy(const Request &request)
 {
-    if (!m_cachedRead) {
-        m_cached.clear();
-        m_sources.clear();
-        for (const QString &fileName : QDir(m_cacheDir).entryList(QDir::Files)) {
-            if (const QRegularExpressionMatch match = cacheName.match(fileName); match.hasMatch())
-                m_cached[match.captured(1)].append(fileName);
-            else if (const QRegularExpressionMatch source = sourceName.match(fileName); source.hasMatch())
-                m_sources[source.captured(1)].append(fileName);
-        }
-        m_cachedRead = true;
-    }
     // A download of another version, named for that version so the current one is still
     // fetched once online
-    for (const QString &fileName : m_sources.value(request.name)) {
-        const QString version = sourceName.match(fileName).captured(2);
+    if (const QString hash = downloadedHash(request.name); !hash.isEmpty()) {
         Request older = request;
-        older.file = cacheFile(request.name, version, request.size);
-        if (QFileInfo::exists(older.file))
-            return older.file;
-        const QString file = sizeFrom(older, m_cacheDir + '/' + fileName);
-        if (!file.isEmpty())
+        older.hash = hash;
+        if (const QString file = cacheFile(older); QFileInfo::exists(file))
+            return file;
+        if (const QString file = sizeFrom(older, sourceFile(older)); !file.isEmpty())
             return file;
     }
-    // One at this size from an earlier call, or else the largest to scale down
+    // Or else the largest size cached, to scale down
     QString largest;
     qint64 largestArea = 0;
-    for (const QString &fileName : m_cached.value(request.name)) {
-        const QRegularExpressionMatch match = cacheName.match(fileName);
-        const QSize size(match.captured(3).toInt(), match.captured(4).toInt());
-        if (size == request.size)
-            return m_cacheDir + '/' + fileName;
-        if (qint64(size.width()) * size.height() > largestArea) {
-            largest = fileName;
-            largestArea = qint64(size.width()) * size.height();
+    for (const QString &file : files(request.name)) {
+        const QRegularExpressionMatch match = cacheName.match(file);
+        const qint64 area = match.captured(2).toLongLong() * match.captured(3).toLongLong();
+        if (match.hasMatch() && area > largestArea) {
+            largest = file;
+            largestArea = area;
         }
     }
     QImage image;
-    if (largest.isEmpty() || !image.load(m_cacheDir + '/' + largest))
+    if (largest.isEmpty() || !image.load(QString("%1/%2-%3").arg(folder(request.name), request.name, largest)))
         return QString();
     // Already adjusted for the screen. Named for the version it came from, so the current
     // one is still fetched once online.
-    const QString file = cacheFile(request.name, cacheName.match(largest).captured(2), request.size);
-    if (!fitted(image, request.size, request.photo).save(file, "PNG"))
-        return QString();
-    m_cached[request.name].append(QFileInfo(file).fileName());
-    return file;
+    Request older = request;
+    older.hash = cacheName.match(largest).captured(1);
+    const QString file = cacheFile(older);
+    return fitted(image, request.size, request.photo).save(file, "PNG") ? file : QString();
 }
 
-QString Covers::fetch(const Request &request)
+QString Covers::fetch(Request request)
 {
     // Not laid out yet: asked again once it has a size
     if (request.size.isEmpty())
         return QString();
-    if (QFileInfo::exists(request.file))
-        return QUrl::fromLocalFile(request.file).toString();
+    // No version, or one replaced this session: whichever was downloaded
+    if (request.hash.isEmpty() || m_replaced.contains(request.name + '/' + request.hash)) {
+        const QString downloaded = downloadedHash(request.name);
+        if (!downloaded.isEmpty())
+            request.hash = downloaded;
+        else if (request.hash.isEmpty())
+            request.hash = shortHash(QString());
+    }
+    const QString file = cacheFile(request);
+    if (QFileInfo::exists(file))
+        return QUrl::fromLocalFile(file).toString();
     // Downloaded already, for another size
-    if (QFileInfo::exists(request.source)) {
-        const QString file = sizeFrom(request, request.source);
-        return file.isEmpty() ? QString() : QUrl::fromLocalFile(file).toString();
+    const QString source = sourceFile(request);
+    if (QFileInfo::exists(source)) {
+        const QString sized = sizeFrom(request, source);
+        return sized.isEmpty() ? QString() : QUrl::fromLocalFile(sized).toString();
     }
     if (!m_client->online()) {
         missed(request);
-        const QString file = localCopy(request);
-        return file.isEmpty() ? QString() : QUrl::fromLocalFile(file).toString();
+        const QString copy = localCopy(request);
+        return copy.isEmpty() ? QString() : QUrl::fromLocalFile(copy).toString();
     }
     // One download however many sizes want it
-    if (!m_wanted.contains(request.source)) {
-        m_wanted.insert(request.source);
+    if (!m_wanted.contains(source)) {
+        m_wanted.insert(source);
         m_queue.prepend(request);
         startDownloads();
     }
     return QString();
+}
+
+bool Covers::save(const Request &request, const QByteArray &data)
+{
+    // Without a version, any download will do: one with a version that arrived meanwhile is
+    // kept instead, so a list with versions doesn't fetch it again
+    if (request.hash == shortHash(QString()) && !downloadedHash(request.name).isEmpty())
+        return true;
+    const QString source = sourceFile(request);
+    QDir().mkpath(folder(request.name));
+    if (const QString error = saveFile(source, data); !error.isEmpty()) {
+        diagnostics::log(error);
+        return false;
+    }
+    // Every other version's download and sizes
+    QDir dir(folder(request.name));
+    for (const QString &file : files(request.name)) {
+        if (file.startsWith(request.hash + '-'))
+            continue;
+        if (const QRegularExpressionMatch match = sourceName.match(file); match.hasMatch())
+            m_replaced.insert(request.name + '/' + match.captured(1));
+        dir.remove(request.name + '-' + file);
+    }
+    return true;
 }
 
 void Covers::startDownloads()
@@ -199,27 +229,19 @@ void Covers::startDownloads()
         m_client->download(request.path,
             [this, request](const QByteArray &data) {
                 m_running--;
-                m_wanted.remove(request.source);
+                m_wanted.remove(sourceFile(request));
                 // Kept as it came; QML asks again for its size, which is made from it
                 QBuffer buffer;
                 buffer.setData(data);
-                QFile file(request.source);
-                if (!QImageReader(&buffer).canRead()) {
+                if (!QImageReader(&buffer).canRead())
                     diagnostics::log(request.path + ": not an image");
-                } else if (!file.open(QIODevice::WriteOnly) || file.write(data) != data.size()) {
-                    diagnostics::log(request.source + ": " + file.errorString());
-                    file.remove();
-                } else {
-                    file.close();
-                    if (m_cachedRead)
-                        m_sources[request.name].append(QFileInfo(request.source).fileName());
+                else if (save(request, data))
                     emit ready(request.id, request.photo);
-                }
                 startDownloads();
             },
             [this, request](int status, const QString &message) {
                 m_running--;
-                m_wanted.remove(request.source);
+                m_wanted.remove(sourceFile(request));
                 if (!m_client->online())
                     missed(request);
                 else
