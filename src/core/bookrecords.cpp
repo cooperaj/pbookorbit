@@ -15,6 +15,11 @@ void addNew(QStringList &list, const QStringList &values)
     }
 }
 
+bool morePages(int page, int pageSize, const QJsonObject &result)
+{
+    return (page + 1) * pageSize < result.value("total").toInt() && !result.value("items").toArray().isEmpty();
+}
+
 QJsonObject rule(const QString &field, const QString &op, const QJsonValue &value)
 {
     return QJsonObject{{"type", "rule"}, {"field", field}, {"operator", op}, {"value", value}};

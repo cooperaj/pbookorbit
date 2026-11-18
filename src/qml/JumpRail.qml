@@ -11,7 +11,7 @@ import "units.js" as Units
 Item {
     id: jumpRail
     property ListView list
-    // The list's sections, e.g. [{label: "A", index: 2}, ...] (see bookOrbit.jumpSections)
+    // The list's sections, e.g. [{label: "A", index: 2}, ...] (see bookOrbit.library.jumpSections)
     property var sections: []
     // Letters, or series numbers
     property bool alphabetical: true

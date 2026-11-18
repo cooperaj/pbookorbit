@@ -6,7 +6,7 @@ import QtQuick
 // book under its number. There's a jump rail when the list is longer than a screen (and,
 // for a series, has at least 16 books). The library's sub-toolbar sits above for filtering
 // and sorting (plus series order for a series), with menus shown by main.qml. Loads on
-// scroll like the library list; bookOrbit.showBooksOf() fills it.
+// scroll like the library list; bookOrbit.booksOf.show() fills it.
 BookListPage {
     id: page
 
@@ -19,17 +19,17 @@ BookListPage {
 
     title: kind + " / " + name
     listName: "booksOfList"
-    model: bookOrbit.booksOf
-    jumpSections: bookOrbit.booksOfJumpSections
-    error: bookOrbit.booksOfError
+    model: bookOrbit.booksOf.model
+    jumpSections: bookOrbit.booksOf.jumpSections
+    error: bookOrbit.booksOf.error
     alphabetical: !seriesOrder
     // Short series are quick enough to scroll without one
     minSections: seriesOrder ? 16 : 1
     // Until the first page says how many there are. No books says so.
-    loading: bookOrbit.booksOfTotal !== 0
+    loading: bookOrbit.booksOf.total !== 0
     empty: true
     emptyTitle: downloadedOnly ? "No downloaded books" : "No books found"
     emptyText: !downloadedOnly ? ""
                : bookOrbit.session.online ? "Turn off Downloaded only to see them all." : offlineText()
-    onRowsWanted: (first, last) => bookOrbit.loadBooksOf(first, last)
+    onRowsWanted: (first, last) => bookOrbit.booksOf.load(first, last)
 }

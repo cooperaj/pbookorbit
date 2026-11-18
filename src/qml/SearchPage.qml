@@ -20,11 +20,11 @@ Rectangle {
     property int headerHeight: Units.dp(56)
     // True while the search box has focus, for faster e-ink updates
     readonly property bool typing: searchField.activeFocus
-    // Long enough to search (bookOrbit.search() ignores shorter text)
+    // Long enough to search (bookOrbit.search.find() ignores shorter text)
     readonly property bool showResults: searchField.text.trim().length >= 3
     // Waiting for typing to pause, or for the results. The spinner replaces the clear
     // button meanwhile.
-    readonly property bool searching: showResults && (searchTimer.running || bookOrbit.searchTotal === -1)
+    readonly property bool searching: showResults && (searchTimer.running || bookOrbit.search.total === -1)
     // The recent searches stay until there are results, or there are none. A refined
     // search keeps the last results until its own arrive.
     readonly property bool showingResults: showResults && (results.list.count > 0 || !searching)
@@ -148,14 +148,14 @@ Rectangle {
                         searchTimer.restart()
                     else {
                         searchTimer.stop()
-                        bookOrbit.search("")
+                        bookOrbit.search.find("")
                     }
                 }
                 onAccepted: {
                     if (text.trim() === "")
                         return
                     searchTimer.stop()
-                    bookOrbit.search(text)
+                    bookOrbit.search.find(text)
                     // Done typing: hide the keyboard to show the results
                     page.hideKeyboard()
                 }
@@ -168,7 +168,7 @@ Rectangle {
             Timer {
                 id: searchTimer
                 interval: 400
-                onTriggered: bookOrbit.search(searchField.text)
+                onTriggered: bookOrbit.search.find(searchField.text)
             }
         }
 
@@ -249,13 +249,13 @@ Rectangle {
         width: parent.width
         listName: "searchResults"
         emptyName: "noBooksFound"
-        model: bookOrbit.searchResults
+        model: bookOrbit.search.model
         // The spinner is in the search box
         empty: true
         emptyTitle: "No books found"
         emptyText: bookOrbit.session.online ? "Try a different title, author or series."
                                     : offlineText("downloaded books", "searched")
-        onRowsWanted: (first, last) => bookOrbit.loadSearchResults(first, last)
+        onRowsWanted: (first, last) => bookOrbit.search.load(first, last)
         // Scrolling or tapping a book ends typing, which saves the search
         onScrollStarted: page.hideKeyboard()
         onBookClicked: (book) => {
@@ -269,9 +269,9 @@ Rectangle {
 
         // New results start at the top
         Connections {
-            target: bookOrbit
-            function onSearchChanged() {
-                if (bookOrbit.searchTotal === -1)
+            target: bookOrbit.search
+            function onChanged() {
+                if (bookOrbit.search.total === -1)
                     results.list.positionViewAtBeginning()
             }
         }

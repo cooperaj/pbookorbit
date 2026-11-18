@@ -25,7 +25,7 @@ Rectangle {
     property ListMenus menus: null
     // An error over rows already shown, under the sub-toolbar
     property bool showErrorLine: true
-    // The list's own error (bookOrbit.booksError and the rest)
+    // The list's own error (bookOrbit.library.error and the rest)
     property string error
 
     // The rail's sections, as JumpRail takes them, and where its entries go (see

@@ -4,6 +4,7 @@ SOURCES += \
     $$PWD/core/bookfinder.cpp \
     $$PWD/core/browser.cpp \
     $$PWD/core/booklistmodel.cpp \
+    $$PWD/core/booklists.cpp \
     $$PWD/core/bookorbitclient.cpp \
     $$PWD/core/bookrecords.cpp \
     $$PWD/core/database.cpp \
@@ -12,6 +13,7 @@ SOURCES += \
     $$PWD/core/downloads.cpp \
     $$PWD/core/launcherfiles.cpp \
     $$PWD/core/network.cpp \
+    $$PWD/core/pagedbooklist.cpp \
     $$PWD/core/recentsearches.cpp \
     $$PWD/core/savefile.cpp \
     $$PWD/core/session.cpp \
@@ -30,6 +32,7 @@ HEADERS += \
     $$PWD/core/bookfinder.h \
     $$PWD/core/browser.h \
     $$PWD/core/booklistmodel.h \
+    $$PWD/core/booklists.h \
     $$PWD/core/bookorbitclient.h \
     $$PWD/core/bookrecords.h \
     $$PWD/core/database.h \
@@ -38,6 +41,7 @@ HEADERS += \
     $$PWD/core/downloads.h \
     $$PWD/core/launcherfiles.h \
     $$PWD/core/network.h \
+    $$PWD/core/pagedbooklist.h \
     $$PWD/core/recentsearches.h \
     $$PWD/core/savefile.h \
     $$PWD/core/session.h \

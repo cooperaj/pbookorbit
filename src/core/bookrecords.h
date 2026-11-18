@@ -15,6 +15,9 @@ namespace bookrecords {
 // Adds those of values not already in list, in order
 void addNew(QStringList &list, const QStringList &values);
 
+// Whether a paged reply ({items, total}) has pages after this one
+bool morePages(int page, int pageSize, const QJsonObject &result);
+
 // Filter parts for BookOrbit's book queries
 QJsonObject rule(const QString &field, const QString &op, const QJsonValue &value);
 QJsonObject group(const QString &join, const QJsonArray &rules);

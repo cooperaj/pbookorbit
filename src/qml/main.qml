@@ -130,7 +130,7 @@ Window {
             { name: "Recently read", field: "lastReadAt", descending: true }
         ]
         sortIndex: 1   // Title, matching bookOrbit's default
-        onApplied: bookOrbit.setBookQuery(sortField, descending(), formats, downloadedOnly)
+        onApplied: bookOrbit.library.setQuery(sortField, descending(), formats, downloadedOnly)
     }
     // Collection sorts from BookOrbit's collections page, minus "Custom order": A-Z, and
     // most books first
@@ -181,7 +181,7 @@ Window {
         authorSeriesPage.list.positionViewAtBeginning()
         showingAuthorSeries = true
     }
-    // Books of an author, series or collection (see bookOrbit.showBooksOf()). Each field
+    // Books of an author, series or collection (see bookOrbit.booksOf.show()). Each field
     // keeps its own sort and filter between uses, like the library.
     property string booksOfField
     property var booksOfValues: []
@@ -231,8 +231,8 @@ Window {
         }
     }
     function applyBooksOf(query) {
-        bookOrbit.showBooksOf(booksOfField, booksOfValues, query.sortField, query.descending(), query.formats,
-                              query.downloadedOnly)
+        bookOrbit.booksOf.show(booksOfField, booksOfValues, query.sortField, query.descending(), query.formats,
+                               query.downloadedOnly)
     }
     // An author's books use the library's sorts
     ListQuery {
@@ -366,24 +366,24 @@ Window {
         anchors.bottom: footer.top
         anchors.left: parent.left
         anchors.right: parent.right
-        model: bookOrbit.books
+        model: bookOrbit.library.model
         query: libraryQuery
         menus: listMenus
         // For A-Z sorts
-        jumpSections: bookOrbit.jumpSections
+        jumpSections: bookOrbit.library.jumpSections
         railLayout: rails
-        error: bookOrbit.booksError
+        error: bookOrbit.library.error
         // The spinner only until the first books arrive; later pages load on scroll. No
         // books says so.
         loading: bookOrbit.session.busy
-        empty: bookOrbit.totalBooks === 0
+        empty: bookOrbit.library.total === 0
         emptyTitle: libraryQuery.downloadedOnly
                     ? ["No downloaded books", "No downloaded ebooks", "No downloaded audiobooks"][libraryQuery.filterIndex]
                     : ["No books", "No ebooks", "No audiobooks"][libraryQuery.filterIndex]
         emptyText: !bookOrbit.session.online ? offlineText()
                    : libraryQuery.downloadedOnly ? "Books you download show here, and can be read offline."
                    : "Books in your BookOrbit library show here."
-        onRowsWanted: (first, last) => bookOrbit.loadBooks(first, last)
+        onRowsWanted: (first, last) => bookOrbit.library.load(first, last)
         onBookClicked: (book) => root.openBook(book)
         onBookHeld: (row) => bookMenu.open(row)
     }

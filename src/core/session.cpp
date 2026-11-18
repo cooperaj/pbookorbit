@@ -207,6 +207,16 @@ void Session::withLibrary(std::function<void(int libraryId)> then, ErrorHandler 
         fail, quiet);
 }
 
+void Session::loadLibrary(std::function<void()> then, FailedHandler onFailed)
+{
+    withLibrary([then](int) { then(); },
+        [onFailed](int status, const QString &message) {
+            // Offline shows in the header instead
+            onFailed(status != 0 ? message : QString());
+        },
+        false);
+}
+
 void Session::callJson(const QByteArray &method, const QString &path, const QJsonDocument &body,
                                std::function<void(const QJsonDocument &)> onSuccess, FailedHandler onFailed)
 {

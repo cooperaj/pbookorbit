@@ -87,6 +87,8 @@ public:
     // Calls then with the library id, fetching it first if needed. Calls made while it's
     // fetched wait for the same request, which is quiet if the first call is.
     void withLibrary(std::function<void(int libraryId)> then, ErrorHandler onError, bool quiet = true);
+    // withLibrary() for a list, setting busy, with onFailed called as callJson() does
+    void loadLibrary(std::function<void()> then, FailedHandler onFailed);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;

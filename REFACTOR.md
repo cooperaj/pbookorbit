@@ -68,7 +68,7 @@ comparison, then a pause for review.
 2. Done: extract `Session`. Downloads, BookFinder and Covers depend on it. QML for online,
    signedIn and busy moves to `bookOrbit.session`.
 3. Done: extract theme, recent searches and details.
-4. Promote `PagedBookList`. Library, search and booksOf move to it, with their QML.
+4. Done: promote `PagedBookList`. Library, search and booksOf move to it, with their QML.
    Removes the shared jumpSectionsChanged.
 5. Promote `GroupList`, its subclasses and `GroupDetails`. The biggest, riskiest step:
    generations and the lookup queue.
