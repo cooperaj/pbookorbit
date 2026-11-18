@@ -90,6 +90,23 @@ AppTestCase {
         compare(sortText(page), "By Author", "the author's kept")
     }
 
+    // A books-of page shows its last rows at once next time, here after a restart with the
+    // server failing
+    function test_showsItsLastRowsNextTime() {
+        openMenuLibrary()
+        const page = openBooksOf("authorBooks")
+        tryVerify(() => titlesIn(page.list) === "Dune, Dune Messiah", 5000)
+        wait(2500)   // saved once loading settles
+        fakeServer.respond("POST", books, 500, "server-error.json", byFrankHerbert)
+
+        reopen()
+        bookRow("Dune")
+        const again = openBooksOf("authorBooks")
+
+        tryVerify(() => titlesIn(again.list) === "Dune, Dune Messiah", 5000, "the saved rows")
+        tryVerify(() => asked("Frank Herbert").length === 2, 5000, "asked for again")
+    }
+
     function test_backReturnsToTheLibrary() {
         openMenuLibrary()
         const page = openBooksOf("authorBooks")

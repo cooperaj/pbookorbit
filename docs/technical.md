@@ -76,8 +76,11 @@ the device plugged in, `sqlite3 <mount>/system/config/pbookorbit.db` opens it fr
 - `collections` and `collection_books` keep the user's collections in order, and each
   one's book ids, newest first.
 - `list_cache` keeps what each list last showed, by name (`library`, `collections`,
-  `series`, `authors`), as JSON. A list shows these rows when first opened, until the
-  server's arrive.
+  `series`, `authors`, and `booksOf:<field>:<values>` for an author's, series' or
+  collection's books), as JSON. A list shows these rows when first opened, until the
+  server's arrive. A book list keeps its first two screens of rows, with its sort and
+  filter, and shows them only for the same ones. The 20 books-of pages loaded most
+  recently are kept.
 - `group_details` keeps what looking up a series', collection's or author's books found,
   by kind (`series`, `collections`, `authors`) and id: the count with an ebook and
   audiobook as one, the formats, the cover versions, a collection's authors, and an

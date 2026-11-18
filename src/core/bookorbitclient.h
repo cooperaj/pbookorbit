@@ -332,9 +332,14 @@ private:
         // Generation the rows belong to. The old rows stay until a new query's first page
         // arrives.
         int listGeneration = -1;
+        // Its list cache name ("library", "booksOf:<field>:<values>"), or empty if it isn't
+        // cached
+        QString cacheName;
         // The rows are from the list cache, for this query: its first page updates them in
         // place, keeping the scroll position
         bool cached = false;
+        // Its first rows have changed since the list cache was saved
+        bool cacheDirty = false;
         // Rows asked for while waiting for the first page, loaded once it's in
         int wantedFirst = 0;
         int wantedLast = -1;
@@ -417,10 +422,10 @@ private:
     void restoreGroups(Groups &groups);
     // The group's list cache name, or empty if it isn't cached
     QString cacheName(const Groups &groups) const;
-    // Caches the library list's first rows, for the same sort and filter at the next start
-    void saveLibraryCache();
-    // Shows the cached library rows, if they're for the list's sort and filter
-    void restoreLibrary();
+    // Caches a book list's first rows, for the same books, sort and filter next time
+    void saveListCache(PagedBooks &list);
+    // Shows a book list's cached rows, if they're for its sort and filter
+    void restoreList(PagedBooks &list);
     // Loads series (the library's or an author's) one page at a time
     void loadSeriesPage(Groups *groups, int page, int generation);
     // Notes rows first to last of the model as wanted, and looks them up once the list has
@@ -559,8 +564,8 @@ private:
     QList<std::pair<std::function<void()>, FailedHandler>> m_afterLibrary;
     // Main library list
     PagedBooks m_list;
-    // Saves the library's list cache once a refresh settles
-    QTimer m_libraryCacheTimer;
+    // Saves the book lists' caches once a refresh settles
+    QTimer m_listCacheTimer;
     PagedBooks m_search;
     PagedBooks m_booksOf;
     // What booksOf shows (see showBooksOf). For a collection, the book ids

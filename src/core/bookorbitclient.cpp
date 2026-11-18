@@ -29,8 +29,10 @@
 static const int BOOKS_PAGE_SIZE = 40;
 // Page size when only reading series numbers (the server's maximum)
 static const int SERIES_NUMBERS_PAGE_SIZE = 200;
-// Library rows kept in the list cache: a couple of screens' worth
-static const int CACHED_LIBRARY_ROWS = 2 * BOOKS_PAGE_SIZE;
+// Rows of a book list kept in the list cache: a couple of screens' worth
+static const int CACHED_ROWS = 2 * BOOKS_PAGE_SIZE;
+// Books-of pages kept in the list cache, the most recently loaded
+static const int CACHED_BOOKS_OF = 20;
 
 // Shorter searches match too much to be useful
 static const int MIN_SEARCH_LENGTH = 3;
@@ -68,9 +70,15 @@ BookOrbitClient::BookOrbitClient(Database *database, QObject *parent)
     qApp->installEventFilter(this);
 
     // Saved once a refreshed list settles, rather than on each page and companion lookup
-    m_libraryCacheTimer.setSingleShot(true);
-    m_libraryCacheTimer.setInterval(2000);
-    connect(&m_libraryCacheTimer, &QTimer::timeout, this, &BookOrbitClient::saveLibraryCache);
+    m_list.cacheName = "library";
+    m_listCacheTimer.setSingleShot(true);
+    m_listCacheTimer.setInterval(2000);
+    connect(&m_listCacheTimer, &QTimer::timeout, this, [this]() {
+        for (PagedBooks *list : {&m_list, &m_booksOf}) {
+            if (std::exchange(list->cacheDirty, false))
+                saveListCache(*list);
+        }
+    });
 }
 
 bool BookOrbitClient::eventFilter(QObject *watched, QEvent *event)
@@ -250,9 +258,9 @@ void BookOrbitClient::refreshList(PagedBooks &list)
         showListedBooks(list);
         return;
     }
-    // Nothing shown yet since starting: the cached rows, until the first page
-    if (&list == &m_list && list.listGeneration == -1 && list.model.count() == 0)
-        restoreLibrary();
+    // Nothing shown yet: the cached rows, until the first page
+    if (list.listGeneration == -1 && list.model.count() == 0)
+        restoreList(list);
     PagedBooks *refreshed = &list;
     const int generation = list.queryGeneration;
     loadLibrary([this, refreshed, generation]() {
@@ -342,6 +350,9 @@ void BookOrbitClient::showBooksOf(const QString &field, const QStringList &value
     // Different books: clear the old rows. A new sort or filter of the same books keeps
     // them until the new rows arrive.
     if (field != m_booksOfField || values != m_booksOfValues) {
+        // Saved now, as the timer would find them replaced
+        if (std::exchange(m_booksOf.cacheDirty, false))
+            saveListCache(m_booksOf);
         restartPages(m_booksOf);
         m_booksOf.listGeneration = -1;
         m_booksOf.total = 0;
@@ -351,6 +362,7 @@ void BookOrbitClient::showBooksOf(const QString &field, const QStringList &value
     }
     m_booksOfField = field;
     m_booksOfValues = values;
+    m_booksOf.cacheName = "booksOf:" + field + ":" + QJsonDocument(QJsonArray::fromStringList(values)).toJson(QJsonDocument::Compact);
     m_booksOfCollectionIds.clear();
     if (field == "collection") {
         const int collectionId = values.value(0).toInt();
@@ -1025,8 +1037,10 @@ void BookOrbitClient::loadPage(PagedBooks &list, int page)
                     }
                     const int first = page * BOOKS_PAGE_SIZE;
                     pages->model.setBooks(first, rows);
-                    if (pages == &m_list && first < CACHED_LIBRARY_ROWS)
-                        m_libraryCacheTimer.start();
+                    if (!pages->cacheName.isEmpty() && first < CACHED_ROWS) {
+                        pages->cacheDirty = true;
+                        m_listCacheTimer.start();
+                    }
                     if (firstPage && pages->wantedLast >= 0)
                         loadPages(*pages, pages->wantedFirst, pages->wantedLast);
                     // Include the next row, whose section start depends on this page's
@@ -2384,40 +2398,47 @@ QString BookOrbitClient::cacheName(const Groups &groups) const
          : &groups == &m_authors ? "authors" : QString();
 }
 
-void BookOrbitClient::saveLibraryCache()
+void BookOrbitClient::saveListCache(PagedBooks &list)
 {
     // Only a list from the server, and not one replaced since
-    if (m_list.onlyListed || m_list.listGeneration != m_list.queryGeneration)
+    if (list.cacheName.isEmpty() || list.onlyListed || list.listGeneration != list.queryGeneration)
         return;
     QVariantList rows;
-    for (int i = 0; i < qMin(m_list.model.count(), CACHED_LIBRARY_ROWS) && m_list.model.isLoaded(i); i++)
-        rows.append(m_list.model.book(i));
+    for (int i = 0; i < qMin(list.model.count(), CACHED_ROWS) && list.model.isLoaded(i); i++)
+        rows.append(list.model.book(i));
     if (rows.isEmpty())
         return;
-    m_database->saveListCache("library", QVariantMap{
-        {"query", m_list.query.toVariantMap()},
-        {"total", m_list.total},
-        {"jumpSections", m_list.jumpSections},
-        {"rows", rows},
+    m_database->transaction([&]() {
+        m_database->saveListCache(list.cacheName, QVariantMap{
+            {"query", list.query.toVariantMap()},
+            {"total", list.total},
+            {"jumpSections", list.jumpSections},
+            {"rows", rows},
+            {"savedAt", QDateTime::currentMSecsSinceEpoch()},
+        });
+        if (&list == &m_booksOf)
+            m_database->keepListCaches("booksOf:", CACHED_BOOKS_OF);
     });
 }
 
-void BookOrbitClient::restoreLibrary()
+void BookOrbitClient::restoreList(PagedBooks &list)
 {
+    if (list.cacheName.isEmpty())
+        return;
     // Only for the same sort and filter
-    const QVariantMap cache = m_database->listCache("library");
+    const QVariantMap cache = m_database->listCache(list.cacheName);
     const QVariantList rows = cache.value("rows").toList();
-    if (rows.isEmpty() || QJsonObject::fromVariantMap(cache.value("query").toMap()) != bookQuery(m_list))
+    if (rows.isEmpty() || QJsonObject::fromVariantMap(cache.value("query").toMap()) != bookQuery(list))
         return;
     // listGeneration stays -1, so the first page from the server replaces these, and
     // scrolling past them waits for it
-    m_list.total = cache.value("total").toInt();
-    m_list.jumpSections = cache.value("jumpSections").toList();
-    m_list.cached = true;
-    m_list.model.reset(m_list.total);
-    m_list.model.setBooks(0, rows);
+    list.total = cache.value("total").toInt();
+    list.jumpSections = cache.value("jumpSections").toList();
+    list.cached = true;
+    list.model.reset(list.total);
+    list.model.setBooks(0, rows);
     emit jumpSectionsChanged();
-    emit booksChanged();
+    emitChanged(list);
 }
 
 void BookOrbitClient::download(const QString &path, DataHandler onSuccess, ErrorHandler onError)
@@ -2724,7 +2745,9 @@ void BookOrbitClient::clearSession()
     m_afterLibrary.clear();
     m_database->clearListCaches();
     m_groupDetails.clear();
-    m_libraryCacheTimer.stop();
+    m_listCacheTimer.stop();
+    m_list.cacheDirty = false;
+    m_booksOf.cacheDirty = false;
     for (Groups *groups : {&m_collections, &m_series, &m_authors, &m_authorSeries}) {
         groups->generation++;
         groups->rows.clear();

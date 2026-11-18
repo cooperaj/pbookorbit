@@ -108,6 +108,9 @@ public:
     // group details.
     void saveListCache(const QString &name, const QVariantMap &data);
     QVariantMap listCache(const QString &name) const;
+    // Keeps the count most recently saved of the list caches whose names start with prefix
+    // (by their savedAt), and deletes the rest
+    void keepListCaches(const QString &prefix, int count);
     void clearListCaches();
     // What a group's books were found to have, kind being "series", "collections" or "authors"
     void saveGroupDetails(const QString &kind, int id, const QVariantMap &details);

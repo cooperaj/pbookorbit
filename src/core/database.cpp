@@ -316,6 +316,14 @@ QVariantMap Database::listCache(const QString &name) const
     return data;
 }
 
+void Database::keepListCaches(const QString &prefix, int count)
+{
+    exec("DELETE FROM list_cache WHERE substr(name, 1, length(?1)) = ?1 AND name NOT IN ("
+         "SELECT name FROM list_cache WHERE substr(name, 1, length(?1)) = ?1 "
+         "ORDER BY json_extract(data, '$.savedAt') DESC LIMIT ?2)",
+         {prefix, count});
+}
+
 void Database::saveGroupDetails(const QString &kind, int id, const QVariantMap &details)
 {
     exec("INSERT OR REPLACE INTO group_details (kind, id, data) VALUES (?, ?, ?)", {kind, id, json(details)});
