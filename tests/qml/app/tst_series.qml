@@ -213,6 +213,24 @@ AppTestCase {
         compare(row("Dune").group.covers[0].coverVersion, "v1")
     }
 
+    // Details saved for a series that has gone are deleted, so they can't show if it comes
+    // back with its books unknown
+    function test_goneSeriesForgetTheirDetails() {
+        openLoadedSeries()
+        fakeServer.respond("GET", series, 200, "series/none.json")
+        tap("LibraryTab")
+        tap("SeriesTab")
+        tryVerify(() => find("emptyState", find("seriesPage")).visible, 5000, "the series have gone")
+        fakeServer.respond("GET", series, 200, "series/list.json")
+        fakeServer.respond("POST", books, 500, "server-error.json", {filter: {rules: [{field: "series"}]}})
+
+        tap("LibraryTab")
+        tap("SeriesTab")
+
+        tryVerify(() => rows() === "Dune (4), Hyperion Cantos (1), The Expanse (2)", 5000,
+                  "the list's counts, not the saved ones: " + rows())
+    }
+
     function test_noSeriesSaysSo() {
         openLibrary()
         fakeServer.respond("GET", series, 200, "series/none.json")

@@ -89,7 +89,8 @@ the device plugged in, `sqlite3 <mount>/system/config/pbookorbit.db` opens it fr
   starting with those in view: series and authors about twenty to a request, collections
   one each (books don't say which collections they're in), saving the collection's book
   ids to `collection_books` too. Filtering the authors by format needs every author's
-  books, so choosing Ebooks or Audiobooks looks them all up. Rows
+  books, so choosing Ebooks or Audiobooks looks them all up. Once a whole list has loaded,
+  the details of rows no longer in it are deleted. Rows
   show the saved details until then, and keep them if the lookup fails. `list_cache` and
   `group_details` are cleared on signing out.
 

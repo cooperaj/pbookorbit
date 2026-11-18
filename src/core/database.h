@@ -103,6 +103,8 @@ public:
         QVariantList bookIds;
     };
     QList<Collection> collections() const;
+    // A saved collection's book ids, newest first
+    QVariantList collectionBookIds(int collectionId) const;
 
     // A list's last rows, shown while the server's load. Cleared on sign-out, with the
     // group details.
@@ -116,6 +118,8 @@ public:
     void saveGroupDetails(const QString &kind, int id, const QVariantMap &details);
     // Every saved group's of a kind, by id
     QHash<int, QVariantMap> groupDetails(const QString &kind) const;
+    // Deletes the saved details of a kind's groups other than these
+    void keepGroupDetails(const QString &kind, const QList<int> &ids);
 
     // Runs writes in a single transaction: one write to storage, all or nothing
     void transaction(const std::function<void()> &writes);

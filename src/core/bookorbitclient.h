@@ -365,6 +365,9 @@ private:
         QString detailsKind;
         // Fields saved with the details besides bookCount, formats and covers
         QStringList detailFields;
+        // Only some of its kind's rows (an author's series), so its loads don't say which
+        // saved details have gone
+        bool partial = false;
         // rows is in server order, model is sorted
         QList<QVariantMap> rows;
         BookListModel model;
@@ -460,6 +463,8 @@ private:
     // Whether the authors are filtered by format, not just to the local books, so every
     // author needs looking up
     static bool filteringByFormat(const Groups &groups);
+    // After a whole list has loaded, deletes the saved details of rows no longer in it
+    void forgetGoneDetails(Groups &groups);
     // Saves what a row's lookup found, if its list's are saved
     void saveRowDetails(const Groups &groups, const QVariantMap &row);
     // The saved details of a kind, read the first time

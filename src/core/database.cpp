@@ -340,6 +340,15 @@ QHash<int, QVariantMap> Database::groupDetails(const QString &kind) const
     return details;
 }
 
+void Database::keepGroupDetails(const QString &kind, const QList<int> &ids)
+{
+    QJsonArray kept;
+    for (const int id : ids)
+        kept.append(id);
+    exec("DELETE FROM group_details WHERE kind = ?1 AND id NOT IN (SELECT value FROM json_each(?2))",
+         {kind, QString::fromUtf8(QJsonDocument(kept).toJson(QJsonDocument::Compact))});
+}
+
 void Database::clearCaches()
 {
     exec("DELETE FROM list_cache");
@@ -434,6 +443,18 @@ QList<Database::Collection> Database::collections() const
         sqlite3_finalize(statement);
     }
     return collections;
+}
+
+QVariantList Database::collectionBookIds(int collectionId) const
+{
+    QVariantList bookIds;
+    if (sqlite3_stmt *statement = prepare("SELECT book_id FROM collection_books WHERE collection_id = ? "
+                                          "ORDER BY position", {collectionId})) {
+        while (sqlite3_step(statement) == SQLITE_ROW)
+            bookIds.append(sqlite3_column_int(statement, 0));
+        sqlite3_finalize(statement);
+    }
+    return bookIds;
 }
 
 void Database::transaction(const std::function<void()> &writes)

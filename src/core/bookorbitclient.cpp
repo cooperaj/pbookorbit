@@ -94,6 +94,7 @@ BookOrbitClient::BookOrbitClient(Database *database, QObject *parent)
     m_series.detailsKind = "series";
     // Not cached, as they change with each author shown. Their details are the series'.
     m_authorSeries.detailsKind = "series";
+    m_authorSeries.partial = true;
     m_authors.lookup = Lookup::Authors;
     m_authors.cacheName = "authors";
     m_authors.detailsKind = "authors";
@@ -398,10 +399,7 @@ void BookOrbitClient::showBooksOf(const QString &field, const QStringList &value
     if (field == "collection") {
         const int collectionId = values.value(0).toInt();
         // As saved by the last lookup, since a row only has them once looked up
-        for (const Database::Collection &collection : m_database->collections()) {
-            if (collection.entry.value("id").toInt() == collectionId)
-                m_booksOfCollectionIds = collection.bookIds;
-        }
+        m_booksOfCollectionIds = m_database->collectionBookIds(collectionId);
         const QString path = QString("/collections/%1/books").arg(collectionId);
         m_booksOf.path = path + "/query";
         m_booksOf.jumpPath = path + "/jump-buckets";
@@ -1674,9 +1672,10 @@ void BookOrbitClient::lookUpWantedRows(Groups &groups)
     }
     // Filtering authors by format needs every author's books, those in view first
     if (filteringByFormat(groups)) {
+        QSet<int> queued(ids.cbegin(), ids.cend());
         for (const QVariantMap &row : std::as_const(groups.rows)) {
             const int id = row.value("id").toInt();
-            if (!groups.lookedUp.contains(id) && !ids.contains(id))
+            if (!groups.lookedUp.contains(id) && !queued.contains(id))
                 ids.append(id);
         }
     }
@@ -1696,11 +1695,15 @@ void BookOrbitClient::lookUpNextRows(Groups *groups, int generation)
     // As many as fit in one request. That's a collection on its own, or series or authors
     // with up to a page of books between them, at least one and at most a rule's worth.
     const bool collections = groups->lookup == Lookup::Collection;
+    // Every author may be waiting, so not a search of the rows for each
+    QHash<int, const QVariantMap *> rowsById;
+    for (const QVariantMap &row : std::as_const(groups->rows))
+        rowsById.insert(row.value("id").toInt(), &row);
     QList<int> ids;
     int books = 0;
     while (!groups->wanted.isEmpty()) {
         const int id = groups->wanted.first();
-        const QVariantMap *row = rowWithId(groups->rows, id);
+        const QVariantMap *row = rowsById.value(id);
         // An empty collection has nothing to look up
         if (!row || groups->lookedUp.contains(id) || (collections && row->value("serverCount").toInt() == 0)) {
             groups->wanted.removeFirst();
@@ -1812,6 +1815,18 @@ void BookOrbitClient::lookUpByName(Groups *groups, const QList<int> &ids, int pa
             if (generation == groups->generation)
                 stopLookingUp(*groups);
         });
+}
+
+void BookOrbitClient::forgetGoneDetails(Groups &groups)
+{
+    if (groups.detailsKind.isEmpty() || groups.partial)
+        return;
+    QSet<int> ids;
+    for (const QVariantMap &row : std::as_const(groups.rows))
+        ids.insert(row.value("id").toInt());
+    QHash<int, QVariantMap> &saved = savedDetails(groups.detailsKind);
+    saved.removeIf([&ids](QHash<int, QVariantMap>::iterator it) { return !ids.contains(it.key()); });
+    m_database->keepGroupDetails(groups.detailsKind, saved.keys());
 }
 
 QHash<int, QVariantMap> &BookOrbitClient::savedDetails(const QString &kind)
@@ -2305,6 +2320,7 @@ void BookOrbitClient::listPageLoaded(Groups &groups, bool more, std::function<vo
         loadNext();
     } else {
         finishGroups(groups, true);
+        forgetGoneDetails(groups);
         lookUpWantedRows(groups);
     }
 }
