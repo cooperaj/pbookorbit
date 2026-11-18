@@ -14,5 +14,5 @@ GroupListPage {
     loaded: bookOrbit.authorSeriesLoaded
     emptyTitle: "No series"
     emptyText: bookOrbit.online ? "None of their books are in a series." : offlineText("series with downloaded books")
-    onRowsWanted: (first, last) => { if (visible) bookOrbit.loadAuthorSeriesDetails(first, last) }
+    onRowsWanted: (first, last) => { if (visible) bookOrbit.lookUpAuthorSeriesRows(first, last) }
 }

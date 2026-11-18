@@ -78,12 +78,15 @@ the device plugged in, `sqlite3 <mount>/system/config/pbookorbit.db` opens it fr
 - `list_cache` keeps what each list last showed, by name (`library`, `collections`,
   `series`, `authors`), as JSON. A list shows these rows when first opened, until the
   server's arrive.
-- `group_details` keeps what looking up a series' or collection's books found, by kind
-  (`series`, `collections`) and id: the count with an ebook and audiobook as one, the
-  formats, the cover versions and, for a collection, its authors. Only rows that have been
-  on screen are looked up, each once per time their list loads, starting with those in
-  view: series about twenty to a request, collections one each (books don't say which
-  collections they're in), saving the collection's book ids to `collection_books` too. Rows
+- `group_details` keeps what looking up a series', collection's or author's books found,
+  by kind (`series`, `collections`, `authors`) and id: the count with an ebook and
+  audiobook as one, the formats, the cover versions, a collection's authors, and an
+  author's books' formats and series (for the format filter and their info page). Only
+  rows that have been on screen are looked up, each once per time their list loads,
+  starting with those in view: series and authors about twenty to a request, collections
+  one each (books don't say which collections they're in), saving the collection's book
+  ids to `collection_books` too. Filtering the authors by format needs every author's
+  books, so choosing Ebooks or Audiobooks looks them all up. Rows
   show the saved details until then, and keep them if the lookup fails. `list_cache` and
   `group_details` are cleared on signing out.
 

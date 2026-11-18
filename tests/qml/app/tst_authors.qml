@@ -4,11 +4,11 @@ import "../helpers"
 // The Authors tab. The server has Frank Herbert (four records: Dune, Dune Messiah, and
 // Children of Dune as an ebook and a separate audiobook), Dan Simmons (two Hyperion Cantos
 // books), James S. A. Corey (four Expanse books, one an audiobook) and Ann Leckie (one book
-// in no series). The list comes first, then each author's books, which set their formats,
-// book and series counts, a book with an ebook and audiobook counting once. Like the
-// series, authors load the first time the tab opens only. Unlike collections and series,
-// authors have the library's filter, and tapping one opens their info page. Offline, the
-// authors are the downloaded books'.
+// in no series). The list comes first, each time the tab opens, then the books of the
+// authors in view, which set their formats, book and series counts, a book with an ebook
+// and audiobook counting once, saved until looked up again. Unlike collections and series,
+// authors have the library's filter, which by format needs every author looked up, and
+// tapping one opens their info page. Offline, the authors are the downloaded books'.
 //
 // The page itself is tested in components/tst_grouplistpage.qml, and what every group list
 // shares in tst_series.qml.
@@ -69,6 +69,25 @@ AppTestCase {
 
     function authorRequests() {
         return fakeServer.requests.filter(r => r.method === "GET" && r.path === authors).length
+    }
+
+    // The authors named in requests for their books, in the order asked
+    function lookedUp() {
+        return fakeServer.requests.filter(r => r.path === books && r.body.filter
+                                               && r.body.filter.rules[0].field === "author")
+                                  .reduce((names, r) => names.concat(Array.from(r.body.filter.rules[0].value)), [])
+    }
+
+    // Sixty authors, more than a screen
+    function openManyAuthors() {
+        openLibrary()
+        fakeServer.respond("GET", authors, 200, "authors/many.json")
+        fakeServer.respond("POST", books, 200, "authors/books.json", {filter: {rules: [{field: "author"}]}})
+        bookRow("Dune")
+        tap("AuthorsTab")
+        const list = find("authorsPage").list
+        tryVerify(() => list.count === 60, 5000, "every author is listed")
+        return list
     }
 
     function sortBy(option) {
@@ -145,16 +164,73 @@ AppTestCase {
         compare(rows(), allByName)
     }
 
-    function test_loadedOnlyTheFirstTime() {
+    // Each time the tab opens, the list and the books of the authors in view are asked for
+    // again
+    function test_reloadedEachTimeTheTabOpens() {
         openLoadedAuthors()
         compare(authorRequests(), 1)
+        const lookups = lookedUp().length
 
         tap("LibraryTab")
         tap("AuthorsTab")
+
+        tryVerify(() => authorRequests() === 2, 5000, "the list is asked for again")
+        tryVerify(() => lookedUp().length > lookups, 5000, "and the authors in view looked up again")
+        compare(rows(), allByName)
+    }
+
+    // Only the authors on screen, and a screen either side, have their books looked up
+    function test_onlyAuthorsInViewAreLookedUp() {
+        const list = openManyAuthors()
+
+        tryVerify(() => lookedUp().includes("Author 01"), 5000, "the first are looked up")
+        wait(300)
+        verify(!lookedUp().includes("Author 60"), "not the last: " + lookedUp())
+
+        list.positionViewAtEnd()
+
+        tryVerify(() => lookedUp().includes("Author 60"), 5000, "the last once scrolled to")
+    }
+
+    // Filtering by format needs every author's books, so choosing it looks them all up
+    function test_formatFilterLooksUpEveryAuthor() {
+        openManyAuthors()
+        tryVerify(() => lookedUp().includes("Author 01"), 5000, "the first are looked up")
+        wait(300)
+
+        filterBy("Audiobooks")
+
+        tryVerify(() => lookedUp().includes("Author 60"), 5000, "every author, without scrolling")
+    }
+
+    // Downloaded only uses the downloaded books, so it needn't look every author up
+    function test_downloadedOnlyDoesntLookUpEveryAuthor() {
+        openManyAuthors()
+        tryVerify(() => lookedUp().includes("Author 01"), 5000, "the first are looked up")
+
+        setDownloadedOnly()
         wait(500)
 
-        compare(authorRequests(), 1, "not asked for again")
-        compare(rows(), allByName)
+        verify(!lookedUp().includes("Author 60"), "not the last")
+        verify(find("emptyState", find("authorsPage")).visible, "no downloaded books, so no authors")
+    }
+
+    // At the next start, what the authors' books showed is there before they're looked up,
+    // and stays if they can't be
+    function test_startShowsTheSavedDetails() {
+        openLoadedAuthors()
+        fakeServer.respond("POST", books, 500, "server-error.json", {filter: {rules: [{field: "author"}]}})
+        const lookups = lookedUp().length
+
+        reopen()
+        tap("AuthorsTab")
+
+        tryVerify(() => authorRequests() === 2, 5000, "the list is asked for again")
+        tryVerify(() => lookedUp().length > lookups, 5000, "the books are asked for, and fail")
+        wait(300)
+        compare(rows(), allByName, "the saved counts")
+        compare(row("Frank Herbert").group.formats, ["epub", "m4b"])
+        compare(row("Frank Herbert").group.seriesCount, 1)
     }
 
     // Only authors with books in the format, counting just those. A counted book shows all
