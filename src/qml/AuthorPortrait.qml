@@ -41,9 +41,9 @@ Item {
     }
 
     CoversImage {
+        objectName: "photo"
         anchors.fill: parent
         photo: true
-        itemId: (portrait.author.photo || "") !== "" ? portrait.author.id : -1
-        version: portrait.author.photo || ""
+        item: (portrait.author.photo || "") !== "" ? {id: portrait.author.id, version: portrait.author.photo} : null
     }
 }

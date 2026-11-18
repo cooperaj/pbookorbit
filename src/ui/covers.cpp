@@ -103,9 +103,10 @@ QString Covers::source(int bookId, const QString &version, int width, int height
 
 QString Covers::authorPhoto(int authorId, const QString &imageUrl, int width, int height)
 {
-    // The path under the API (download() adds the prefix). The query is the version.
+    // The path under the API (download() adds the prefix), which must be this author's, so
+    // another's photo is never kept as theirs. The query is the version.
     static const QString apiPrefix = "/api/v1";
-    if (!imageUrl.startsWith(apiPrefix))
+    if (QUrl(imageUrl).path() != QString("%1/authors/%2/thumbnail").arg(apiPrefix).arg(authorId))
         return QString();
     return fetch({authorId, true, imageUrl.mid(apiPrefix.size()), QSize(width, height),
                   QString("author-%1").arg(authorId), shortHash(QUrl(imageUrl).query())});

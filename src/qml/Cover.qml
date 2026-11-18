@@ -34,8 +34,8 @@ Item {
     CoversImage {
         id: image
         objectName: "image"
-        itemId: cover.book.id !== undefined && cover.book.hasCover !== false ? cover.book.id : -1
-        version: cover.book.coverVersion || ""
+        item: cover.book.id !== undefined && cover.book.hasCover !== false
+              ? {id: cover.book.id, version: cover.book.coverVersion || ""} : null
         fetchWidth: cover.width
         fetchHeight: cover.height
         width: Math.min(implicitWidth, cover.width)

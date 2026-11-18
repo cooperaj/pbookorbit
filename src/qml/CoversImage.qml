@@ -6,11 +6,11 @@ import "night.js" as Night
 // inverted copy, so it keeps its colours. Loads in the background unless told otherwise.
 Image {
     id: image
-    // The book's or author's id, or -1 for none
-    property int itemId: -1
+    // {id, version}: a book's id and coverVersion, or an author's id and photo URL from the
+    // authors list. Set as one, so the URL is never asked for with one's id and another's
+    // version while bindings update. null for none.
+    property var item: null
     property bool photo: false
-    // A cover's coverVersion, or a photo's URL from the authors list
-    property string version
     // The space it's made for
     property int fetchWidth: width
     property int fetchHeight: height
@@ -18,13 +18,13 @@ Image {
     // Bumped when the download arrives, so the URL is asked for again. A binding rather
     // than setting the URL, so the image follows a re-sorted list.
     property int revision: 0
-    readonly property string url: revision < 0 || itemId < 0 ? ""
-                                  : photo ? covers.authorPhoto(itemId, version, fetchWidth, fetchHeight)
-                                  : covers.source(itemId, version, fetchWidth, fetchHeight)
+    readonly property string url: revision < 0 || !item ? ""
+                                  : photo ? covers.authorPhoto(item.id, item.version, fetchWidth, fetchHeight)
+                                  : covers.source(item.id, item.version, fetchWidth, fetchHeight)
     Connections {
         target: covers
         function onReady(id, photo) {
-            if (id === image.itemId && photo === image.photo)
+            if (image.item && id === image.item.id && photo === image.photo)
                 image.revision++
         }
     }

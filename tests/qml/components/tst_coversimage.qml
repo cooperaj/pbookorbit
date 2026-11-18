@@ -40,7 +40,7 @@ UiTestCase {
     }
 
     function test_nothingWithoutAnId() {
-        const image = make({version: "v1"})
+        const image = make({})
 
         compare(image.url, "")
         wait(200)
@@ -49,7 +49,7 @@ UiTestCase {
 
     // Empty while it downloads, then shown once covers says it's ready
     function test_coverArrives() {
-        const image = make({itemId: 7, version: "v1"})
+        const image = make({item: {id: 7, version: "v1"}})
         compare(image.url, "", "downloading")
 
         tryVerify(() => image.status === Image.Ready, 5000, "the cover shows")
@@ -57,16 +57,25 @@ UiTestCase {
     }
 
     function test_photoArrives() {
-        const image = make({itemId: 7, photo: true, version: "/api/v1/authors/7/thumbnail?t=1"})
+        const image = make({photo: true, item: {id: 7, version: "/api/v1/authors/7/thumbnail?t=1"}})
 
         tryVerify(() => image.status === Image.Ready, 5000, "the photo shows")
         compare(fetches("/api/v1/authors/7/thumbnail"), 1)
         compare(fetches("/api/v1/books/7/thumbnail"), 0, "not the book's cover")
     }
 
+    // Another author's photo URL is refused, so it can't be kept as this author's
+    function test_anotherAuthorsPhotoIsRefused() {
+        const image = make({photo: true, item: {id: 8, version: "/api/v1/authors/7/thumbnail?t=1"}})
+
+        compare(image.url, "")
+        wait(200)
+        compare(fetches("/api/v1/authors/7/thumbnail"), 0, "nothing fetched")
+    }
+
     // A book and an author can share an id
     function test_onlyItsOwnDownloadCounts() {
-        const image = make({itemId: 7, photo: true, version: "/api/v1/authors/7/thumbnail?t=1"})
+        const image = make({photo: true, item: {id: 7, version: "/api/v1/authors/7/thumbnail?t=1"}})
         const revision = image.revision
 
         covers.ready(7, false)
@@ -79,19 +88,19 @@ UiTestCase {
     // A changed cover is fetched and the old one's files deleted. A list that still has the
     // old version, not yet refreshed, shows the new cover without fetching either again.
     function test_newVersionReplacesOld() {
-        const image = make({itemId: 7, version: "v1"})
+        const image = make({item: {id: 7, version: "v1"}})
         tryVerify(() => image.status === Image.Ready, 5000, "the first version shows")
         const oldFiles = testApp.coverFiles("7")
         compare(oldFiles.length, 2, "the download and its size")
 
-        image.version = "v2"
+        image.item = {id: 7, version: "v2"}
         tryVerify(() => fetches("/api/v1/books/7/thumbnail") === 2, 5000, "the new version is fetched")
         tryVerify(() => image.status === Image.Ready && image.url !== "", 5000, "and shows")
         const newFiles = testApp.coverFiles("7")
         compare(newFiles.length, 2, "only the new version's files are kept")
         verify(!newFiles.some(file => oldFiles.includes(file)), "the old version's files are gone")
 
-        image.version = "v1"
+        image.item = {id: 7, version: "v1"}
         tryVerify(() => image.status === Image.Ready && image.url !== "", 5000, "the old version shows the new cover")
         verify(image.url.endsWith(newFiles.find(file => file.endsWith(".png"))))
         wait(200)
@@ -100,10 +109,10 @@ UiTestCase {
 
     // The series list gives no cover versions: a book's cover is used as downloaded
     function test_noVersionUsesTheDownload() {
-        const versioned = make({itemId: 7, version: "v1"})
+        const versioned = make({item: {id: 7, version: "v1"}})
         tryVerify(() => versioned.status === Image.Ready, 5000, "the cover shows")
 
-        const unversioned = createTemporaryObject(coversImage, test, {itemId: 7, version: "", width: 20, height: 30})
+        const unversioned = createTemporaryObject(coversImage, test, {item: {id: 7, version: ""}, width: 20, height: 30})
         tryVerify(() => unversioned.status === Image.Ready, 5000, "the series' cover shows")
         wait(200)
         compare(fetches("/api/v1/books/7/thumbnail"), 1, "not fetched again")
@@ -113,8 +122,8 @@ UiTestCase {
     // version, so the book list needn't fetch it again at the next start
     function test_versionedDownloadKeptOverUnversioned() {
         fakeServer.hold("GET", "/api/v1/books/7/thumbnail")
-        const versioned = make({itemId: 7, version: "v1"})
-        const unversioned = createTemporaryObject(coversImage, test, {itemId: 7, version: ""})
+        const versioned = make({item: {id: 7, version: "v1"}})
+        const unversioned = createTemporaryObject(coversImage, test, {item: {id: 7, version: ""}})
         tryVerify(() => fetches("/api/v1/books/7/thumbnail") === 2, 5000, "both fetch it")
 
         fakeServer.release("GET", "/api/v1/books/7/thumbnail")
@@ -122,14 +131,14 @@ UiTestCase {
         compare(testApp.coverFiles("7").filter(file => file.endsWith("-source")).length, 1, "one download kept")
 
         testApp.restart()
-        const again = createTemporaryObject(coversImage, test, {itemId: 7, version: "v1"})
+        const again = createTemporaryObject(coversImage, test, {item: {id: 7, version: "v1"}})
         tryVerify(() => again.status === Image.Ready, 5000, "the cover shows after a restart")
         compare(fetches("/api/v1/books/7/thumbnail"), 2, "without fetching it again")
     }
 
     // Offline there's nothing to fetch; back online it's asked for again
     function test_askedForAgainOnline() {
-        const image = make({itemId: 7, version: "v1"}, {offline: true})
+        const image = make({item: {id: 7, version: "v1"}}, {offline: true})
         wait(200)
         compare(image.url, "")
         compare(fetches("/api/v1/books/7/thumbnail"), 0, "nothing fetched offline")
