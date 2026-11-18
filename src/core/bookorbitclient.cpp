@@ -1,4 +1,5 @@
 #include "core/bookorbitclient.h"
+#include "core/bookrecords.h"
 #include "ui/accents.h"
 #include "core/database.h"
 #include "core/diagnostics.h"
@@ -42,30 +43,28 @@ static const int MIN_SEARCH_LENGTH = 3;
 // Recent searches kept
 static const int MAX_RECENT_SEARCHES = 10;
 
-// Filter parts for BookOrbit's book queries
+using bookrecords::addCompanions;
+using bookrecords::addNew;
+using bookrecords::authorSortKey;
+using bookrecords::companionKey;
+using bookrecords::companionsFilter;
+using bookrecords::group;
+using bookrecords::hideListedPairs;
+using bookrecords::isFinished;
+using bookrecords::letterSection;
+using bookrecords::looseText;
+using bookrecords::ownFormats;
+using bookrecords::ownVariants;
+using bookrecords::rule;
+using bookrecords::seriesNames;
+using bookrecords::sortAuthors;
+using bookrecords::sortFormats;
+using bookrecords::words;
+
 // Whether a paged reply has pages after this one
 static bool morePages(int page, int pageSize, const QJsonObject &result)
 {
     return (page + 1) * pageSize < result.value("total").toInt() && !result.value("items").toArray().isEmpty();
-}
-
-// Adds those of values not already in list, in order
-static void addNew(QStringList &list, const QStringList &values)
-{
-    for (const QString &value : values) {
-        if (!list.contains(value))
-            list.append(value);
-    }
-}
-
-static QJsonObject rule(const QString &field, const QString &op, const QJsonValue &value)
-{
-    return QJsonObject{{"type", "rule"}, {"field", field}, {"operator", op}, {"value", value}};
-}
-
-static QJsonObject group(const QString &join, const QJsonArray &rules)
-{
-    return QJsonObject{{"type", "group"}, {"join", join}, {"rules", rules}};
 }
 
 BookOrbitClient::BookOrbitClient(Database *database, QObject *parent)
@@ -551,185 +550,6 @@ void BookOrbitClient::loadLibrary(std::function<void()> then, FailedHandler onFa
     }, fail);
 }
 
-// Lower-case letters and digits only, so "Carl’s" matches "Carl's" and "S.A." matches "S.
-// A."
-static QString looseText(const QString &text)
-{
-    QString loose;
-    for (const QChar c : text) {
-        if (c.isLetterOrNumber())
-            loose.append(c.toLower());
-    }
-    return loose;
-}
-
-// The words of some text, without the punctuation around and inside them
-static QStringList words(const QString &text)
-{
-    static const QRegularExpression notWord(R"([^\p{L}\p{N}]+)");
-    return text.split(notWord, Qt::SkipEmptyParts);
-}
-
-// Identifies records of the same book: loose title plus first author
-static QString companionKey(const QVariantMap &book)
-{
-    const QStringList authors = book.value("authors").toStringList();
-    return looseText(book.value("title").toString()) + '\n'
-           + (authors.isEmpty() ? QString() : looseText(authors.first()));
-}
-
-// A filter for every record that might share a book's title and first author: titles
-// containing each word, and an author containing the first author's longest word.
-// Punctuation is dropped since records spell it differently ("Carl’s"/"Carl's");
-// companionKey() then picks the real matches.
-static QJsonObject companionsFilter(const QVariantList &books)
-{
-    QJsonArray matches;
-    for (const QVariant &value : books) {
-        const QVariantMap book = value.toMap();
-        const QString title = book.value("title").toString();
-        QJsonArray match;
-        for (const QString &word : words(title))
-            match.append(rule("title", "contains", word));
-        if (match.isEmpty())
-            match.append(rule("title", "eq", title));
-        QString authorWord;
-        for (const QString &word : words(book.value("authors").toStringList().value(0))) {
-            if (word.length() > authorWord.length())
-                authorWord = word;
-        }
-        if (!authorWord.isEmpty())
-            match.append(rule("author", "includesAny", QJsonArray{authorWord}));
-        matches.append(group("AND", match));
-    }
-    return group("OR", matches);
-}
-
-// A record's book files, primary first: those with a format and the role "primary" or
-// "content" (the same book in another format). Cover, metadata and supplement files are
-// skipped.
-static QList<QVariantMap> bookFiles(const QVariantMap &book)
-{
-    QList<QVariantMap> files;
-    for (const QVariant &value : book.value("files").toList()) {
-        const QVariantMap file = value.toMap();
-        const QString role = file.value("role").toString();
-        if (!file.value("format").toString().isEmpty() && (role == "primary" || role == "content"))
-            files.append(file);
-    }
-    std::stable_sort(files.begin(), files.end(), [](const QVariantMap &a, const QVariantMap &b) {
-        return a.value("role") == "primary" && b.value("role") != "primary";
-    });
-    return files;
-}
-
-// A record's versions of the book, at most one ebook and one audiobook, from its first
-// file of each kind: [{bookId, fileId, format, sizeBytes, kind: "ebook" | "audiobook",
-// book}], where book is the record to download from
-static QVariantList ownVariants(const QVariantMap &book)
-{
-    QVariantList variants;
-    QStringList kinds;
-    for (const QVariantMap &file : bookFiles(book)) {
-        const QString format = file.value("format").toString();
-        const QString kind = mediaKind(format);
-        if (kinds.contains(kind))
-            continue;
-        kinds.append(kind);
-        variants.append(QVariantMap{
-            {"bookId", book.value("id")},
-            {"fileId", file.value("id")},
-            {"format", format.toLower()},
-            {"sizeBytes", file.value("sizeBytes")},
-            {"kind", kind},
-            {"book", book},
-        });
-    }
-    return variants;
-}
-
-// Every book format a record has, primary first: "epub", "azw3", ...
-static QStringList ownFormats(const QVariantMap &book)
-{
-    QStringList formats;
-    for (const QVariantMap &file : bookFiles(book)) {
-        const QString format = file.value("format").toString().toLower();
-        addNew(formats, {format});
-    }
-    return formats;
-}
-
-QVariantList BookOrbitClient::formatFiles(const QVariantMap &book) const
-{
-    QVariantList files;
-    QStringList formats;
-    for (const QVariantMap &file : bookFiles(book)) {
-        const QString format = file.value("format").toString().toLower();
-        if (formats.contains(format))
-            continue;
-        formats.append(format);
-        files.append(QVariantMap{
-            {"format", format},
-            {"sizeBytes", file.value("sizeBytes", 0)},
-            {"kind", mediaKind(format)},
-        });
-    }
-    return files;
-}
-
-void BookOrbitClient::addCompanions(QVariantMap &row, const QList<QVariantMap> &companions, bool hideAudio)
-{
-    QVariantList variants = row.value("variants").toList();
-    QStringList formats = row.value("formats").toStringList();
-    QStringList kinds;
-    for (const QVariant &variant : std::as_const(variants))
-        kinds.append(variant.toMap().value("kind").toString());
-    const QString ownKind = kinds.isEmpty() ? QString() : kinds.first();
-
-    bool ebookElsewhere = false;
-    for (const QVariantMap &companion : companions) {
-        for (const QVariant &value : ownVariants(companion)) {
-            const QString kind = value.toMap().value("kind").toString();
-            if (kind == "ebook")
-                ebookElsewhere = true;
-            if (!kinds.contains(kind)) {
-                kinds.append(kind);
-                variants.append(value);
-            }
-        }
-        addNew(formats, ownFormats(companion));
-    }
-    // Ebook versions first: a downloaded ebook opens before its audiobook. The formats
-    // follow, so an audiobook's row reads like its ebook's.
-    std::stable_sort(variants.begin(), variants.end(), [](const QVariant &a, const QVariant &b) {
-        return a.toMap().value("kind") == "ebook" && b.toMap().value("kind") != "ebook";
-    });
-    std::stable_sort(formats.begin(), formats.end(), [](const QString &a, const QString &b) {
-        return !isAudioFormat(a) && isAudioFormat(b);
-    });
-    row.insert("variants", variants);
-    row.insert("formats", formats);
-    row.insert("hidden", hideAudio && ownKind == "audiobook" && ebookElsewhere);
-}
-
-void BookOrbitClient::hideListedPairs(QVariantList &merged, const QVariantList &rows,
-                                      const QList<std::pair<int, QList<QVariantMap>>> &maybeHidden,
-                                      const QVariantList &listedIds)
-{
-    for (const auto &[i, companions] : maybeHidden) {
-        QList<QVariantMap> listed;
-        for (const QVariantMap &companion : companions) {
-            if (listedIds.contains(companion.value("id")))
-                listed.append(companion);
-        }
-        QVariantMap listedRow = rows.at(i).toMap();
-        addCompanions(listedRow, listed, true);
-        QVariantMap row = merged.at(i).toMap();
-        row.insert("hidden", listedRow.value("hidden"));
-        merged[i] = row;
-    }
-}
-
 QJsonObject BookOrbitClient::bookQuery(const PagedBooks &list)
 {
     QJsonObject query{
@@ -742,21 +562,6 @@ QJsonObject BookOrbitClient::bookQuery(const PagedBooks &list)
     if (!rules.isEmpty())
         query.insert("filter", group("AND", rules));
     return query;
-}
-
-// "George R.R. Martin" -> "Martin, George R.R.". Close enough to BookOrbit's author sort
-// names, which list entries don't include.
-static QString authorSortKey(const QString &name)
-{
-    const int space = name.trimmed().lastIndexOf(' ');
-    return space < 0 ? name.trimmed() : name.mid(space + 1) + ", " + name.left(space);
-}
-
-// "A" to "Z" for keys starting with a letter, otherwise "#", matching BookOrbit
-static QString letterSection(const QString &key)
-{
-    const QChar first = key.isEmpty() ? QChar() : key.at(0).toUpper();
-    return first >= 'A' && first <= 'Z' ? QString(first) : QString("#");
 }
 
 void BookOrbitClient::showListedBooks(PagedBooks &list)
@@ -1174,61 +979,15 @@ void BookOrbitClient::lookUpCompanions(PagedBooks *list, const QVariantList &boo
         });
 }
 
-QVariantMap BookOrbitClient::decorateBook(const QVariantMap &book, const PagedBooks &list) const
+QVariantMap BookOrbitClient::decorateBook(const QVariantMap &book, const PagedBooks &list)
 {
-    QVariantMap row = book;
-
     // Date added, and last read on the device (lastOpenedAt, see showListedBooks), are
     // sectioned by day. A-Z and last read from the server use the jump sections instead (see
     // updateSectionStarts).
-    QString section;
-    row.insert("sectionLabel", QString());
-    if (list.sections == Sections::Days) {
-        // Labelled like the system library: "2026/10/23" or "Never"
-        const QString field = list.sortField == "lastReadAt" ? "lastOpenedAt" : "addedAt";
-        const QDateTime when = QDateTime::fromString(book.value(field).toString(), Qt::ISODateWithMs);
-        if (when.isValid()) {
-            const QDate date = when.toLocalTime().date();
-            section = date.toString("yyyy-MM-dd");
-            row.insert("sectionLabel", date.toString("yyyy/MM/dd"));
-        } else {
-            section = "never";
-            row.insert("sectionLabel", "Never");
-        }
-    }
-    row.insert("section", section);
-    row.insert("sectionStart", false);
-
-    // Third line, as in the system library: reading status and series, either optional,
-    // e.g. "19% read | The Rising World - 2", "Completed", "Discworld - 13". Progress
-    // (0-100) shows whatever the status, as in BookOrbit, since reading doesn't always set
-    // one.
-    const QString status = book.value("readStatus").toMap().value("status").toString();
-    const double progress = book.value("readingProgress").toDouble();
-    QString statusText;
-    if (status == "read" || status == "skimmed" || progress >= 100) {
-        statusText = "Completed";
-    } else if (status == "on_hold") {
-        statusText = "On hold";
-    } else if (status == "abandoned") {
-        statusText = "Abandoned";
-    } else if (progress > 0) {
-        // Never "0%" or "100%" for a book that is part read
-        statusText = QString("%1% read").arg(qBound(1, qRound(progress), 99));
-    } else if (status == "reading" || status == "rereading") {
-        statusText = "Reading";
-    }
-    QString seriesText = book.value("seriesName").toString();
-    if (!seriesText.isEmpty() && !book.value("seriesIndex").isNull())
-        seriesText += " - " + book.value("seriesIndex").toString();
-    row.insert("statusText", statusText);
-    row.insert("seriesText", seriesText);
-
-    // Its own versions and formats. lookUpCompanions adds other records'.
-    row.insert("variants", ownVariants(book));
-    row.insert("formats", ownFormats(book));
-    row.insert("hidden", false);
-    return row;
+    QString dayField;
+    if (list.sections == Sections::Days)
+        dayField = list.sortField == "lastReadAt" ? "lastOpenedAt" : "addedAt";
+    return bookrecords::row(book, dayField);
 }
 
 void BookOrbitClient::updateSectionStarts(PagedBooks &list, int first, int last)
@@ -1269,36 +1028,6 @@ void BookOrbitClient::updateSectionStarts(PagedBooks &list, int first, int last)
                 || (books.isLoaded(previous) && books.book(previous).value("section").toString() != section));
         }
     }
-}
-
-// Ebooks before audiobooks, each in BookOrbit's order of formats
-static void sortFormats(QStringList &formats)
-{
-    static const QStringList order{"epub", "kepub", "mobi", "azw3", "azw", "fb2", "pdf", "djvu",
-                                   "cbz", "cbr", "m4b", "mp3", "m4a", "opus", "ogg", "flac"};
-    std::stable_sort(formats.begin(), formats.end(), [](const QString &a, const QString &b) {
-        return uint(order.indexOf(a)) < uint(order.indexOf(b));   // unknown ones last
-    });
-}
-
-// By surname
-static void sortAuthors(QStringList &authors)
-{
-    std::sort(authors.begin(), authors.end(), [](const QString &a, const QString &b) {
-        return QString::localeAwareCompare(authorSortKey(a).toLower(), authorSortKey(b).toLower()) < 0;
-    });
-}
-
-// The row with this id, or nullptr
-// Every series a book is in
-static QStringList seriesNames(const QVariantMap &book)
-{
-    QStringList names;
-    for (const QVariant &membership : book.value("seriesMemberships").toList())
-        names.append(membership.toMap().value("seriesName").toString());
-    if (names.isEmpty() && !book.value("seriesName").toString().isEmpty())
-        names.append(book.value("seriesName").toString());
-    return names;
 }
 
 // How many series a group's books are in, books being key -> series names
@@ -1379,6 +1108,7 @@ static QVariantList withCoverVersions(QVariantList covers, const QHash<int, QVar
     return covers;
 }
 
+// The row with this id, or nullptr
 static QVariantMap *rowWithId(QList<QVariantMap> &rows, int id)
 {
     for (QVariantMap &row : rows) {
@@ -1854,13 +1584,6 @@ QVariantMap BookOrbitClient::withSavedDetails(const Groups &groups, QVariantMap 
         versions.insert(cover.toMap().value("id").toInt(), cover.toMap().value("coverVersion"));
     row.insert("covers", withCoverVersions(row.value("covers").toList(), versions));
     return row;
-}
-
-// Finished, as decorateBook() shows "Completed"
-static bool isFinished(const QVariantMap &book)
-{
-    const QString status = book.value("readStatus").toMap().value("status").toString();
-    return status == "read" || status == "skimmed" || book.value("readingProgress").toDouble() >= 100;
 }
 
 // A stable id for a row built offline, negative so it can't clash with the server's

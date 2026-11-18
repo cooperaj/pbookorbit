@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/booklistmodel.h"
+#include "core/bookrecords.h"
 
 #include <QColor>
 #include <QElapsedTimer>
@@ -242,7 +243,10 @@ public:
     Q_INVOKABLE QVariantMap authorRow(int authorId) const;
     // A record's book files, one per format, primary first: [{format, sizeBytes, kind}],
     // with the format in lower case and kind "ebook" or "audiobook"
-    Q_INVOKABLE QVariantList formatFiles(const QVariantMap &book) const;
+    Q_INVOKABLE QVariantList formatFiles(const QVariantMap &book) const
+    {
+        return bookrecords::formatFiles(book);
+    }
     // Placeholder for a missing author photo, as BookOrbit draws it: initials ("AT" for
     // "Adrian Tchaikovsky") on a gradient chosen from the name, near the accent hue.
     // Returns {initials, from, to, color}, saturated for e-ink.
@@ -537,17 +541,8 @@ private:
     // rows and calls then with them. If the lookup fails, then gets the rows unmerged.
     void lookUpCompanions(PagedBooks *list, const QVariantList &books, const QVariantList &rows,
                           int generation, std::function<void(const QVariantList &rows)> then);
-    // Adds display fields to a row: section, sectionLabel, statusText, seriesText, and
-    // variants, formats and hidden (see addCompanions)
-    QVariantMap decorateBook(const QVariantMap &book, const PagedBooks &list) const;
-    // Merges other records of the same book into a row's variants and formats. With
-    // hideAudio, hides an audiobook row whose ebook is also listed.
-    static void addCompanions(QVariantMap &row, const QList<QVariantMap> &companions, bool hideAudio);
-    // Hides each audiobook row in maybeHidden (row, its companions) whose ebook companion is
-    // in listedIds, and shows the rest. rows are the unmerged rows.
-    static void hideListedPairs(QVariantList &merged, const QVariantList &rows,
-                                const QList<std::pair<int, QList<QVariantMap>>> &maybeHidden,
-                                const QVariantList &listedIds);
+    // A row for a record (see bookrecords::row), sectioned by day if the list is
+    static QVariantMap decorateBook(const QVariantMap &book, const PagedBooks &list);
     // Marks which rows from first to last start a section
     void updateSectionStarts(PagedBooks &list, int first, int last);
     // Letter sorts and date sorts

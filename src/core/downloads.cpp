@@ -1,6 +1,7 @@
 #include "core/downloads.h"
 
 #include "core/bookorbitclient.h"
+#include "core/bookrecords.h"
 #include "core/database.h"
 #include "core/diagnostics.h"
 #include "core/formats.h"
@@ -178,29 +179,15 @@ bool Downloads::isOnDevice(int bookId) const
 
 QVariantMap Downloads::fileToDownload(const QVariantMap &book, int fileId) const
 {
-    // files: [{id, format, role, sizeBytes}]. "primary" is the book in its main format and
-    // "content" the same book in another. "cover", "metadata" and "supplement" files aren't
-    // the book.
+    // The one asked for, or else the book in its main format
     QVariantMap chosen;
-    for (const QVariant &value : book.value("files").toList()) {
-        const QVariantMap file = value.toMap();
-        const QString role = file.value("role").toString();
-        if (file.value("format").toString().isEmpty() || (role != "primary" && role != "content"))
-            continue;
-        if (fileId >= 0) {
-            if (file.value("id").toInt() == fileId) {
-                chosen = file;
-                break;
-            }
-            continue;
-        }
-        if (role == "primary") {
+    for (const QVariantMap &file : bookrecords::bookFiles(book)) {
+        if (fileId < 0 || file.value("id").toInt() == fileId) {
             chosen = file;
             break;
         }
-        if (chosen.isEmpty())
-            chosen = file;
     }
+
     // Destination: "Books" or "Audio Books"
     if (!chosen.isEmpty())
         chosen.insert("folder", QFileInfo(folderFor(chosen.value("format").toString())).fileName());

@@ -5,6 +5,7 @@ SOURCES += \
     $$PWD/core/browser.cpp \
     $$PWD/core/booklistmodel.cpp \
     $$PWD/core/bookorbitclient.cpp \
+    $$PWD/core/bookrecords.cpp \
     $$PWD/core/database.cpp \
     $$PWD/core/diagnostics.cpp \
     $$PWD/core/downloads.cpp \
@@ -26,6 +27,7 @@ HEADERS += \
     $$PWD/core/browser.h \
     $$PWD/core/booklistmodel.h \
     $$PWD/core/bookorbitclient.h \
+    $$PWD/core/bookrecords.h \
     $$PWD/core/database.h \
     $$PWD/core/diagnostics.h \
     $$PWD/core/downloads.h \
