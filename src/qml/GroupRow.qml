@@ -11,7 +11,7 @@ import "format.js" as Format
 // books | 2 series".
 ListRow {
     id: row
-    // A row from bookOrbit.collections, seriesList or authorsList
+    // A row from bookOrbit.collections, series or authors
     property var group
 
     readonly property bool isAuthor: group.kind === "author"

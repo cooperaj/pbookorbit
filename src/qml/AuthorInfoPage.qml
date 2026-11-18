@@ -10,7 +10,7 @@ import "format.js" as Format
 InfoPage {
     id: page
 
-    // The author's unfiltered Authors list row (bookOrbit.authorRow)
+    // The author's unfiltered Authors list row (bookOrbit.authors.row)
     property var author: ({})
     // GET /authors/:id, once loaded
     property var details: ({})
@@ -19,7 +19,7 @@ InfoPage {
     signal seriesClicked()
 
     function show(authorId) {
-        author = bookOrbit.authorRow(authorId)
+        author = bookOrbit.authors.row(authorId)
         details = {}
         scrollToTop()
         bookOrbit.details.loadAuthor(authorId)
@@ -34,10 +34,10 @@ InfoPage {
     }
     // Formats and series arrive after the list
     Connections {
-        target: bookOrbit
-        function onAuthorsChanged() {
+        target: bookOrbit.authors
+        function onChanged() {
             if (page.visible && page.author.id !== undefined)
-                page.author = bookOrbit.authorRow(page.author.id)
+                page.author = bookOrbit.authors.row(page.author.id)
         }
     }
 

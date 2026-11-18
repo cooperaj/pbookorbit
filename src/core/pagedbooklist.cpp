@@ -115,15 +115,10 @@ void PagedBookList::refresh()
 
 void PagedBookList::setPaths()
 {
-    m_path = libraryBooksPath();
+    m_path = m_session->libraryBooksPath();
     m_jumpPath = m_path + "/jump-buckets";
     // With every type listed, an audiobook's ebook record is in the list too
     m_mergePairs = m_formats.isEmpty();
-}
-
-QString PagedBookList::libraryBooksPath() const
-{
-    return QString("/libraries/%1/books").arg(m_session->libraryId());
 }
 
 void PagedBookList::withLibrary(std::function<void()> then)
@@ -469,7 +464,7 @@ void PagedBookList::lookUpCompanions(const QVariantList &books, const QVariantLi
         {"filter", companionsFilter(books)},
         {"pagination", QJsonObject{{"page", 0}, {"size", COMPANIONS_PAGE_SIZE}}},
     };
-    m_session->callJson("POST", libraryBooksPath(), QJsonDocument(query),
+    m_session->callJson("POST", m_session->libraryBooksPath(), QJsonDocument(query),
         [this, books, rows, generation, then](const QJsonDocument &doc) {
             if (generation != m_queryGeneration)
                 return;

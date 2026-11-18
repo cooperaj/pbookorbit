@@ -84,7 +84,6 @@ protected:
     // Saves the list's first rows, if it's cached and they've changed
     void saveCache();
     void setError(const QString &error);
-    QString libraryBooksPath() const;
 
     // When the library is known: sets the endpoints and mergePairs for the query
     virtual void setPaths();

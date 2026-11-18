@@ -7,7 +7,14 @@ import QtQuick
 ListPage {
     id: page
 
-    property bool loaded: false
+    model: groups ? groups.model : null
+    jumpSections: groups ? groups.jumpSections : []
+    error: groups ? groups.error : ""
+
+    // The list shown: bookOrbit.collections, series, authors or authorSeries. None, for a
+    // page whose rows are set some other way.
+    property var groups: null
+    property bool loaded: groups ? groups.loaded : false
     // The client's, unless set
     property bool online: bookOrbit.session.online
 
@@ -16,7 +23,7 @@ ListPage {
     loading: !loaded && online
     empty: loaded
     // The rows in view have their books looked up, not while hidden
-    onRowsWanted: (first, last) => { if (visible) bookOrbit.lookUpRows(model, first, last) }
+    onRowsWanted: (first, last) => { if (visible && groups) groups.lookUpRows(first, last) }
 
     delegate: GroupRow {
         required property var book

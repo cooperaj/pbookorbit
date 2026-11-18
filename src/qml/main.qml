@@ -141,7 +141,7 @@ Window {
             { name: "Book count", field: "bookCount", descending: true }
         ]
         hasFilter: false
-        onApplied: bookOrbit.setCollectionSort(sortField, descending())
+        onApplied: bookOrbit.collections.setSort(sortField, descending())
     }
     // Series sorts from BookOrbit's series page: A-Z, then most books, latest added and
     // most read first
@@ -154,7 +154,7 @@ Window {
             { name: "Read progress", field: "readProgress", descending: true }
         ]
         hasFilter: false
-        onApplied: bookOrbit.setSeriesSort(sortField, descending())
+        onApplied: bookOrbit.series.setSort(sortField, descending())
     }
     // Author sorts from BookOrbit's authors page: A-Z by name or surname, most books and
     // latest added first. Filtered by their books, like the library.
@@ -166,18 +166,18 @@ Window {
             { name: "Book count", field: "bookCount", descending: true },
             { name: "Recently added", field: "lastAddedAt", descending: true }
         ]
-        onApplied: bookOrbit.setAuthorQuery(sortField, descending(), formats, downloadedOnly)
+        onApplied: bookOrbit.authors.setQuery(sortField, descending(), formats, downloadedOnly)
     }
     // An author's series: the Series view's sorts, kept between authors
     ListQuery {
         id: authorSeriesQuery
         sorts: seriesQuery.sorts
         hasFilter: false
-        onApplied: bookOrbit.setAuthorSeriesSort(sortField, descending())
+        onApplied: bookOrbit.authorSeries.setSort(sortField, descending())
     }
     function openAuthorSeries(name) {
         authorSeriesPage.name = name
-        bookOrbit.showAuthorSeries(name)
+        bookOrbit.authorSeries.show(name)
         authorSeriesPage.list.positionViewAtBeginning()
         showingAuthorSeries = true
     }
@@ -273,13 +273,13 @@ Window {
                 authorsQuery.applied()
             // Offline, series are the downloaded books'
             if (showingSeries)
-                bookOrbit.loadSeries()
+                bookOrbit.series.load()
             if (showingAuthorSeries)
-                bookOrbit.showAuthorSeries(authorSeriesPage.name)
+                bookOrbit.authorSeries.show(authorSeriesPage.name)
             if (showingAuthors)
-                bookOrbit.loadAuthors()
+                bookOrbit.authors.load()
             if (showingCollections)
-                bookOrbit.loadCollections()
+                bookOrbit.collections.load()
         }
     }
     Component.onCompleted: {
@@ -392,10 +392,7 @@ Window {
         id: collectionsPage
         objectName: "collectionsPage"
         visible: bookOrbit.session.signedIn && root.showingCollections
-        model: bookOrbit.collections
-        jumpSections: bookOrbit.collectionJumpSections
-        error: bookOrbit.collectionsError
-        loaded: bookOrbit.collectionsLoaded
+        groups: bookOrbit.collections
         emptyTitle: "No collections"
         emptyText: bookOrbit.session.online ? "Collections you make in BookOrbit show here."
                                     : offlineText("collections containing downloaded books")
@@ -409,7 +406,7 @@ Window {
         // Reloaded every time the view opens, showing the last rows until then, and the books
         // of the collections in view looked up. Offline, the saved collections' downloaded
         // books.
-        onVisibleChanged: if (visible) bookOrbit.loadCollections()
+        onVisibleChanged: if (visible) bookOrbit.collections.load()
         onGroupClicked: (collection) => root.openBooksOf("collection", [String(collection.id)], collection.name)
     }
 
@@ -417,10 +414,7 @@ Window {
         id: seriesPage
         objectName: "seriesPage"
         visible: bookOrbit.session.signedIn && root.showingSeries
-        model: bookOrbit.seriesList
-        jumpSections: bookOrbit.seriesJumpSections
-        error: bookOrbit.seriesError
-        loaded: bookOrbit.seriesLoaded
+        groups: bookOrbit.series
         emptyTitle: "No series"
         emptyText: bookOrbit.session.online ? "Series show here once books in the library belong to one."
                                     : offlineText("series with downloaded books")
@@ -433,7 +427,7 @@ Window {
         menus: listMenus
         // Reloaded every time the view opens, showing the last rows until then, and the books
         // of the series in view looked up. Offline, the downloaded books'.
-        onVisibleChanged: if (visible) bookOrbit.loadSeries()
+        onVisibleChanged: if (visible) bookOrbit.series.load()
         onGroupClicked: (series) => root.openBooksOf("series", [series.name])
     }
 
@@ -441,13 +435,11 @@ Window {
         id: authorsPage
         objectName: "authorsPage"
         visible: bookOrbit.session.signedIn && root.showingAuthors
-        model: bookOrbit.authorsList
-        jumpSections: bookOrbit.authorJumpSections
-        error: bookOrbit.authorsError
+        groups: bookOrbit.authors
         // Filtered by format, authors appear once every author's books have been looked up.
         // Downloaded only uses the downloaded books.
-        loaded: bookOrbit.authorsLoaded && (bookOrbit.allAuthorsLookedUp || authorsQuery.filterIndex === 0
-                                            || authorsQuery.downloadedOnly)
+        loaded: bookOrbit.authors.loaded && (bookOrbit.authors.allLookedUp || authorsQuery.filterIndex === 0
+                                             || authorsQuery.downloadedOnly)
         emptyTitle: authorsQuery.downloadedOnly || authorsQuery.filterIndex === 0 ? "No authors"
                     : "No authors with " + authorsQuery.filterName.toLowerCase()
         emptyText: !bookOrbit.session.online ? offlineText("authors of downloaded books")
@@ -462,7 +454,7 @@ Window {
         railLayout: rails
         menus: listMenus
         // Reloaded every time the view opens, like the series
-        onVisibleChanged: if (visible) bookOrbit.loadAuthors()
+        onVisibleChanged: if (visible) bookOrbit.authors.load()
         onGroupClicked: (author) => {
             authorInfoPage.show(author.id)
             root.showingAuthor = true

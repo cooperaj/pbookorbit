@@ -11,6 +11,9 @@ SOURCES += \
     $$PWD/core/details.cpp \
     $$PWD/core/diagnostics.cpp \
     $$PWD/core/downloads.cpp \
+    $$PWD/core/groupdetails.cpp \
+    $$PWD/core/grouplist.cpp \
+    $$PWD/core/grouplists.cpp \
     $$PWD/core/launcherfiles.cpp \
     $$PWD/core/network.cpp \
     $$PWD/core/pagedbooklist.cpp \
@@ -39,6 +42,9 @@ HEADERS += \
     $$PWD/core/details.h \
     $$PWD/core/diagnostics.h \
     $$PWD/core/downloads.h \
+    $$PWD/core/groupdetails.h \
+    $$PWD/core/grouplist.h \
+    $$PWD/core/grouplists.h \
     $$PWD/core/launcherfiles.h \
     $$PWD/core/network.h \
     $$PWD/core/pagedbooklist.h \

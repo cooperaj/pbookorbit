@@ -8,7 +8,7 @@ import "night.js" as Night
 // the size; 3:4 suits most photos.
 Item {
     id: portrait
-    // A bookOrbit.authorsList row or bookOrbit.authorRow(): id, name, photo
+    // A bookOrbit.authors row or bookOrbit.authors.row(): id, name, photo
     property var author: ({})
 
     // Recomputed when the accent changes

@@ -48,7 +48,7 @@ void SearchResults::find(const QString &text)
         if (generation != m_queryGeneration)
             return;
         // Same as BookOrbit's web client: the text as q, sorted by title
-        m_path = libraryBooksPath();
+        m_path = m_session->libraryBooksPath();
         m_query = QJsonObject{
             {"q", q},
             {"sort", QJsonArray{QJsonObject{{"field", "title"}, {"dir", "asc"}}}},
@@ -100,7 +100,7 @@ void SearchResults::hideListedPairs(const QVariantList &merged, const QVariantLi
         {"pagination", QJsonObject{{"page", 0}, {"size", COMPANIONS_PAGE_SIZE}}},
     };
     const int generation = m_queryGeneration;
-    m_session->callJson("POST", libraryBooksPath(), QJsonDocument(query),
+    m_session->callJson("POST", m_session->libraryBooksPath(), QJsonDocument(query),
         [this, rows, merged, maybeHidden, generation, then](const QJsonDocument &doc) {
             if (generation != m_queryGeneration)
                 return;

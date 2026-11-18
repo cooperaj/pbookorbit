@@ -63,6 +63,8 @@ public:
     QString error() const { return m_error; }
     // The library's id, or -1 until withLibrary() has fetched it
     int libraryId() const { return m_libraryId; }
+    // Endpoint for the library's book queries
+    QString libraryBooksPath() const { return QString("/libraries/%1/books").arg(m_libraryId); }
 
     // server is as typed, e.g. "books.example.com". Defaults to https.
     Q_INVOKABLE void signIn(const QString &server, const QString &username, const QString &password);

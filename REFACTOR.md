@@ -70,10 +70,11 @@ comparison, then a pause for review.
 3. Done: extract theme, recent searches and details.
 4. Done: promote `PagedBookList`. Library, search and booksOf move to it, with their QML.
    Removes the shared jumpSectionsChanged.
-5. Promote `GroupList`, its subclasses and `GroupDetails`. The biggest, riskiest step:
-   generations and the lookup queue.
-6. Extract `LocalLibrary`'s offline builders.
-7. Trim `BookOrbit` to the coordinator.
+5. Done: promote `GroupList`, its subclasses and `GroupDetails`. The biggest, riskiest
+   step: generations and the lookup queue.
+6. Dropped: extract `LocalLibrary`'s offline builders. After step 5 each list builds its
+   own offline rows (`showLocal()`), next to how it loads and looks up the same rows.
+7. Done with step 5: `BookOrbitClient` is the coordinator.
 
 ## Watch for
 
