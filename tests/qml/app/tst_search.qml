@@ -53,7 +53,7 @@ AppTestCase {
     function recent(text) {
         let row = null
         tryVerify(() => (row = findChild(find("recentSearches"), "recent " + text)) !== null, 5000,
-                  "a row for " + text + " in " + JSON.stringify(bookOrbit.recentSearches))
+                  "a row for " + text + " in " + JSON.stringify(bookOrbit.recentSearches.items))
         return row
     }
 
@@ -199,7 +199,7 @@ AppTestCase {
         keyClick(Qt.Key_Return)
 
         verify(!find("searchField").activeFocus, "typing ends")
-        compare(bookOrbit.recentSearches, ["dune", "hyperion"], "newest first")
+        compare(bookOrbit.recentSearches.items, ["dune", "hyperion"], "newest first")
     }
 
     function test_goingBackDoesntSaveTheSearch() {
@@ -210,7 +210,7 @@ AppTestCase {
         tap("backButton", page)
 
         verify(!page.visible, "back to the library")
-        compare(bookOrbit.recentSearches, [])
+        compare(bookOrbit.recentSearches.items, [])
     }
 
     // Searched again, it moves to the top rather than being listed twice
@@ -222,7 +222,7 @@ AppTestCase {
 
         compare(find("searchField").text, "dune")
         tryVerify(() => results() === "Dune, Dune Messiah", 5000, "its results")
-        compare(bookOrbit.recentSearches, ["dune", "hyperion"])
+        compare(bookOrbit.recentSearches.items, ["dune", "hyperion"])
     }
 
     function test_recentSearchesAreKept() {
@@ -232,7 +232,7 @@ AppTestCase {
         keyClick(Qt.Key_Return)
 
         // As though the app were started again
-        const saved = {recentSearches: JSON.stringify(bookOrbit.recentSearches)}
+        const saved = {recentSearches: JSON.stringify(bookOrbit.recentSearches.items)}
         openSearchLibrary(saved)
         openSearch()
 
@@ -248,7 +248,7 @@ AppTestCase {
         mouseClick(bookRow("Dune Messiah", "searchResults"))
 
         expectOpenedInReader("/Books/Dune Messiah.epub")
-        compare(bookOrbit.recentSearches, ["dune"])
+        compare(bookOrbit.recentSearches.items, ["dune"])
     }
 
     function test_tappingAResultNotOnTheDeviceOffersToDownloadIt() {
@@ -275,7 +275,7 @@ AppTestCase {
 
         tryVerify(() => menu.visible, 3000, "the menu opens")
         compare(menu.book.title, "Dune Messiah", "for that book")
-        compare(bookOrbit.recentSearches, ["dune"], "the search is saved")
+        compare(bookOrbit.recentSearches.items, ["dune"], "the search is saved")
     }
 
     // Offline, every word must be in the title, an author or a series, in any case

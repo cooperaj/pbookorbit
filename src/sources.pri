@@ -7,10 +7,12 @@ SOURCES += \
     $$PWD/core/bookorbitclient.cpp \
     $$PWD/core/bookrecords.cpp \
     $$PWD/core/database.cpp \
+    $$PWD/core/details.cpp \
     $$PWD/core/diagnostics.cpp \
     $$PWD/core/downloads.cpp \
     $$PWD/core/launcherfiles.cpp \
     $$PWD/core/network.cpp \
+    $$PWD/core/recentsearches.cpp \
     $$PWD/core/savefile.cpp \
     $$PWD/core/session.cpp \
     $$PWD/core/systemlibrary.cpp \
@@ -22,6 +24,7 @@ SOURCES += \
     $$PWD/ui/einkcolors.cpp \
     $$PWD/ui/invertedimageprovider.cpp \
     $$PWD/ui/launchertile.cpp \
+    $$PWD/ui/theme.cpp \
     $$PWD/ui/themeimageprovider.cpp
 HEADERS += \
     $$PWD/core/bookfinder.h \
@@ -30,10 +33,12 @@ HEADERS += \
     $$PWD/core/bookorbitclient.h \
     $$PWD/core/bookrecords.h \
     $$PWD/core/database.h \
+    $$PWD/core/details.h \
     $$PWD/core/diagnostics.h \
     $$PWD/core/downloads.h \
     $$PWD/core/launcherfiles.h \
     $$PWD/core/network.h \
+    $$PWD/core/recentsearches.h \
     $$PWD/core/savefile.h \
     $$PWD/core/session.h \
     $$PWD/core/formats.h \
@@ -46,6 +51,7 @@ HEADERS += \
     $$PWD/ui/einkcolors.h \
     $$PWD/ui/invertedimageprovider.h \
     $$PWD/ui/launchertile.h \
+    $$PWD/ui/theme.h \
     $$PWD/ui/themeimageprovider.h
 
 # qmake SUGGESTED_SERVER=books.example.com prefills the server field, for builds handed to

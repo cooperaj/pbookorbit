@@ -67,7 +67,7 @@ comparison, then a pause for review.
 1. Done: extract `bookrecords` and unit test it.
 2. Done: extract `Session`. Downloads, BookFinder and Covers depend on it. QML for online,
    signedIn and busy moves to `bookOrbit.session`.
-3. Extract theme, recent searches and details.
+3. Done: extract theme, recent searches and details.
 4. Promote `PagedBookList`. Library, search and booksOf move to it, with their QML.
    Removes the shared jumpSectionsChanged.
 5. Promote `GroupList`, its subclasses and `GroupDetails`. The biggest, riskiest step:
@@ -84,3 +84,9 @@ comparison, then a pause for review.
   which every list goes through.
 - The QML page tests use the real client and FakeServer, so they keep covering behaviour.
   Only their property paths change.
+
+## Afterwards
+
+- Test the author info page picking up an author's formats and series when they arrive
+  after the list (its `onAuthorsChanged` handler). Nothing covers it: splitting its
+  `Connections` in step 3 only showed up as a QML warning.

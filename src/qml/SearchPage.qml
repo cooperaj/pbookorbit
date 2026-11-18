@@ -162,7 +162,7 @@ Rectangle {
                 // Save the search however typing ends, except going back
                 onActiveFocusChanged: {
                     if (!activeFocus && page.visible && !page.closing)
-                        bookOrbit.addRecentSearch(text)
+                        bookOrbit.recentSearches.add(text)
                 }
             }
             Timer {
@@ -206,7 +206,7 @@ Rectangle {
         width: parent.width
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        model: bookOrbit.recentSearches
+        model: bookOrbit.recentSearches.items
 
         // Inverted while pressed (see PressableRow), with a grey line below
         delegate: PressableRow {
@@ -223,7 +223,7 @@ Rectangle {
                 // list changes under the tap.
                 const search = modelData
                 searchField.text = search
-                bookOrbit.addRecentSearch(search)
+                bookOrbit.recentSearches.add(search)
             }
 
             Text {

@@ -22,16 +22,19 @@ InfoPage {
         author = bookOrbit.authorRow(authorId)
         details = {}
         scrollToTop()
-        bookOrbit.loadAuthorDetails(authorId)
+        bookOrbit.details.loadAuthor(authorId)
     }
 
     Connections {
-        target: bookOrbit
+        target: bookOrbit.details
         function onAuthorDetails(authorId, newDetails) {
             if (authorId === page.author.id)
                 page.details = newDetails
         }
-        // Formats and series arrive after the list
+    }
+    // Formats and series arrive after the list
+    Connections {
+        target: bookOrbit
         function onAuthorsChanged() {
             if (page.visible && page.author.id !== undefined)
                 page.author = bookOrbit.authorRow(page.author.id)

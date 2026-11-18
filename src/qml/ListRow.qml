@@ -121,7 +121,7 @@ Item {
                         width: pillContent.width + 2 * Units.dp(7)
                         height: Units.dp(16)
                         radius: height / 2
-                        color: Night.color(bookOrbit.accentColor)
+                        color: Night.color(bookOrbit.theme.accentColor)
                     }
                     Row {
                         id: pillContent
@@ -138,21 +138,21 @@ Item {
                             radius: 2
                             color: "transparent"
                             border.width: 2
-                            border.color: Night.color(bookOrbit.accentTextColor)
+                            border.color: Night.color(bookOrbit.theme.accentTextColor)
                             Rectangle {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 anchors.bottom: parent.bottom
                                 anchors.bottomMargin: 3
                                 width: 3
                                 height: 1
-                                color: Night.color(bookOrbit.accentTextColor)
+                                color: Night.color(bookOrbit.theme.accentTextColor)
                             }
                         }
                         Text {
                             id: label
                             anchors.verticalCenter: parent.verticalCenter
                             text: format.modelData.toUpperCase()
-                            color: format.onDevice ? Night.color(bookOrbit.accentTextColor) : "#606060"
+                            color: format.onDevice ? Night.color(bookOrbit.theme.accentTextColor) : "#606060"
                             font.pointSize: 6
                         }
                     }

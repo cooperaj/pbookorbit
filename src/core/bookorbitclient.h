@@ -2,9 +2,11 @@
 
 #include "core/booklistmodel.h"
 #include "core/bookrecords.h"
+#include "core/details.h"
+#include "core/recentsearches.h"
 #include "core/session.h"
+#include "ui/theme.h"
 
-#include <QColor>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -33,6 +35,9 @@ class BookOrbitClient : public QObject
     Q_PROPERTY(QString authorsError READ authorsError NOTIFY authorsChanged)
     Q_PROPERTY(QString authorSeriesError READ authorSeriesError NOTIFY authorSeriesChanged)
     Q_PROPERTY(Session *session READ session CONSTANT)
+    Q_PROPERTY(Theme *theme READ theme CONSTANT)
+    Q_PROPERTY(RecentSearches *recentSearches READ recentSearches CONSTANT)
+    Q_PROPERTY(Details *details READ details CONSTANT)
     Q_PROPERTY(BookListModel *books READ books CONSTANT)
     // Number of books, or -1 until known
     Q_PROPERTY(int totalBooks READ totalBooks NOTIFY booksChanged)
@@ -83,13 +88,6 @@ class BookOrbitClient : public QObject
     // Jump sections for booksOf: letters for an author's books, series numbers for a
     // series (e.g. [{label: "12", index: 11}, ...])
     Q_PROPERTY(QVariantList booksOfJumpSections READ booksOfJumpSections NOTIFY jumpSectionsChanged)
-    // The user's BookOrbit accent colour and a readable text colour on top of it. Only
-    // available if they've synced their theme to the server, otherwise teal (BookOrbit's
-    // default). Cached for offline use.
-    Q_PROPERTY(QColor accentColor READ accentColor NOTIFY accentChanged)
-    Q_PROPERTY(QColor accentTextColor READ accentTextColor NOTIFY accentChanged)
-    // Recent searches, newest first
-    Q_PROPERTY(QStringList recentSearches READ recentSearches NOTIFY recentSearchesChanged)
 
 public:
     explicit BookOrbitClient(Database *database, QObject *parent = nullptr);
@@ -102,6 +100,9 @@ public:
     QString authorsError() const { return m_authors.error; }
     QString authorSeriesError() const { return m_authorSeries.error; }
     Session *session() { return &m_session; }
+    Theme *theme() { return &m_theme; }
+    RecentSearches *recentSearches() { return &m_recentSearches; }
+    Details *details() { return &m_details; }
     BookListModel *books() { return &m_list.model; }
     int totalBooks() const;
     QVariantList jumpSections() const { return m_list.jumpSections; }
@@ -123,9 +124,6 @@ public:
     BookListModel *authorSeriesList() { return &m_authorSeries.model; }
     bool authorSeriesLoaded() const { return m_authorSeries.loaded; }
     QVariantList authorSeriesJumpSections() const { return m_authorSeries.jumpSections; }
-    QStringList recentSearches() const { return m_recentSearches; }
-    QColor accentColor() const;
-    QColor accentTextColor() const;
 
     // Loads the book list if a session was saved
     Q_INVOKABLE void start();
@@ -200,20 +198,6 @@ public:
     {
         return bookrecords::formatFiles(book);
     }
-    // Placeholder for a missing author photo, as BookOrbit draws it: initials ("AT" for
-    // "Adrian Tchaikovsky") on a gradient chosen from the name, near the accent hue.
-    // Returns {initials, from, to, color}, saturated for e-ink.
-    Q_INVOKABLE QVariantMap authorMonogram(const QString &name) const;
-    // Fetches an author's details and emits authorDetails(), with the saved ones (or none)
-    // on failure
-    Q_INVOKABLE void loadAuthorDetails(int authorId);
-    // Fetches a book's full details and emits bookDetails(), with the saved ones (or none)
-    // on failure. Saved for books with saved list entries, i.e. on the device.
-    Q_INVOKABLE void loadBookDetails(int bookId);
-
-    // Adds text to the top of the recent searches (moving it if already there, ignoring
-    // case) and saves them
-    Q_INVOKABLE void addRecentSearch(const QString &text);
 
 signals:
     void booksChanged();
@@ -224,12 +208,6 @@ signals:
     void seriesListChanged();
     void authorsChanged();
     void authorSeriesChanged();
-    void authorDetails(int authorId, const QVariantMap &details);
-    void bookDetails(int bookId, const QVariantMap &details);
-    void recentSearchesChanged();
-    void accentChanged();
-    // Saved books' list entries were updated from the server
-    void savedBooksChanged();
 
 private:
     // How a list is sectioned: not at all, at the rows in sectionStarts (A-Z, or the
@@ -414,12 +392,8 @@ private:
     void showLocalAuthors();
     // Offline: the saved collections with local books, counting only those
     void showLocalCollections();
-    // Updates the saved entries of any of these books (see Database::updateBooks)
-    void updateSavedBooks(const QJsonArray &items);
     // Offline: the local books matching the search text
     void searchLocalBooks(const QString &text);
-    // Reads the accent colour from the user's synced theme, if any
-    void loadAccent();
     // Calls then once the library id is known (see Session::withLibrary), or onFailed with
     // the error to show
     void loadLibrary(std::function<void()> then, Session::FailedHandler onFailed);
@@ -462,6 +436,9 @@ private:
 
     Database *m_database;
     Session m_session;
+    Theme m_theme;
+    RecentSearches m_recentSearches;
+    Details m_details;
     // Main library list
     PagedBooks m_list;
     // Saves the book lists' caches once a refresh settles
@@ -481,7 +458,5 @@ private:
     QHash<QString, QHash<int, QVariantMap>> m_savedDetails;
     // Author whose series m_authorSeries holds
     QString m_authorSeriesName;
-    QStringList m_recentSearches;
     QVariantList m_localBooks;
-    QString m_accent;   // BookOrbit accent name, e.g. "teal"; empty for the default
 };

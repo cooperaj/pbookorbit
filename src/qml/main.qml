@@ -94,7 +94,7 @@ Window {
         anchors.left: parent.left
         anchors.right: parent.right
         // "Orbit" in the user's BookOrbit accent colour
-        title: "PocketBook × Book<font color=\"" + Night.color(bookOrbit.accentColor) + "\">Orbit</font>"
+        title: "PocketBook × Book<font color=\"" + Night.color(bookOrbit.theme.accentColor) + "\">Orbit</font>"
         menuOpen: menu.visible
         offline: bookOrbit.session.signedIn && !bookOrbit.session.online
         showSearch: bookOrbit.session.signedIn

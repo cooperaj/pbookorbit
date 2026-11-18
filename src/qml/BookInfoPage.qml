@@ -61,11 +61,11 @@ InfoPage {
     // The described record's details, unless already loaded
     function loadDetails() {
         if (record.id !== undefined && detailsById[record.id] === undefined)
-            bookOrbit.loadBookDetails(record.id)
+            bookOrbit.details.loadBook(record.id)
     }
 
     Connections {
-        target: bookOrbit
+        target: bookOrbit.details
         function onBookDetails(bookId, newDetails) {
             if (page.records.every(r => r.id !== bookId))
                 return

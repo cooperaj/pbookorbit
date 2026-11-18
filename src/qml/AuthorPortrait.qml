@@ -3,7 +3,7 @@ import "night.js" as Night
 
 // An author's photo filling the item (covers.authorPhoto() crops it to size, as BookOrbit
 // does, see CoversImage), or if there's none their initials as BookOrbit shows them: a serif face on a
-// gradient chosen by name near the accent hue (bookOrbit.authorMonogram()). The initials
+// gradient chosen by name near the accent hue (bookOrbit.theme.authorMonogram()). The initials
 // sit underneath, so they show while the photo downloads or if it fails. The caller sets
 // the size; 3:4 suits most photos.
 Item {
@@ -12,7 +12,7 @@ Item {
     property var author: ({})
 
     // Recomputed when the accent changes
-    readonly property var monogram: bookOrbit.accentColor, bookOrbit.authorMonogram(author.name || "")
+    readonly property var monogram: bookOrbit.theme.accentColor, bookOrbit.theme.authorMonogram(author.name || "")
 
     // Gradient from top left to bottom right, like CSS's 135deg: a square with a vertical
     // gradient, rotated so its ends just reach those corners

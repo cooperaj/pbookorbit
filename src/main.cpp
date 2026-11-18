@@ -49,9 +49,9 @@ int main(int argc, char *argv[])
     Downloads downloads(client.session(), &database);
     BookFinder bookFinder(client.session(), &downloads, &database);
     // Saved with the book, for offline
-    QObject::connect(&downloads, &Downloads::downloaded, &client, &BookOrbitClient::loadBookDetails);
+    QObject::connect(&downloads, &Downloads::downloaded, client.details(), &Details::loadBook);
     // So the downloaded book lists show the latest status and progress
-    QObject::connect(&client, &BookOrbitClient::savedBooksChanged, &downloads, &Downloads::entriesChanged);
+    QObject::connect(client.details(), &Details::savedBooksChanged, &downloads, &Downloads::entriesChanged);
     Browser browser;
     Updater updater(Updater::GITHUB_RELEASES, QString::fromUtf8(PB_APP_VERSION), QString::fromUtf8(PB_SDK),
                     LauncherFiles::current());

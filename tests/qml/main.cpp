@@ -165,9 +165,9 @@ private:
         objects->bookFinder = std::make_unique<BookFinder>(objects->client->session(), objects->downloads.get(),
                                                            objects->database.get());
         // As in the app's main.cpp
-        connect(objects->downloads.get(), &Downloads::downloaded, objects->client.get(),
-                &BookOrbitClient::loadBookDetails);
-        connect(objects->client.get(), &BookOrbitClient::savedBooksChanged, objects->downloads.get(),
+        connect(objects->downloads.get(), &Downloads::downloaded, objects->client->details(),
+                &Details::loadBook);
+        connect(objects->client->details(), &Details::savedBooksChanged, objects->downloads.get(),
                 &Downloads::entriesChanged);
         objects->browser = std::make_unique<Browser>();
         // GitHub's releases come from the fake server too, at /releases. The build is

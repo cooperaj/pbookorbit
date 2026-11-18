@@ -119,8 +119,8 @@ Item {
                 width: parent.width
                 height: serverField.implicitHeight
                 radius: height / 2
-                color: Night.color(bookOrbit.accentColor)
-                readonly property color textColor: Night.color(bookOrbit.accentTextColor)
+                color: Night.color(bookOrbit.theme.accentColor)
+                readonly property color textColor: Night.color(bookOrbit.theme.accentTextColor)
 
                 Text {
                     objectName: "serverPillText"
