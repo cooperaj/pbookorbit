@@ -271,9 +271,8 @@ Window {
                 booksOfQuery.applied()
             if (!authorsQuery.downloadedChosen)
                 authorsQuery.applied()
-            // Offline, series are the downloaded books'. Back online, rows built offline
-            // count as not loaded.
-            if (showingSeries && (!bookOrbit.seriesLoaded || !bookOrbit.online))
+            // Offline, series are the downloaded books'
+            if (showingSeries)
                 bookOrbit.loadSeries()
             if (showingAuthorSeries)
                 bookOrbit.showAuthorSeries(authorSeriesPage.name)
@@ -430,9 +429,10 @@ Window {
         query: seriesQuery
         railLayout: rails
         menus: listMenus
-        // Loaded the first time the view opens: large libraries have many series, and their
-        // formats take a request per few series. Offline, the downloaded books' each time.
-        onVisibleChanged: if (visible && (!bookOrbit.seriesLoaded || !bookOrbit.online)) bookOrbit.loadSeries()
+        // Reloaded every time the view opens, showing the last rows until then, and the books
+        // of the series in view looked up. Offline, the downloaded books'.
+        onVisibleChanged: if (visible) bookOrbit.loadSeries()
+        onRowsWanted: (first, last) => { if (visible) bookOrbit.loadSeriesDetails(first, last) }
         onGroupClicked: (series) => root.openBooksOf("series", [series.name])
     }
 

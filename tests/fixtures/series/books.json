@@ -8,7 +8,7 @@
       ],
       "seriesName": "Dune",
       "seriesIndex": 1,
-      "hasCover": false,
+      "hasCover": true,
       "readingProgress": null,
       "readStatus": null,
       "addedAt": "2026-01-03T10:00:00.000Z",
@@ -19,7 +19,8 @@
           "role": "primary",
           "sizeBytes": 1950000
         }
-      ]
+      ],
+      "coverVersion": "v1"
     },
     {
       "id": 6,
@@ -113,7 +114,7 @@
       ],
       "seriesName": "The Expanse",
       "seriesIndex": 1,
-      "hasCover": false,
+      "hasCover": true,
       "readingProgress": null,
       "readStatus": null,
       "addedAt": "2026-01-03T10:00:00.000Z",
@@ -124,7 +125,8 @@
           "role": "primary",
           "sizeBytes": 1950000
         }
-      ]
+      ],
+      "coverVersion": "v10"
     },
     {
       "id": 11,

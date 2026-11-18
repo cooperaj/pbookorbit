@@ -3,9 +3,10 @@ import "../helpers"
 
 // The Series tab. The server has Dune (four records: Dune, Dune Messiah, and Children of
 // Dune as an ebook and a separate audiobook), Hyperion Cantos and The Expanse. The list
-// comes first, then each series' books, which set its formats and count, a book with an
-// ebook and audiobook counting once. Unlike collections, series load the first time the
-// tab opens only. Offline, the series are the downloaded books'.
+// comes first, each time the tab opens, then the books of the series in view, which set
+// their formats, count (a book with an ebook and audiobook counting once) and cover
+// versions. What the books showed is saved, and shown until they're looked up again.
+// Offline, the series are the downloaded books'.
 //
 // The page itself (spinner, errors, rail) is tested in components/tst_grouplistpage.qml. The
 // sorting, sections and errors the client gives every group list are tested here, once.
@@ -61,6 +62,13 @@ AppTestCase {
 
     function seriesRequests() {
         return fakeServer.requests.filter(r => r.method === "GET" && r.path === series).length
+    }
+
+    // The series named in requests for their books, in the order asked
+    function lookedUp() {
+        return fakeServer.requests.filter(r => r.path === books && r.body.filter
+                                               && r.body.filter.rules[0].field === "series")
+                                  .reduce((names, r) => names.concat(Array.from(r.body.filter.rules[0].value)), [])
     }
 
     function sortBy(option) {
@@ -144,16 +152,65 @@ AppTestCase {
                "asked for in series order")
     }
 
-    function test_loadedOnlyTheFirstTime() {
+    // Each time the tab opens, the list and the books of the series in view are asked for
+    // again
+    function test_reloadedEachTimeTheTabOpens() {
         openLoadedSeries()
         compare(seriesRequests(), 1)
+        const lookups = lookedUp().length
 
         tap("LibraryTab")
         tap("SeriesTab")
-        wait(500)
 
-        compare(seriesRequests(), 1, "not asked for again")
+        tryVerify(() => seriesRequests() === 2, 5000, "the list is asked for again")
+        tryVerify(() => lookedUp().length > lookups, 5000, "and the series in view looked up again")
         compare(rows(), "Dune (3), Hyperion Cantos (1), The Expanse (2)")
+    }
+
+    // The list has no cover versions: they come with the books, so a changed cover is fetched
+    function test_coversGetVersionsFromTheirBooks() {
+        openLoadedSeries()
+
+        compare(row("Dune").group.covers[0].coverVersion, "v1")
+        compare(row("The Expanse").group.covers[0].coverVersion, "v10")
+    }
+
+    // Only the series on screen, and a screen either side, have their books looked up
+    function test_onlySeriesInViewAreLookedUp() {
+        openLibrary()
+        fakeServer.respond("GET", series, 200, "series/many.json")
+        fakeServer.respond("POST", books, 200, "series/books.json", {filter: {rules: [{field: "series"}]}})
+        bookRow("Dune")
+
+        tap("SeriesTab")
+
+        const list = find("seriesPage").list
+        tryVerify(() => list.count === 60, 5000, "every series is listed")
+        tryVerify(() => lookedUp().includes("Series 01"), 5000, "the first are looked up")
+        wait(300)
+        verify(!lookedUp().includes("Series 60"), "not the last: " + lookedUp())
+
+        list.positionViewAtEnd()
+
+        tryVerify(() => lookedUp().includes("Series 60"), 5000, "the last once scrolled to")
+    }
+
+    // At the next start, what the series' books showed is there before they're looked up,
+    // and stays if they can't be
+    function test_startShowsTheSavedDetails() {
+        openLoadedSeries()
+        fakeServer.respond("POST", books, 500, "server-error.json", {filter: {rules: [{field: "series"}]}})
+        const lookups = lookedUp().length
+
+        reopen()
+        tap("SeriesTab")
+
+        tryVerify(() => seriesRequests() === 2, 5000, "the list is asked for again")
+        tryVerify(() => lookedUp().length > lookups, 5000, "the books are asked for, and fail")
+        wait(300)
+        compare(rows(), "Dune (3), Hyperion Cantos (1), The Expanse (2)", "the saved counts")
+        compare(row("Dune").group.formats, ["epub", "m4b"])
+        compare(row("Dune").group.covers[0].coverVersion, "v1")
     }
 
     function test_noSeriesSaysSo() {

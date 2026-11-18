@@ -82,8 +82,9 @@ class BookOrbitClient : public QObject
     // Whether collections have loaded since sign-in
     Q_PROPERTY(bool collectionsLoaded READ collectionsLoaded NOTIFY collectionsChanged)
     // The library's series, in rows like the collections': {id, name, bookCount, covers
-    // (first two books), authors, formats (filled in later), lastAddedAt, readProgress
-    // (0 to 1)}. Once formats are in, bookCount counts an ebook/audiobook pair once.
+    // (first two books), authors, formats, lastAddedAt, readProgress (0 to 1)}. Formats,
+    // cover versions and a bookCount that counts an ebook/audiobook pair once come from
+    // looking up a series' books (see loadSeriesDetails()), saved from the last time.
     Q_PROPERTY(BookListModel *seriesList READ seriesList CONSTANT)
     Q_PROPERTY(QVariantList seriesJumpSections READ seriesJumpSections NOTIFY seriesListChanged)
     Q_PROPERTY(bool seriesLoaded READ seriesLoaded NOTIFY seriesListChanged)
@@ -209,9 +210,14 @@ public:
     Q_INVOKABLE void loadCollections();
     // Sorts collections by "name" or "bookCount"
     Q_INVOKABLE void setCollectionSort(const QString &field, bool descending);
-    // Fetches the library's series, then their books' formats in the background. Existing
-    // rows stay until the new ones arrive.
+    // Fetches the library's series. Existing rows, or the saved ones, stay until the new
+    // ones arrive.
     Q_INVOKABLE void loadSeries();
+    // Looks up the books of the series in rows first to last of seriesList, for their
+    // formats, counts and cover versions, once each per loadSeries(). Called while
+    // scrolling for the visible rows plus a screen either side; until the list has loaded,
+    // it waits for it. Only these rows are looked up: the ones asked for before are dropped.
+    Q_INVOKABLE void loadSeriesDetails(int first, int last);
     // Sorts series by "name", "bookCount", "lastAddedAt" or "readProgress"
     Q_INVOKABLE void setSeriesSort(const QString &field, bool descending);
     // Fetches the library's authors, then their books in the background for formats and
@@ -221,9 +227,10 @@ public:
     // those with books in formats (and, with localOnly, among the local books).
     Q_INVOKABLE void setAuthorQuery(const QString &sortField, bool descending, const QStringList &formats,
                                     bool localOnly = false);
-    // Fills authorSeriesList with the series containing books by author, then looks up
-    // their formats
+    // Fills authorSeriesList with the series containing books by author
     Q_INVOKABLE void showAuthorSeries(const QString &author);
+    // loadSeriesDetails() for authorSeriesList. The details are shared with seriesList's.
+    Q_INVOKABLE void loadAuthorSeriesDetails(int first, int last);
     // Same fields as setSeriesSort()
     Q_INVOKABLE void setAuthorSeriesSort(const QString &field, bool descending);
     // The author's unfiltered row from authorsList, or empty if not listed
@@ -351,6 +358,15 @@ private:
         bool localOnly = false;
         // Whether every row's books have been looked up (series and authors only)
         bool booksLoaded = false;
+        // Rows whose books have been looked up since the list was loaded, by name
+        QSet<QString> lookedUp;
+        // Names to look up next, those on screen
+        QStringList wanted;
+        // Rows of the model last asked for (see loadSeriesDetails), looked up once loaded
+        int wantedFirst = 0;
+        int wantedLast = -1;
+        // The generation a lookup is in flight for, or -1
+        int lookingUp = -1;
         // Rows built from the local books while offline, to fetch again once online
         bool local = false;
         // Rows from the list cache, shown instead of rows until a load finishes
@@ -398,9 +414,23 @@ private:
     void restoreLibrary();
     // Loads series (the library's or an author's) one page at a time
     void loadSeriesPage(Groups *groups, int page, int generation);
-    // Looks up books for the rows from first onwards, a request at a time, for formats
-    // and counts
-    void loadGroupBooks(Groups *groups, int first, int page, int generation);
+    // Notes rows first to last of the model as wanted, and looks them up once the list has
+    // loaded
+    void wantGroupDetails(Groups &groups, int first, int last);
+    void lookUpWanted(Groups &groups);
+    // Looks up the books of the rows named, replacing any waiting, a request at a time
+    void lookUpGroups(Groups *groups, const QStringList &names);
+    // Sends the next request for the waiting names: as many as fit in one
+    void lookUpNext(Groups *groups, int generation);
+    // Looks up the books of the rows named, from page onwards, for formats, counts and
+    // cover versions
+    void loadGroupBooks(Groups *groups, const QStringList &names, int page, int generation);
+    // "series" for the series lists, whose rows' lookups are saved, else empty
+    QString detailsKind(const Groups &groups) const;
+    // The saved details of a kind, read the first time
+    QHash<int, QVariantMap> &groupDetails(const QString &kind);
+    // A row with any saved details of its group put in
+    QVariantMap withDetails(const Groups &groups, QVariantMap row);
     // Loads authors one page at a time
     void loadAuthorsPage(int page, int generation);
     // Offline: rows for the series (the library's or the author's) or authors of the local
@@ -525,6 +555,8 @@ private:
     Groups m_series;
     Groups m_authors;
     Groups m_authorSeries;
+    // What looking up rows' books found, by kind and id (see Database::groupDetails)
+    QHash<QString, QHash<int, QVariantMap>> m_groupDetails;
     // Author whose series m_authorSeries holds
     QString m_authorSeriesName;
     QStringList m_recentSearches;

@@ -75,6 +75,15 @@ the device plugged in, `sqlite3 <mount>/system/config/pbookorbit.db` opens it fr
   details (`GET /authors/:id`) as JSON, each saved when fetched.
 - `collections` and `collection_books` keep the user's collections in order, and each
   one's book ids, newest first.
+- `list_cache` keeps what each list last showed, by name (`library`, `collections`,
+  `series`, `authors`), as JSON. A list shows these rows when first opened, until the
+  server's arrive.
+- `group_details` keeps what looking up a series' books found, by kind (`series`) and id:
+  the count with an ebook and audiobook as one, the formats and the cover versions. Only
+  series that have been on screen are looked up, each once per time the Series tab (or an
+  author's series) loads, a request per twenty or so, starting with those in view. Their
+  rows show the saved details until then, and keep them if the lookup fails. `list_cache`
+  and `group_details` are cleared on signing out.
 
 Only downloaded books are cached at the moment. Their entries are replaced whenever they
 appear in a list fetched from the server, so status and progress stay current. Deleting a book's files leaves its cache
@@ -465,7 +474,9 @@ On a 401 the client refreshes and retries the request once.
   (plain text), `bookCount`, `birthDate`/`birthYear`, `deathDate`/`deathYear`,
   `website`, `genres` and `imageUrl`.
 - `GET /series?libraryId=&sort=name&order=asc&page=&size=` lists a library's series, each
-  with `coverBookIds` for its covers.
+  with `coverBookIds` for its covers but no cover versions, formats or ebook and
+  audiobook pairs. The client gets those from the series' books, `POST
+  /libraries/:id/books` filtered on `series includesAny [names]`.
 - `GET /series?libraryId=&author=<text>` lists series with any author whose name contains
   the text, ignoring case. `author=Martin` matches every Martin, so the client filters to
   series whose `authors` include the exact name.

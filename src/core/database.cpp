@@ -62,6 +62,13 @@ static const char *SCHEMA = R"sql(
         name TEXT PRIMARY KEY,                      -- "library", "collections", ...
         data TEXT NOT NULL CHECK (json_valid(data))
     ) WITHOUT ROWID;
+
+    CREATE TABLE IF NOT EXISTS group_details (
+        kind TEXT NOT NULL,                         -- "series"
+        id   INTEGER NOT NULL,                      -- BookOrbit's id for it
+        data TEXT NOT NULL CHECK (json_valid(data)),
+        PRIMARY KEY (kind, id)
+    ) WITHOUT ROWID;
 )sql";
 
 Database::Database(const QString &path)
@@ -309,9 +316,26 @@ QVariantMap Database::listCache(const QString &name) const
     return data;
 }
 
+void Database::saveGroupDetails(const QString &kind, int id, const QVariantMap &details)
+{
+    exec("INSERT OR REPLACE INTO group_details (kind, id, data) VALUES (?, ?, ?)", {kind, id, json(details)});
+}
+
+QHash<int, QVariantMap> Database::groupDetails(const QString &kind) const
+{
+    QHash<int, QVariantMap> details;
+    if (sqlite3_stmt *statement = prepare("SELECT id, data FROM group_details WHERE kind = ?", {kind})) {
+        while (sqlite3_step(statement) == SQLITE_ROW)
+            details.insert(sqlite3_column_int(statement, 0), jsonMap(columnText(statement, 1)));
+        sqlite3_finalize(statement);
+    }
+    return details;
+}
+
 void Database::clearListCaches()
 {
     exec("DELETE FROM list_cache");
+    exec("DELETE FROM group_details");
 }
 
 void Database::saveAuthors(const QList<QVariantMap> &entries)
