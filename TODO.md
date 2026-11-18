@@ -9,7 +9,7 @@
   endpoint returns days or months for those).
 - Test data for reading status: the `app` test account has no reading progress or
   statuses, so "Completed" and "N% read" can't be seen in the emulator. Add a mock, e.g. an
-  environment variable that makes `decorateBook()` give books sample progress and statuses.
+  environment variable that makes `PagedBookList::decorateBook()` give books sample progress and statuses.
 - Check the system library's schema on firmware 6.11 and add it to `CHECKED_FIRMWARE` in
   `src/core/systemlibrary.cpp` if it's the same.
 - Opening a downloaded book in the emulator froze the app until it was force-quit (seen
@@ -64,3 +64,6 @@
 - Sort names: the Series and Authors tabs call their newest-first sort "Recently added"
   (`lastAddedAt`, when their latest book was added), while the library calls its own
   "Date added" (`addedAt`). They're much the same thing, so pick one name for both.
+- Test the author info page picking up an author's formats and series when they arrive
+  after the list (its `Connections` on `bookOrbit.authors`). Nothing covers it: splitting
+  that `Connections` in the client refactor only showed up as a QML warning.
