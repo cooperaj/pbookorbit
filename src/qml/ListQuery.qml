@@ -26,7 +26,7 @@ QtObject {
     // Only books on the device, combined with the content type: as chosen, and always
     // while offline. Back online, the list returns to the choice.
     property bool downloadedChosen: false
-    readonly property bool downloadedOnly: downloadedChosen || !bookOrbit.online
+    readonly property bool downloadedOnly: downloadedChosen || !bookOrbit.session.online
 
     readonly property bool sortDescending: descending()
 

@@ -13,5 +13,5 @@ GroupListPage {
     error: bookOrbit.authorSeriesError
     loaded: bookOrbit.authorSeriesLoaded
     emptyTitle: "No series"
-    emptyText: bookOrbit.online ? "None of their books are in a series." : offlineText("series with downloaded books")
+    emptyText: bookOrbit.session.online ? "None of their books are in a series." : offlineText("series with downloaded books")
 }

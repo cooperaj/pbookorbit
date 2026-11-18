@@ -1,10 +1,10 @@
 #include "core/downloads.h"
 
-#include "core/bookorbitclient.h"
 #include "core/bookrecords.h"
 #include "core/database.h"
 #include "core/diagnostics.h"
 #include "core/formats.h"
+#include "core/session.h"
 
 #include <common_utilities/einkinterface.h>
 #include <inkview.h>
@@ -56,10 +56,10 @@ static QString dispositionFileName(const QByteArray &header)
     return match.hasMatch() ? match.captured(1) : QString();
 }
 
-Downloads::Downloads(BookOrbitClient *client, Database *database, std::function<qint64()> freeSpace,
+Downloads::Downloads(Session *session, Database *database, std::function<qint64()> freeSpace,
                      QObject *parent)
     : QObject(parent)
-    , m_client(client)
+    , m_session(session)
     , m_database(database)
     , m_freeSpace(freeSpace ? std::move(freeSpace) : [] {
         return QStorageInfo(QString::fromUtf8(FLASHDIR)).bytesAvailable();
@@ -232,7 +232,7 @@ void Downloads::download(const QVariantMap &book, int fileId)
     }
 
     const int generation = m_generation;
-    m_client->startStream(QString("/books/files/%1/download").arg(file.value("id").toInt()),
+    m_session->startStream(QString("/books/files/%1/download").arg(file.value("id").toInt()),
         [this, generation, bookId, folder](QNetworkReply *reply) {
             if (generation != m_generation) {
                 // Cancelled while signing in

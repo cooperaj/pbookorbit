@@ -30,8 +30,8 @@ AppTestCase {
         open({serverUrl: fakeServer.url, username: "reader", refreshToken: "saved-token"}, {books: books})
 
         tryVerify(() => find("offlineIcon").visible, 5000, "the offline icon shows")
-        verify(bookOrbit.networkConnected, "the network is up")
-        verify(bookOrbit.signedIn, "still signed in")
+        verify(bookOrbit.session.networkConnected, "the network is up")
+        verify(bookOrbit.session.signedIn, "still signed in")
         const list = find("bookList")
         tryCompare(list, "count", 1)
         compare(list.itemAtIndex(0).book.title, "Downloaded Book")

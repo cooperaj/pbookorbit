@@ -3,7 +3,7 @@
 - Offline collections only know the books of collections looked up while online (see
   `group_details` in docs/technical.md), so a collection never scrolled to online won't
   list its downloaded books offline.
-- Libraries: the list shows the first library (`loadLibrary()` in `src/core/bookorbitclient.cpp`).
+- Libraries: the list shows the first library (`withLibrary()` in `src/core/session.cpp`).
   Choose one when the server has several.
 - Jump rail: dragging along it, and jumping by date for the date sorts (the jump-buckets
   endpoint returns days or months for those).

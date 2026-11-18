@@ -45,9 +45,9 @@ int main(int argc, char *argv[])
     BookOrbitClient client(&database);
 
     // /mnt/ext1/system/cache on the device, ./system/cache in the emulator
-    Covers covers(&client, QString::fromUtf8(USERDATA "/cache/pbookorbit-covers"));
-    Downloads downloads(&client, &database);
-    BookFinder bookFinder(&client, &downloads, &database);
+    Covers covers(client.session(), QString::fromUtf8(USERDATA "/cache/pbookorbit-covers"));
+    Downloads downloads(client.session(), &database);
+    BookFinder bookFinder(client.session(), &downloads, &database);
     // Saved with the book, for offline
     QObject::connect(&downloads, &Downloads::downloaded, &client, &BookOrbitClient::loadBookDetails);
     // So the downloaded book lists show the latest status and progress

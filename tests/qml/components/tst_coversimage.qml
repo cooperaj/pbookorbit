@@ -144,7 +144,7 @@ UiTestCase {
         compare(fetches("/api/v1/books/7/thumbnail"), 0, "nothing fetched offline")
 
         testApp.offline = false
-        bookOrbit.goOnline()
+        bookOrbit.session.goOnline()
 
         tryVerify(() => image.status === Image.Ready, 5000, "the cover shows once online")
     }

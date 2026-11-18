@@ -253,7 +253,7 @@ Rectangle {
         // The spinner is in the search box
         empty: true
         emptyTitle: "No books found"
-        emptyText: bookOrbit.online ? "Try a different title, author or series."
+        emptyText: bookOrbit.session.online ? "Try a different title, author or series."
                                     : offlineText("downloaded books", "searched")
         onRowsWanted: (first, last) => bookOrbit.loadSearchResults(first, last)
         // Scrolling or tapping a book ends typing, which saves the search

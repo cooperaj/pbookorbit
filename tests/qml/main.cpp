@@ -158,11 +158,11 @@ private:
         m_keyboard->reset();
         objects->log = std::make_unique<diagnostics::Log>(objects->database.get());
         objects->client = std::make_unique<BookOrbitClient>(objects->database.get());
-        objects->covers = std::make_unique<Covers>(objects->client.get(), objects->dir->filePath("covers"));
+        objects->covers = std::make_unique<Covers>(objects->client->session(), objects->dir->filePath("covers"));
         const qint64 freeSpace = options.value("freeSpace", 8LL * 1024 * 1024 * 1024).toLongLong();
-        objects->downloads = std::make_unique<Downloads>(objects->client.get(), objects->database.get(),
+        objects->downloads = std::make_unique<Downloads>(objects->client->session(), objects->database.get(),
                                                          [freeSpace] { return freeSpace; });
-        objects->bookFinder = std::make_unique<BookFinder>(objects->client.get(), objects->downloads.get(),
+        objects->bookFinder = std::make_unique<BookFinder>(objects->client->session(), objects->downloads.get(),
                                                            objects->database.get());
         // As in the app's main.cpp
         connect(objects->downloads.get(), &Downloads::downloaded, objects->client.get(),

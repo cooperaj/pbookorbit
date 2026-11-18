@@ -8,7 +8,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 
-class BookOrbitClient;
+class Session;
 class Database;
 
 // Finds books that were already on the device (e.g. downloaded through KOReader) and
@@ -40,7 +40,7 @@ class BookFinder : public QObject
     Q_PROPERTY(QString error READ error NOTIFY changed)
 
 public:
-    BookFinder(BookOrbitClient *client, Downloads *downloads, Database *database,
+    BookFinder(Session *session, Downloads *downloads, Database *database,
                QObject *parent = nullptr);
 
     QString state() const { return m_state; }
@@ -87,7 +87,7 @@ private:
     void fail(const QString &error);
     void setPercent(int percent);
 
-    BookOrbitClient *m_client;
+    Session *m_session;
     Downloads *m_downloads;
     Database *m_database;
     QString m_state = "idle";

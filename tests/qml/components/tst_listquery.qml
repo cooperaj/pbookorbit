@@ -134,9 +134,9 @@ UiTestCase {
         verify(!query.downloadedChosen, "though not chosen")
 
         testApp.offline = false
-        bookOrbit.goOnline()
+        bookOrbit.session.goOnline()
 
-        tryVerify(() => bookOrbit.online, 5000, "online")
+        tryVerify(() => bookOrbit.session.online, 5000, "online")
         verify(!query.downloadedOnly, "back to the choice")
     }
 }

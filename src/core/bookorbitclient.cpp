@@ -70,20 +70,27 @@ static bool morePages(int page, int pageSize, const QJsonObject &result)
 BookOrbitClient::BookOrbitClient(Database *database, QObject *parent)
     : QObject(parent)
     , m_database(database)
+    , m_session(database)
 {
-    m_nam.setTransferTimeout(30000);
-    m_serverUrl = m_database->text("serverUrl");
-    m_username = m_database->text("username");
-    m_refreshToken = m_database->text("refreshToken");
     m_recentSearches = m_database->list("recentSearches");
     m_accent = m_database->text("accent");
-    // A saved session counts as signed in, so the app opens on the book list. If the server
-    // has revoked it, the first request signs out.
-    m_signedIn = !m_serverUrl.isEmpty() && !m_refreshToken.isEmpty();
-    m_online = !network::simulatingOffline();
 
-    // Offline, each tap or key press looks whether Wi-Fi has connected (see eventFilter)
-    qApp->installEventFilter(this);
+    // Connected before QML's handlers, so the lists are ready for them
+    connect(&m_session, &Session::started, this, &BookOrbitClient::start);
+    connect(&m_session, &Session::ended, this, &BookOrbitClient::clearLists);
+    connect(&m_session, &Session::onlineChanged, this, [this]() {
+        if (m_session.online())
+            forgetLocalRows();
+    });
+    connect(&m_session, &Session::signedOut, this, [this]() {
+        // These belong to the signed-out user
+        m_recentSearches.clear();
+        m_database->remove("recentSearches");
+        m_accent.clear();
+        m_database->remove("accent");
+        emit recentSearchesChanged();
+        emit accentChanged();
+    });
 
     m_collections.lookup = Lookup::Collection;
     m_collections.cacheName = "collections";
@@ -112,68 +119,10 @@ BookOrbitClient::BookOrbitClient(Database *database, QObject *parent)
     });
 }
 
-bool BookOrbitClient::eventFilter(QObject *watched, QEvent *event)
-{
-#ifndef EMULATOR
-    // Wi-Fi connecting may mean the server is back. The system's EVT_NET_CONNECTED doesn't
-    // reach the app (seen on the Era Color, 6.10), and polling costs battery, so look when
-    // the user does something, at most every 3 seconds. QueryNetwork() doesn't touch the
-    // network. Only a new connection is news: Wi-Fi also disconnects when idle.
-    const QEvent::Type type = event->type();
-    if (!m_online && (type == QEvent::TouchBegin || type == QEvent::MouseButtonPress || type == QEvent::KeyPress)
-            && (!m_networkLook.isValid() || m_networkLook.elapsed() >= 3000)) {
-        m_networkLook.start();
-        const bool connected = QueryNetwork() & NET_CONNECTED;
-        if (connected && !m_networkConnected) {
-            diagnostics::trace("Wi-Fi connected, " + diagnostics::networkState());
-            checkServer();
-        }
-        m_networkConnected = connected;
-    }
-#endif
-    return QObject::eventFilter(watched, event);
-}
-
-// "books.example.com" or "https://books.example.com/" -> "https://books.example.com". Empty
-// if it isn't a web address.
-static QString normalisedServerUrl(const QString &typed)
-{
-    QString text = typed.trimmed();
-    if (!text.contains("://"))
-        text.prepend("https://");
-    QUrl url(text, QUrl::StrictMode);
-    if (!url.isValid() || url.host().isEmpty() || (url.scheme() != "https" && url.scheme() != "http"))
-        return QString();
-    // Its web address, not the API's
-    QString path = url.path();
-    while (path.endsWith('/'))
-        path.chop(1);
-    if (path.endsWith("/api/v1"))
-        path.chop(7);
-    url.setPath(path);
-    url.setQuery(QString());
-    url.setFragment(QString());
-    return url.toString();
-}
-
-QString BookOrbitClient::suggestedServer() const
-{
-    return QString::fromUtf8(SUGGESTED_SERVER);
-}
-
-void BookOrbitClient::forgetServer()
-{
-    if (m_signedIn || m_serverUrl.isEmpty())
-        return;
-    m_serverUrl.clear();
-    m_database->remove("serverUrl");
-    emit serverUrlChanged();
-}
-
 void BookOrbitClient::start()
 {
     // The first request gets an access token from the saved session
-    if (m_signedIn) {
+    if (m_session.signedIn()) {
         refreshBooks();
         loadAccent();
     }
@@ -194,7 +143,7 @@ void BookOrbitClient::loadAccent()
 {
     // {settings: {theme, accent, ...}}, or {settings: null} if the user has never synced
     // their theme. Quiet, since the colour isn't urgent.
-    download("/user-preferences/theme",
+    m_session.download("/user-preferences/theme",
         [this](const QByteArray &data) {
             const QString accent = QJsonDocument::fromJson(data).object().value("settings")
                                        .toObject().value("accent").toString();
@@ -206,64 +155,6 @@ void BookOrbitClient::loadAccent()
             emit accentChanged();
         },
         [](int, const QString &message) { diagnostics::log("accent: " + message); });
-}
-
-void BookOrbitClient::signIn(const QString &server, const QString &username, const QString &password)
-{
-    const QString serverUrl = normalisedServerUrl(server);
-    if (serverUrl.isEmpty()) {
-        setError("That isn't a server address");
-        return;
-    }
-    setError(QString());
-    // Only saved if the sign-in succeeds
-    m_serverUrl = serverUrl;
-    m_username = username.trimmed();
-    emit usernameChanged();
-
-    // Shown in the user's session list in BookOrbit
-    const QString deviceLabel = QString::fromUtf8(GetDeviceModel()).trimmed();
-    QJsonObject body{
-        {"username", m_username},
-        {"password", password},
-        {"clientKind", "native"},
-        {"deviceLabel", ("PocketBook " + deviceLabel).trimmed().left(100)},
-    };
-    network::ensure();
-    // Returns NativeCredentials plus the user: {accessToken, refreshToken, sessionId, user, ...}
-    send("POST", "/auth/login", QJsonDocument(body),
-        [this](const QByteArray &data) {
-            applyCredentials(QJsonDocument::fromJson(data).object());
-            if (m_database->text("serverUrl") != m_serverUrl) {
-                m_database->setText("serverUrl", m_serverUrl);
-                emit serverUrlChanged();
-            }
-            m_database->setText("username", m_username);
-            refreshBooks();
-            loadAccent();
-        },
-        [this](int, const QString &message) {
-            m_serverUrl = m_database->text("serverUrl");
-            setError(message);
-        });
-}
-
-void BookOrbitClient::signOut()
-{
-    // Revoke the session on the server without waiting for it
-    if (!m_refreshToken.isEmpty()) {
-        send("POST", "/auth/logout", QJsonDocument(QJsonObject{{"refreshToken", m_refreshToken}}),
-             [](const QByteArray &) {}, [](int, const QString &) {});
-    }
-    clearSession();
-    setError(QString());
-    // These belong to the signed-out user
-    m_recentSearches.clear();
-    m_database->remove("recentSearches");
-    m_accent.clear();
-    m_database->remove("accent");
-    emit recentSearchesChanged();
-    emit accentChanged();
 }
 
 void BookOrbitClient::setBookQuery(const QString &sortField, bool descending,
@@ -341,7 +232,7 @@ void BookOrbitClient::search(const QString &text)
         emit searchChanged();
         return;
     }
-    if (!m_online) {
+    if (!m_session.online()) {
         searchLocalBooks(q);
         return;
     }
@@ -457,7 +348,7 @@ void BookOrbitClient::loadBookDetails(int bookId)
 {
     // BookDetail (packages/types/src/book.ts). Quiet: the page already shows the list's
     // details, and offline it just shows less.
-    download(QString("/books/%1").arg(bookId),
+    m_session.download(QString("/books/%1").arg(bookId),
         [this, bookId](const QByteArray &data) {
             const QVariantMap details = QJsonDocument::fromJson(data).object().toVariantMap();
             m_database->saveBookDetails(bookId, details);
@@ -485,69 +376,6 @@ void BookOrbitClient::addRecentSearch(const QString &text)
     m_recentSearches = searches;
     m_database->setList("recentSearches", m_recentSearches);
     emit recentSearchesChanged();
-}
-
-void BookOrbitClient::goOnline()
-{
-    if (network::ensure())
-        checkServer();
-}
-
-void BookOrbitClient::checkServer()
-{
-    // Signed out, there's no session to refresh: sign-in will find out
-    if (m_refreshToken.isEmpty())
-        setOnline(true);
-    else
-        refreshSession([]() {});
-}
-
-void BookOrbitClient::setOnline(bool online)
-{
-    if (m_online == online)
-        return;
-    m_online = online;
-    diagnostics::log(QString(online ? "online, " : "offline, ") + diagnostics::networkState());
-    // Rows built offline stay on screen until the server's arrive
-    if (online) {
-        for (Groups *groups : {&m_collections, &m_series, &m_authors, &m_authorSeries}) {
-            if (groups->local)
-                groups->loaded = false;
-        }
-        emit collectionsChanged();
-        emit seriesListChanged();
-        emit authorsChanged();
-        emit authorSeriesChanged();
-    }
-    emit onlineChanged();
-}
-
-void BookOrbitClient::loadLibrary(std::function<void()> then, FailedHandler onFailed)
-{
-    if (m_libraryId >= 0) {
-        then();
-        return;
-    }
-    // Calls made while it's being fetched wait for the same request
-    m_afterLibrary.append({then, onFailed});
-    if (m_afterLibrary.size() > 1)
-        return;
-    const auto fail = [this](const QString &error) {
-        for (const auto &queued : std::exchange(m_afterLibrary, {}))
-            queued.second(error);
-    };
-    // [{id, name, bookCount, ...}] in the user's order. TODO: let the user choose when
-    // there are several; this uses the first.
-    callJson("GET", "/libraries", QJsonDocument(), [this, fail](const QJsonDocument &doc) {
-        const QJsonArray libraries = doc.array();
-        if (libraries.isEmpty()) {
-            fail("No libraries on this server");
-            return;
-        }
-        m_libraryId = libraries.first().toObject().value("id").toInt();
-        for (const auto &queued : std::exchange(m_afterLibrary, {}))
-            queued.first();
-    }, fail);
 }
 
 QJsonObject BookOrbitClient::bookQuery(const PagedBooks &list)
@@ -720,7 +548,7 @@ void BookOrbitClient::loadJumpSections(PagedBooks &list, std::function<void()> t
     query.insert("maxBuckets", 64);
     PagedBooks *sectioned = &list;
     const int generation = list.queryGeneration;
-    callJson("POST", list.jumpPath, QJsonDocument(query),
+    m_session.callJson("POST", list.jumpPath, QJsonDocument(query),
         [this, sectioned, generation, then](const QJsonDocument &doc) {
             if (generation != sectioned->queryGeneration)
                 return;   // stale reply
@@ -756,7 +584,7 @@ void BookOrbitClient::loadSeriesSections(PagedBooks &list, int page)
     query.insert("pagination", QJsonObject{{"page", page}, {"size", SERIES_NUMBERS_PAGE_SIZE}});
     PagedBooks *sectioned = &list;
     const int generation = list.queryGeneration;
-    callJson("POST", list.path, QJsonDocument(query),
+    m_session.callJson("POST", list.path, QJsonDocument(query),
         [this, sectioned, page, generation](const QJsonDocument &doc) {
             if (generation != sectioned->queryGeneration)
                 return;
@@ -831,7 +659,7 @@ void BookOrbitClient::loadPage(PagedBooks &list, int page)
     list.loadingPages.insert(page);
     const int generation = list.queryGeneration;
     PagedBooks *pages = &list;
-    callJson("POST", list.path, QJsonDocument(query),
+    m_session.callJson("POST", list.path, QJsonDocument(query),
         [this, pages, page, generation](const QJsonDocument &doc) {
             if (generation != pages->queryGeneration)
                 return;   // stale reply
@@ -900,7 +728,7 @@ void BookOrbitClient::lookUpCompanions(PagedBooks *list, const QVariantList &boo
         {"filter", companionsFilter(books)},
         {"pagination", QJsonObject{{"page", 0}, {"size", 4 * BOOKS_PAGE_SIZE}}},
     };
-    callJson("POST", libraryBooksPath(), QJsonDocument(query),
+    m_session.callJson("POST", libraryBooksPath(), QJsonDocument(query),
         [this, list, books, rows, generation, then](const QJsonDocument &doc) {
             if (generation != list->queryGeneration)
                 return;
@@ -955,7 +783,7 @@ void BookOrbitClient::lookUpCompanions(PagedBooks *list, const QVariantList &boo
                 {"filter", companionsFilter(candidates)},
                 {"pagination", QJsonObject{{"page", 0}, {"size", 4 * BOOKS_PAGE_SIZE}}},
             };
-            callJson("POST", libraryBooksPath(), QJsonDocument(searchQuery),
+            m_session.callJson("POST", libraryBooksPath(), QJsonDocument(searchQuery),
                 [list, rows, merged, maybeHidden, generation, then](const QJsonDocument &doc) {
                     if (generation != list->queryGeneration)
                         return;
@@ -1121,14 +949,14 @@ static QVariantMap *rowWithId(QList<QVariantMap> &rows, int id)
 void BookOrbitClient::loadCollections()
 {
     const int generation = startLoad(m_collections);
-    if (!m_online) {
+    if (!m_session.online()) {
         showLocalCollections();
         return;
     }
     restoreList(m_collections);
     // [{id, name, icon, displayOrder, bookCount, ...}]: the user's collections and others'
     // public ones, in the user's order
-    callJson("GET", "/collections", QJsonDocument(), [this, generation](const QJsonDocument &doc) {
+    m_session.callJson("GET", "/collections", QJsonDocument(), [this, generation](const QJsonDocument &doc) {
         if (generation != m_collections.generation)
             return;
         m_collections.rows.clear();
@@ -1160,7 +988,7 @@ void BookOrbitClient::lookUpCollection(int collectionId, int page, int generatio
         {"pagination", QJsonObject{{"page", page}, {"size", LOOKUP_PAGE_SIZE}}},
     };
     // Quiet: this only fills in existing rows
-    request("POST", QString("/collections/%1/books/query").arg(collectionId), QJsonDocument(query),
+    m_session.request("POST", QString("/collections/%1/books/query").arg(collectionId), QJsonDocument(query),
         [this, collectionId, page, generation](const QByteArray &data) {
             if (generation != m_collections.generation)
                 return;
@@ -1224,7 +1052,7 @@ static const int MAX_RULE_VALUES = 20;
 void BookOrbitClient::loadSeries()
 {
     const int generation = startLoad(m_series);
-    if (!m_online) {
+    if (!m_session.online()) {
         showLocalSeries(m_series);
         return;
     }
@@ -1250,7 +1078,7 @@ void BookOrbitClient::showAuthorSeries(const QString &author)
         showGroups(m_authorSeries);
     }
     m_authorSeriesName = author;
-    if (!m_online) {
+    if (!m_session.online()) {
         showLocalSeries(m_authorSeries);
         return;
     }
@@ -1313,7 +1141,7 @@ QVariantMap BookOrbitClient::authorMonogram(const QString &name) const
 void BookOrbitClient::loadAuthorDetails(int authorId)
 {
     // Quiet: offline, the page shows what was saved
-    download(QString("/authors/%1").arg(authorId),
+    m_session.download(QString("/authors/%1").arg(authorId),
         [this, authorId](const QByteArray &data) {
             const QVariantMap details = QJsonDocument::fromJson(data).object().toVariantMap();
             m_database->saveAuthorDetails(authorId, details);
@@ -1333,10 +1161,10 @@ void BookOrbitClient::loadSeriesPage(Groups *groups, int page, int generation)
     // whose name contains it, ignoring case.
     const bool ofAuthor = groups == &m_authorSeries;
     QString path = QString("/series?libraryId=%1&sort=name&order=asc&page=%2&size=%3")
-                       .arg(m_libraryId).arg(page).arg(SERIES_PAGE_SIZE);
+                       .arg(m_session.libraryId()).arg(page).arg(SERIES_PAGE_SIZE);
     if (ofAuthor)
         path += "&author=" + QString::fromUtf8(QUrl::toPercentEncoding(m_authorSeriesName));
-    callJson("GET", path, QJsonDocument(), [this, groups, ofAuthor, page, generation](const QJsonDocument &doc) {
+    m_session.callJson("GET", path, QJsonDocument(), [this, groups, ofAuthor, page, generation](const QJsonDocument &doc) {
         if (generation != groups->generation)
             return;
         const QJsonObject result = doc.object();
@@ -1392,7 +1220,7 @@ void BookOrbitClient::wantRows(Groups &groups, int first, int last)
 void BookOrbitClient::lookUpWantedRows(Groups &groups)
 {
     // Only once the list has loaded, and not for rows built offline
-    if (!m_online || groups.local || !groups.loaded || !groups.cached.isEmpty())
+    if (!m_session.online() || groups.local || !groups.loaded || !groups.cached.isEmpty())
         return;
     QList<int> ids;
     for (int i = qMax(0, groups.wantedFirst); i <= groups.wantedLast && i < groups.model.count(); i++) {
@@ -1492,7 +1320,7 @@ void BookOrbitClient::lookUpByName(Groups *groups, const QList<int> &ids, int pa
         {"pagination", QJsonObject{{"page", page}, {"size", LOOKUP_PAGE_SIZE}}},
     };
     // Quiet: this only fills in existing rows
-    request("POST", libraryBooksPath(), QJsonDocument(query),
+    m_session.request("POST", libraryBooksPath(), QJsonDocument(query),
         [this, groups, series, ids, page, generation](const QByteArray &data) {
             if (generation != groups->generation)
                 return;
@@ -1601,7 +1429,7 @@ void BookOrbitClient::setLocalBooks(const QVariantList &books)
         refreshList(m_booksOf);
     if (m_authors.localOnly)
         showGroups(m_authors);
-    if (m_online)
+    if (m_session.online())
         return;
     if (m_series.local)
         showLocalSeries(m_series);
@@ -1832,7 +1660,7 @@ void BookOrbitClient::setSeriesSort(const QString &field, bool descending)
 void BookOrbitClient::loadAuthors()
 {
     const int generation = startLoad(m_authors);
-    if (!m_online) {
+    if (!m_session.online()) {
         showLocalAuthors();
         return;
     }
@@ -1844,8 +1672,8 @@ void BookOrbitClient::loadAuthorsPage(int page, int generation)
 {
     // {items: [{id, name, sortName, bookCount, lastAddedAt, imageUrl (or null), ...}], total}
     const QString path = QString("/authors?libraryId=%1&sort=name&order=asc&page=%2&size=%3")
-                             .arg(m_libraryId).arg(page).arg(SERIES_PAGE_SIZE);
-    callJson("GET", path, QJsonDocument(), [this, page, generation](const QJsonDocument &doc) {
+                             .arg(m_session.libraryId()).arg(page).arg(SERIES_PAGE_SIZE);
+    m_session.callJson("GET", path, QJsonDocument(), [this, page, generation](const QJsonDocument &doc) {
         if (generation != m_authors.generation)
             return;
         const QJsonObject result = doc.object();
@@ -2113,308 +1941,18 @@ void BookOrbitClient::restoreList(PagedBooks &list)
     emitChanged(list);
 }
 
-void BookOrbitClient::download(const QString &path, DataHandler onSuccess, ErrorHandler onError)
+void BookOrbitClient::loadLibrary(std::function<void()> then, Session::FailedHandler onFailed)
 {
-    call("GET", path, QJsonDocument(), onSuccess, onError, true);
-}
-
-void BookOrbitClient::request(const QByteArray &method, const QString &path, const QJsonDocument &body,
-                              DataHandler onSuccess, ErrorHandler onError)
-{
-    call(method, path, body, onSuccess, onError, true);
-}
-
-void BookOrbitClient::withLibrary(std::function<void(int libraryId)> then, ErrorHandler onError)
-{
-    if (m_libraryId >= 0) {
-        then(m_libraryId);
-        return;
-    }
-    // Like loadLibrary(), for requests that belong to no list
-    request("GET", "/libraries", QJsonDocument(),
-        [this, then, onError](const QByteArray &data) {
-            const QJsonArray libraries = QJsonDocument::fromJson(data).array();
-            if (libraries.isEmpty()) {
-                onError(0, "No libraries on this server");
-                return;
-            }
-            m_libraryId = libraries.first().toObject().value("id").toInt();
-            then(m_libraryId);
-        },
-        onError);
-}
-
-void BookOrbitClient::callJson(const QByteArray &method, const QString &path, const QJsonDocument &body,
-                               std::function<void(const QJsonDocument &)> onSuccess, FailedHandler onFailed)
-{
-    call(method, path, body,
-        [onSuccess, onFailed](const QByteArray &data) {
-            QJsonParseError parseError;
-            const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-            if (parseError.error != QJsonParseError::NoError) {
-                onFailed("Unexpected response from server: " + parseError.errorString());
-                return;
-            }
-            onSuccess(doc);
-        },
+    m_session.withLibrary([then](int) { then(); },
         [onFailed](int status, const QString &message) {
             // Offline shows in the header instead
             onFailed(status != 0 ? message : QString());
-        });
-}
-
-void BookOrbitClient::call(const QByteArray &method, const QString &path, const QJsonDocument &body,
-                           DataHandler onSuccess, ErrorHandler onError, bool quiet, bool retried)
-{
-    // After a refresh: sent if it gave an access token. If not, it isn't tried again, or a
-    // request waiting for a failed refresh would start another.
-    const auto afterRefresh = [=]() {
-        if (!m_signedIn)
-            return;
-        if (!m_accessToken.isEmpty())
-            call(method, path, body, onSuccess, onError, quiet, retried);
-        else if (!m_online)
-            onError(0, NO_CONNECTION);
-        else if (m_refreshStatus != 0)
-            onError(m_refreshStatus, m_refreshError);
-    };
-    if (m_refreshing) {
-        m_afterRefresh.append(afterRefresh);
-        return;
-    }
-    if (!m_online) {
-        failOffline(onError);
-        return;
-    }
-    if (m_accessToken.isEmpty()) {
-        if (m_refreshToken.isEmpty()) {
-            onError(0, "Not signed in");
-            return;
-        }
-        // Saved session but no access token yet (first request, or the last refresh failed,
-        // e.g. offline): get one first
-        refreshSession(afterRefresh);
-        return;
-    }
-    send(method, path, body, onSuccess, [=](int status, const QString &message) {
-        if (status == 401 && !retried) {
-            // Access tokens last about 15 minutes: get a new one and try once more
-            refreshSession([=]() {
-                if (m_signedIn)
-                    call(method, path, body, onSuccess, onError, quiet, true);
-            });
-            return;
-        }
-        onError(status, message);
-    }, true, quiet);
-}
-
-void BookOrbitClient::refreshSession(std::function<void()> then)
-{
-    m_afterRefresh.append(then);
-    if (m_refreshing)
-        return;
-    m_refreshing = true;
-    m_refreshStatus = 0;
-    m_refreshError.clear();
-
-    const auto finish = [this]() {
-        m_refreshing = false;
-        const auto queued = std::exchange(m_afterRefresh, {});
-        for (const auto &fn : queued)
-            fn();
-    };
-    // Returns NativeCredentials with a new refresh token, invalidating the old one. A reply
-    // for a session that has since ended (signed out, or another sign-in) is dropped, so it
-    // can't sign the user back in.
-    const QString refreshToken = m_refreshToken;
-    send("POST", "/auth/refresh", QJsonDocument(QJsonObject{{"refreshToken", refreshToken}}),
-        [this, finish, refreshToken](const QByteArray &data) {
-            if (refreshToken == m_refreshToken)
-                applyCredentials(QJsonDocument::fromJson(data).object());
-            finish();
         },
-        [this, finish, refreshToken](int status, const QString &message) {
-            if (refreshToken != m_refreshToken) {
-                finish();
-                return;
-            }
-            // 401: the session expired or was revoked. Other failures (offline, server
-            // down) keep the session for next time.
-            if (status == 401) {
-                clearSession();
-                setError("Session expired, please sign in again");
-            } else if (status != 0) {
-                m_refreshStatus = status;
-                m_refreshError = message;
-            }
-            finish();
-        });
+        false);
 }
 
-bool BookOrbitClient::networkConnected() const
+void BookOrbitClient::clearLists()
 {
-    return network::connected();
-}
-
-void BookOrbitClient::whenNetwork(std::function<void(bool connected)> then)
-{
-    if (network::simulatingOffline()) {
-        then(false);
-        return;
-    }
-#ifndef EMULATOR
-    if (!(QueryNetwork() & NET_CONNECTED)) {
-        m_afterConnect.append(then);
-        if (m_afterConnect.size() > 1)
-            return;
-        QElapsedTimer netTimer;
-        netTimer.start();
-        auto rc = std::make_shared<int>(0);
-        QThread *thread = QThread::create([rc] { *rc = NetConnectSilent(nullptr); });
-        connect(thread, &QThread::finished, this, [this, thread, rc, netTimer] {
-            thread->deleteLater();
-            (*rc != 0 ? diagnostics::log : diagnostics::trace)(QString("NetConnectSilent -> %1 after %2 ms, %3")
-                    .arg(*rc).arg(netTimer.elapsed()).arg(diagnostics::networkState()));
-            const auto queued = std::exchange(m_afterConnect, {});
-            for (const auto &fn : queued)
-                fn(*rc == 0);
-        });
-        thread->start();
-        return;
-    }
-#endif
-    then(true);
-}
-
-void BookOrbitClient::failOffline(const ErrorHandler &onError)
-{
-    setOnline(false);
-    // Later, like a reply, so callers finish setting up first
-    QTimer::singleShot(0, this, [onError]() { onError(0, NO_CONNECTION); });
-}
-
-void BookOrbitClient::startStream(const QString &path, std::function<void(QNetworkReply *)> onStarted,
-                                  ErrorHandler onError)
-{
-    if (m_refreshToken.isEmpty()) {
-        onError(0, "Not signed in");
-        return;
-    }
-    if (!network::ensure()) {
-        failOffline(onError);
-        return;
-    }
-    refreshSession([=]() {
-        if (!m_online) {
-            onError(0, NO_CONNECTION);
-            return;
-        }
-        if (!m_signedIn || m_accessToken.isEmpty()) {
-            onError(0, !m_refreshError.isEmpty() ? m_refreshError
-                       : !m_error.isEmpty() ? m_error : QString("Not signed in"));
-            return;
-        }
-        QNetworkRequest request(QUrl(m_serverUrl + "/api/v1" + path));
-        request.setRawHeader("Accept", "*/*");
-        request.setRawHeader("Authorization", "Bearer " + m_accessToken.toUtf8());
-        // Books can be slow: only time out after a minute with no data
-        request.setTransferTimeout(60000);
-        diagnostics::trace("GET " + path + " (streamed)");
-        onStarted(m_nam.get(request));
-    });
-}
-
-void BookOrbitClient::send(const QByteArray &method, const QString &path, const QJsonDocument &body,
-                           DataHandler onSuccess, ErrorHandler onError, bool withToken, bool quiet)
-{
-    // Busy from the start, as reconnecting Wi-Fi can take seconds
-    if (!quiet) {
-        m_pending++;
-        emit busyChanged();
-    }
-    // Reconnects Wi-Fi if it went idle
-    whenNetwork([=](bool connected) {
-        if (!connected) {
-            diagnostics::trace(QString("%1 %2 -> no connection").arg(QString::fromLatin1(method), path));
-            if (!quiet) {
-                m_pending--;
-                emit busyChanged();
-            }
-            failOffline(onError);
-            return;
-        }
-        sendNow(method, path, body, onSuccess, onError, withToken, quiet);
-    });
-}
-
-void BookOrbitClient::sendNow(const QByteArray &method, const QString &path, const QJsonDocument &body,
-                              DataHandler onSuccess, ErrorHandler onError, bool withToken, bool quiet)
-{
-    QNetworkRequest request(QUrl(m_serverUrl + "/api/v1" + path));
-    // Downloads (the only quiet requests) accept any content type, e.g. JPEG
-    request.setRawHeader("Accept", quiet ? "*/*" : "application/json");
-    if (withToken)
-        request.setRawHeader("Authorization", "Bearer " + m_accessToken.toUtf8());
-    if (!body.isNull())
-        request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-
-    QNetworkReply *reply = m_nam.sendCustomRequest(request, method, body.isNull() ? QByteArray() : body.toJson(QJsonDocument::Compact));
-    QElapsedTimer timer;
-    timer.start();
-
-    connect(reply, &QNetworkReply::finished, this, [=]() {
-        reply->deleteLater();
-        // Clear busy only once the result (or error) has been applied
-        const auto done = qScopeGuard([this, quiet] {
-            if (!quiet) {
-                m_pending--;
-                emit busyChanged();
-            }
-        });
-
-        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        const QByteArray data = reply->readAll();
-        // No status: no reply, or none in time
-        setOnline(status != 0);
-        (reply->error() != QNetworkReply::NoError ? diagnostics::log : diagnostics::trace)(
-                QString("%1 %2 -> %3 (%4 bytes) in %5 ms")
-                             .arg(QString::fromLatin1(method), path)
-                             .arg(status ? QString::number(status) : reply->errorString())
-                             .arg(data.size()).arg(timer.elapsed()));
-        if (reply->error() != QNetworkReply::NoError) {
-            if (status == 0) {
-                onError(0, networkConnected() ? NO_REPLY : NO_CONNECTION);
-                return;
-            }
-            // NestJS error body: {"statusCode": 401, "message": "Invalid credentials" | [...]}
-            const QJsonValue message = QJsonDocument::fromJson(data).object().value("message");
-            QString text = message.isArray() ? message.toArray().first().toString() : message.toString();
-            if (text.isEmpty())
-                text = reply->attribute(QNetworkRequest::HttpReasonPhraseAttribute).toString();
-            onError(status, QString("%1 (HTTP %2)").arg(text).arg(status));
-            return;
-        }
-
-        onSuccess(data);
-    });
-}
-
-void BookOrbitClient::applyCredentials(const QJsonObject &credentials)
-{
-    m_accessToken = credentials.value("accessToken").toString();
-    m_refreshToken = credentials.value("refreshToken").toString();
-    m_database->setText("refreshToken", m_refreshToken);
-    setSignedIn(true);
-}
-
-void BookOrbitClient::clearSession()
-{
-    m_accessToken.clear();
-    m_refreshToken.clear();
-    m_database->remove("refreshToken");
-    m_libraryId = -1;
-    m_afterLibrary.clear();
     m_database->clearCaches();
     m_savedDetails.clear();
     m_listCacheTimer.stop();
@@ -2436,6 +1974,7 @@ void BookOrbitClient::clearSession()
     emit seriesListChanged();
     emit authorsChanged();
     emit authorSeriesChanged();
+
     for (PagedBooks *list : {&m_list, &m_search, &m_booksOf}) {
         restartPages(*list);
         list->listGeneration = -1;
@@ -2448,23 +1987,19 @@ void BookOrbitClient::clearSession()
     emit booksChanged();
     emit searchChanged();
     emit booksOfChanged();
-    setSignedIn(false);
 }
 
-void BookOrbitClient::setSignedIn(bool signedIn)
+void BookOrbitClient::forgetLocalRows()
 {
-    if (m_signedIn == signedIn)
-        return;
-    m_signedIn = signedIn;
-    emit signedInChanged();
-}
-
-void BookOrbitClient::setError(const QString &error)
-{
-    if (m_error == error)
-        return;
-    m_error = error;
-    emit errorChanged();
+    // Rows built offline stay on screen until the server's arrive
+    for (Groups *groups : {&m_collections, &m_series, &m_authors, &m_authorSeries}) {
+        if (groups->local)
+            groups->loaded = false;
+    }
+    emit collectionsChanged();
+    emit seriesListChanged();
+    emit authorsChanged();
+    emit authorSeriesChanged();
 }
 
 void BookOrbitClient::emitChanged(const PagedBooks &list)

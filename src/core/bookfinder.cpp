@@ -1,9 +1,9 @@
 #include "core/bookfinder.h"
 
-#include "core/bookorbitclient.h"
 #include "core/database.h"
 #include "core/diagnostics.h"
 #include "core/formats.h"
+#include "core/session.h"
 
 #include <inkview.h>
 #include <QCryptographicHash>
@@ -218,10 +218,10 @@ private:
     int m_pos = 0;
 };
 
-BookFinder::BookFinder(BookOrbitClient *client, Downloads *downloads, Database *database,
+BookFinder::BookFinder(Session *session, Downloads *downloads, Database *database,
                        QObject *parent)
     : QObject(parent)
-    , m_client(client)
+    , m_session(session)
     , m_downloads(downloads)
     , m_database(database)
 {
@@ -287,7 +287,7 @@ QHash<QString, BookFinder::KoreaderMatch> BookFinder::koreaderMatches() const
     // KOReader's account id is "<server>/api/v1|<KOReader user>". That user is the KOReader
     // sync login, not necessarily the BookOrbit one, so only the server is compared;
     // matched books must still be in this user's library.
-    const QString server = m_client->serverUrl() + "/api/v1|";
+    const QString server = m_session->serverUrl() + "/api/v1|";
     QHash<QString, KoreaderMatch> matches;
     const QDir dir(QString::fromUtf8(KOREADER_SETTINGS_DIR));
     for (const QString &name : dir.entryList(QDir::Files)) {
@@ -347,7 +347,7 @@ void BookFinder::start()
         finish(generation);
         return;
     }
-    m_client->withLibrary(
+    m_session->withLibrary(
         [this, generation](int libraryId) {
             if (generation == m_generation)
                 loadLibraryPage(libraryId, 0, generation);
@@ -364,7 +364,7 @@ void BookFinder::loadLibraryPage(int libraryId, int page, int generation)
         {"sort", QJsonArray{QJsonObject{{"field", "title"}, {"dir", "asc"}}}},
         {"pagination", QJsonObject{{"page", page}, {"size", LIBRARY_PAGE_SIZE}}},
     };
-    m_client->request("POST", QString("/libraries/%1/books").arg(libraryId), QJsonDocument(query),
+    m_session->request("POST", QString("/libraries/%1/books").arg(libraryId), QJsonDocument(query),
         [this, libraryId, page, generation](const QByteArray &data) {
             if (generation != m_generation)
                 return;
@@ -450,7 +450,7 @@ void BookFinder::checkCandidate(int index, int candidate, int generation)
     const QVariantMap book = m_library.at(file.candidates.at(candidate));
     const int bookId = book.value("id").toInt();
     // Book details: files [{id, format, filename, fileHash, ...}]
-    m_client->request("GET", QString("/books/%1").arg(bookId), QJsonDocument(),
+    m_session->request("GET", QString("/books/%1").arg(bookId), QJsonDocument(),
         [this, index, candidate, generation, book, bookId](const QByteArray &data) {
             if (generation != m_generation)
                 return;

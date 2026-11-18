@@ -9,7 +9,7 @@ ListPage {
 
     property bool loaded: false
     // The client's, unless set
-    property bool online: bookOrbit.online
+    property bool online: bookOrbit.session.online
 
     signal groupClicked(var group)
 

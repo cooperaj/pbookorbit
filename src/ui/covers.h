@@ -7,7 +7,7 @@
 #include <QString>
 #include <QStringList>
 
-class BookOrbitClient;
+class Session;
 
 // Cover thumbnails for book lists and photos for the authors list. Downloads a book's
 // thumbnail (GET /books/:id/thumbnail, about 100 KB) or an author's (GET
@@ -27,7 +27,7 @@ class Covers : public QObject
     Q_OBJECT
 
 public:
-    Covers(BookOrbitClient *client, const QString &cacheDir, QObject *parent = nullptr);
+    Covers(Session *session, const QString &cacheDir, QObject *parent = nullptr);
 
     // File URL of the cached cover, or "" while downloading. version is the book's
     // coverVersion, so changed covers are fetched again. Without one (the series list
@@ -80,7 +80,7 @@ private:
     // Notes a cover or photo to ask for again once online
     void missed(const Request &request);
 
-    BookOrbitClient *m_client;
+    Session *m_session;
     QString m_cacheDir;
     // Newest requests first, so covers on screen beat ones already scrolled past
     QList<Request> m_queue;

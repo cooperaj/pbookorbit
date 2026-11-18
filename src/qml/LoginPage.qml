@@ -16,8 +16,8 @@ Item {
     // True while either field has focus, for faster e-ink updates
     readonly property bool typing: serverField.activeFocus || usernameField.activeFocus
                                    || passwordField.activeFocus
-    readonly property string server: bookOrbit.serverUrl !== "" ? bookOrbit.serverUrl : serverField.text.trim()
-    readonly property bool canSignIn: !bookOrbit.busy && server !== "" && usernameField.text !== ""
+    readonly property string server: bookOrbit.session.serverUrl !== "" ? bookOrbit.session.serverUrl : serverField.text.trim()
+    readonly property bool canSignIn: !bookOrbit.session.busy && server !== "" && usernameField.text !== ""
                                       && passwordField.text !== ""
 
     function signIn() {
@@ -27,7 +27,7 @@ Item {
         // stay up. Clear focus and close the keyboard first.
         page.forceActiveFocus()
         Qt.inputMethod.hide()
-        bookOrbit.signIn(page.server, usernameField.text, passwordField.text)
+        bookOrbit.session.signIn(page.server, usernameField.text, passwordField.text)
         passwordField.text = ""
     }
 
@@ -86,7 +86,7 @@ Item {
         }
     }
 
-    readonly property bool noNetwork: !bookOrbit.online && !bookOrbit.networkConnected
+    readonly property bool noNetwork: !bookOrbit.session.online && !bookOrbit.session.networkConnected
 
     Column {
         id: form
@@ -105,8 +105,8 @@ Item {
             FormField {
                 id: serverField
                 objectName: "serverField"
-                visible: bookOrbit.serverUrl === ""
-                text: bookOrbit.suggestedServer
+                visible: bookOrbit.session.serverUrl === ""
+                text: bookOrbit.session.suggestedServer
                 inputMethodHints: Qt.ImhUrlCharactersOnly | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
                 onAccepted: usernameField.forceActiveFocus()
                 onActiveFocusChanged: Qt.callLater(page.updateKeyboardShift)
@@ -115,7 +115,7 @@ Item {
             Rectangle {
                 id: serverPill
                 objectName: "serverPill"
-                visible: bookOrbit.serverUrl !== ""
+                visible: bookOrbit.session.serverUrl !== ""
                 width: parent.width
                 height: serverField.implicitHeight
                 radius: height / 2
@@ -129,7 +129,7 @@ Item {
                     anchors.right: forget.left
                     anchors.verticalCenter: parent.verticalCenter
                     // https:// is assumed, so only http:// is shown
-                    text: bookOrbit.serverUrl.replace(/^https:\/\//, "")
+                    text: bookOrbit.session.serverUrl.replace(/^https:\/\//, "")
                     color: serverPill.textColor
                     font.pointSize: 8
                     elide: Text.ElideMiddle
@@ -147,10 +147,10 @@ Item {
                     inverted: serverPill.textColor.hslLightness > 0.5
                     iconSize: Units.dp(20)
                     fallbackText: "×"
-                    enabled: !bookOrbit.busy
+                    enabled: !bookOrbit.session.busy
                     onClicked: {
-                        serverField.text = bookOrbit.suggestedServer
-                        bookOrbit.forgetServer()
+                        serverField.text = bookOrbit.session.suggestedServer
+                        bookOrbit.session.forgetServer()
                     }
                 }
             }
@@ -166,7 +166,7 @@ Item {
             FormField {
                 id: usernameField
                 objectName: "usernameField"
-                text: bookOrbit.username
+                text: bookOrbit.session.username
                 inputMethodHints: Qt.ImhNoAutoUppercase
                 onAccepted: passwordField.forceActiveFocus()
                 onActiveFocusChanged: Qt.callLater(page.updateKeyboardShift)
@@ -191,7 +191,7 @@ Item {
             objectName: "errorText"
             width: parent.width
             height: Math.max(implicitHeight, Units.dp(40))
-            text: bookOrbit.busy ? "" : bookOrbit.error
+            text: bookOrbit.session.busy ? "" : bookOrbit.session.error
             font.pointSize: 8
             wrapMode: Text.Wrap
         }
@@ -200,7 +200,7 @@ Item {
             objectName: "signInButton"
             anchors.horizontalCenter: parent.horizontalCenter
             text: "Sign in"
-            busy: bookOrbit.busy
+            busy: bookOrbit.session.busy
             enabled: page.canSignIn
             onClicked: page.signIn()
         }
@@ -223,8 +223,8 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: "Connect"
-                busy: bookOrbit.busy
-                onClicked: bookOrbit.goOnline()
+                busy: bookOrbit.session.busy
+                onClicked: bookOrbit.session.goOnline()
             }
         }
     }

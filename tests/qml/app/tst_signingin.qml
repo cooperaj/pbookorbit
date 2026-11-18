@@ -143,7 +143,7 @@ AppTestCase {
         signOut()
 
         fakeServer.release("POST", refresh)
-        tryVerify(() => !bookOrbit.busy, 5000, "the refresh's reply is handled")
+        tryVerify(() => !bookOrbit.session.busy, 5000, "the refresh's reply is handled")
     }
 
     // A refresh still on its way when the user signs out doesn't sign them back in

@@ -80,7 +80,7 @@ Window {
                                       : showingAuthorSeries ? authorSeriesPage
                                       : showingAuthor ? authorInfoPage
                                       : searching ? searchPage
-                                      : !bookOrbit.signedIn ? null
+                                      : !bookOrbit.session.signedIn ? null
                                       : showingCollections ? collectionsPage
                                       : showingSeries ? seriesPage
                                       : showingAuthors ? authorsPage : libraryPage
@@ -96,8 +96,8 @@ Window {
         // "Orbit" in the user's BookOrbit accent colour
         title: "PocketBook × Book<font color=\"" + Night.color(bookOrbit.accentColor) + "\">Orbit</font>"
         menuOpen: menu.visible
-        offline: bookOrbit.signedIn && !bookOrbit.online
-        showSearch: bookOrbit.signedIn
+        offline: bookOrbit.session.signedIn && !bookOrbit.session.online
+        showSearch: bookOrbit.session.signedIn
         onHomeClicked: Qt.quit()
         onTitleClicked: root.backToTop()
         onSecretTapped: {
@@ -112,7 +112,7 @@ Window {
     LoginPage {
         id: loginPage
         objectName: "loginPage"
-        visible: !bookOrbit.signedIn
+        visible: !bookOrbit.session.signedIn
         anchors.top: header.bottom
         anchors.bottom: parent.bottom
         anchors.left: parent.left
@@ -263,7 +263,7 @@ Window {
 
     // Going offline or back online changes what lists that aren't downloaded only show
     Connections {
-        target: bookOrbit
+        target: bookOrbit.session
         function onOnlineChanged() {
             if (!libraryQuery.downloadedChosen)
                 libraryQuery.applied()
@@ -286,7 +286,7 @@ Window {
         bookOrbit.setLocalBooks(downloads.downloadedBooks())
         // Starting offline: list the downloaded books before bookOrbit.start() loads the
         // list
-        if (!bookOrbit.online)
+        if (!bookOrbit.session.online)
             libraryQuery.applied()
     }
 
@@ -361,7 +361,7 @@ Window {
         listName: "bookList"
         railName: "libraryRail"
         emptyName: "libraryEmptyState"
-        visible: bookOrbit.signedIn && !root.showingCollections && !root.showingSeries && !root.showingAuthors
+        visible: bookOrbit.session.signedIn && !root.showingCollections && !root.showingSeries && !root.showingAuthors
         anchors.top: header.bottom
         anchors.bottom: footer.top
         anchors.left: parent.left
@@ -375,12 +375,12 @@ Window {
         error: bookOrbit.booksError
         // The spinner only until the first books arrive; later pages load on scroll. No
         // books says so.
-        loading: bookOrbit.busy
+        loading: bookOrbit.session.busy
         empty: bookOrbit.totalBooks === 0
         emptyTitle: libraryQuery.downloadedOnly
                     ? ["No downloaded books", "No downloaded ebooks", "No downloaded audiobooks"][libraryQuery.filterIndex]
                     : ["No books", "No ebooks", "No audiobooks"][libraryQuery.filterIndex]
-        emptyText: !bookOrbit.online ? offlineText()
+        emptyText: !bookOrbit.session.online ? offlineText()
                    : libraryQuery.downloadedOnly ? "Books you download show here, and can be read offline."
                    : "Books in your BookOrbit library show here."
         onRowsWanted: (first, last) => bookOrbit.loadBooks(first, last)
@@ -391,13 +391,13 @@ Window {
     GroupListPage {
         id: collectionsPage
         objectName: "collectionsPage"
-        visible: bookOrbit.signedIn && root.showingCollections
+        visible: bookOrbit.session.signedIn && root.showingCollections
         model: bookOrbit.collections
         jumpSections: bookOrbit.collectionJumpSections
         error: bookOrbit.collectionsError
         loaded: bookOrbit.collectionsLoaded
         emptyTitle: "No collections"
-        emptyText: bookOrbit.online ? "Collections you make in BookOrbit show here."
+        emptyText: bookOrbit.session.online ? "Collections you make in BookOrbit show here."
                                     : offlineText("collections containing downloaded books")
         anchors.top: header.bottom
         anchors.bottom: footer.top
@@ -416,13 +416,13 @@ Window {
     GroupListPage {
         id: seriesPage
         objectName: "seriesPage"
-        visible: bookOrbit.signedIn && root.showingSeries
+        visible: bookOrbit.session.signedIn && root.showingSeries
         model: bookOrbit.seriesList
         jumpSections: bookOrbit.seriesJumpSections
         error: bookOrbit.seriesError
         loaded: bookOrbit.seriesLoaded
         emptyTitle: "No series"
-        emptyText: bookOrbit.online ? "Series show here once books in the library belong to one."
+        emptyText: bookOrbit.session.online ? "Series show here once books in the library belong to one."
                                     : offlineText("series with downloaded books")
         anchors.top: header.bottom
         anchors.bottom: footer.top
@@ -440,7 +440,7 @@ Window {
     GroupListPage {
         id: authorsPage
         objectName: "authorsPage"
-        visible: bookOrbit.signedIn && root.showingAuthors
+        visible: bookOrbit.session.signedIn && root.showingAuthors
         model: bookOrbit.authorsList
         jumpSections: bookOrbit.authorJumpSections
         error: bookOrbit.authorsError
@@ -450,7 +450,7 @@ Window {
                                             || authorsQuery.downloadedOnly)
         emptyTitle: authorsQuery.downloadedOnly || authorsQuery.filterIndex === 0 ? "No authors"
                     : "No authors with " + authorsQuery.filterName.toLowerCase()
-        emptyText: !bookOrbit.online ? offlineText("authors of downloaded books")
+        emptyText: !bookOrbit.session.online ? offlineText("authors of downloaded books")
                    : authorsQuery.downloadedOnly ? "Turn off Downloaded only to see every author."
                    : authorsQuery.filterIndex !== 0 ? "Choose All titles to see every author."
                    : "Authors show here once the library has books."
@@ -471,7 +471,7 @@ Window {
 
     TabFooter {
         id: footer
-        visible: bookOrbit.signedIn
+        visible: bookOrbit.session.signedIn
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
@@ -547,7 +547,7 @@ Window {
             text: "Downloaded only"
             checked: root.activeQuery.downloadedOnly
             // Always on offline
-            enabled: bookOrbit.online
+            enabled: bookOrbit.session.online
             onClicked: root.activeQuery.setDownloadedOnly(!root.activeQuery.downloadedOnly)
         }
     }
@@ -601,17 +601,17 @@ Window {
         // Offline: asks the system to connect
         PopupMenuItem {
             objectName: "reconnect"
-            visible: bookOrbit.signedIn && !bookOrbit.online
+            visible: bookOrbit.session.signedIn && !bookOrbit.session.online
             text: "Reconnect"
             onClicked: {
                 menu.visible = false
-                bookOrbit.goOnline()
+                bookOrbit.session.goOnline()
             }
         }
         // Needs the server's library
         PopupMenuItem {
             objectName: "findBooks"
-            visible: bookOrbit.signedIn && bookOrbit.online
+            visible: bookOrbit.session.signedIn && bookOrbit.session.online
             text: "Find books on this device"
             onClicked: {
                 menu.visible = false
@@ -629,12 +629,12 @@ Window {
         }
         PopupMenuItem {
             objectName: "signOut"
-            visible: bookOrbit.signedIn
+            visible: bookOrbit.session.signedIn
             text: "Sign out"
             onClicked: {
                 menu.visible = false
                 root.closePages()
-                bookOrbit.signOut()
+                bookOrbit.session.signOut()
             }
         }
     }
@@ -843,9 +843,9 @@ Window {
     // After the first sign-in, offer to find books already on the device, if there are any.
     // Only once; after that it's in the menu.
     Connections {
-        target: bookOrbit
+        target: bookOrbit.session
         function onSignedInChanged() {
-            if (bookOrbit.signedIn && bookFinder.shouldOffer()) {
+            if (bookOrbit.session.signedIn && bookFinder.shouldOffer()) {
                 bookFinder.markOffered()
                 findBooksDialog.offer()
             }

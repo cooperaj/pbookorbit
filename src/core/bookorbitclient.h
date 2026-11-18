@@ -2,53 +2,27 @@
 
 #include "core/booklistmodel.h"
 #include "core/bookrecords.h"
+#include "core/session.h"
 
 #include <QColor>
-#include <QElapsedTimer>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QHash>
 #include <QSet>
 #include <QList>
-#include <QNetworkAccessManager>
 #include <QObject>
 #include <QStringList>
 #include <QTimer>
 #include <functional>
 
 class Database;
-class QNetworkReply;
 
-// Client for the BookOrbit web API, signed in as an ordinary user.
-//
-// Uses a "native" session: POST /auth/login returns a short-lived access token (sent as a
-// Bearer token) and a refresh token. Only the refresh token is saved, and every refresh
-// replaces it.
+// The app's view of a BookOrbit library: its book lists and groups, fetched through the
+// session (see Session), or built from the local books offline
 class BookOrbitClient : public QObject
 {
     Q_OBJECT
-    // Last server signed in to, e.g. "https://books.example.com". Empty until a sign-in
-    // succeeds, and kept after signing out.
-    Q_PROPERTY(QString serverUrl READ serverUrl NOTIFY serverUrlChanged)
-    // Prefill for the server field when none is saved. Set at build time with
-    // SUGGESTED_SERVER, otherwise empty.
-    Q_PROPERTY(QString suggestedServer READ suggestedServer CONSTANT)
-    Q_PROPERTY(QString username READ username NOTIFY usernameChanged)
-    Q_PROPERTY(bool signedIn READ signedIn NOTIFY signedInChanged)
-    Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
-    // Whether the server can be reached, as far as the app knows. Starts true; goes false
-    // when a request gets no reply or Wi-Fi can't reconnect without asking, and true again
-    // on any reply. While false, requests other than goOnline(), sign-in and downloads
-    // fail at once with NO_CONNECTION.
-    Q_PROPERTY(bool online READ online NOTIFY onlineChanged)
-    // Whether the device has a network connection, as the system reports it. Nothing tells
-    // the app when that changes, so it's looked at again whenever online changes. Offline
-    // with it true means the server didn't reply.
-    Q_PROPERTY(bool networkConnected READ networkConnected NOTIFY onlineChanged)
-    // Signing in's error, shown on the sign-in page. Each list has its own (booksError
-    // and the rest).
-    Q_PROPERTY(QString error READ error NOTIFY errorChanged)
     // Each list's error: set when a request for it fails, cleared when it loads again.
     // Empty offline, which the header shows instead.
     Q_PROPERTY(QString booksError READ booksError NOTIFY booksChanged)
@@ -58,6 +32,7 @@ class BookOrbitClient : public QObject
     Q_PROPERTY(QString seriesError READ seriesError NOTIFY seriesListChanged)
     Q_PROPERTY(QString authorsError READ authorsError NOTIFY authorsChanged)
     Q_PROPERTY(QString authorSeriesError READ authorSeriesError NOTIFY authorSeriesChanged)
+    Q_PROPERTY(Session *session READ session CONSTANT)
     Q_PROPERTY(BookListModel *books READ books CONSTANT)
     // Number of books, or -1 until known
     Q_PROPERTY(int totalBooks READ totalBooks NOTIFY booksChanged)
@@ -117,23 +92,8 @@ class BookOrbitClient : public QObject
     Q_PROPERTY(QStringList recentSearches READ recentSearches NOTIFY recentSearchesChanged)
 
 public:
-    using DataHandler = std::function<void(const QByteArray &)>;
-    using ErrorHandler = std::function<void(int status, const QString &message)>;
-    // The error for requests that can't be sent, with status 0
-    static inline const QString NO_CONNECTION = QStringLiteral("No connection");
-    // The error for requests sent that got no reply, with the network up
-    static inline const QString NO_REPLY = QStringLiteral("The server didn't reply");
-
     explicit BookOrbitClient(Database *database, QObject *parent = nullptr);
 
-    QString serverUrl() const { return m_serverUrl; }
-    QString suggestedServer() const;
-    QString username() const { return m_username; }
-    bool signedIn() const { return m_signedIn; }
-    bool busy() const { return m_pending > 0; }
-    bool online() const { return m_online; }
-    bool networkConnected() const;
-    QString error() const { return m_error; }
     QString booksError() const { return m_list.error; }
     QString searchError() const { return m_search.error; }
     QString booksOfError() const { return m_booksOf.error; }
@@ -141,6 +101,7 @@ public:
     QString seriesError() const { return m_series.error; }
     QString authorsError() const { return m_authors.error; }
     QString authorSeriesError() const { return m_authorSeries.error; }
+    Session *session() { return &m_session; }
     BookListModel *books() { return &m_list.model; }
     int totalBooks() const;
     QVariantList jumpSections() const { return m_list.jumpSections; }
@@ -168,14 +129,6 @@ public:
 
     // Loads the book list if a session was saved
     Q_INVOKABLE void start();
-    // server is as typed, e.g. "books.example.com". Defaults to https.
-    Q_INVOKABLE void signIn(const QString &server, const QString &username, const QString &password);
-    // Clears the saved server so another can be used. Only when signed out.
-    Q_INVOKABLE void forgetServer();
-    Q_INVOKABLE void signOut();
-    // Asks the system to connect Wi-Fi (its own dialog), then checks the server is there
-    Q_INVOKABLE void goOnline();
-
     // Sets the book list's sort and filter, and reloads it.
     //   sortField   addedAt, title, author or lastReadAt
     //   descending  Z to A, or newest first
@@ -262,29 +215,7 @@ public:
     // case) and saves them
     Q_INVOKABLE void addRecentSearch(const QString &text);
 
-    // Authenticated GET for raw data such as thumbnails. Doesn't set busy.
-    void download(const QString &path, DataHandler onSuccess, ErrorHandler onError);
-    // Authenticated GET for a large file the caller streams. Refreshes the access token
-    // first so it outlasts the download. The caller owns the reply.
-    void startStream(const QString &path, std::function<void(QNetworkReply *)> onStarted,
-                     ErrorHandler onError);
-    // Authenticated background request. Errors go to onError, not the error property, and
-    // it doesn't set busy.
-    void request(const QByteArray &method, const QString &path, const QJsonDocument &body,
-                 DataHandler onSuccess, ErrorHandler onError);
-    // Calls then with the library id, fetching it first if needed
-    void withLibrary(std::function<void(int libraryId)> then, ErrorHandler onError);
-
-protected:
-    bool eventFilter(QObject *watched, QEvent *event) override;
-
 signals:
-    void serverUrlChanged();
-    void usernameChanged();
-    void signedInChanged();
-    void busyChanged();
-    void onlineChanged();
-    void errorChanged();
     void booksChanged();
     void jumpSectionsChanged();
     void searchChanged();
@@ -420,7 +351,7 @@ private:
     void setListError(PagedBooks &list, const QString &error);
     void setListError(Groups &groups, const QString &error);
     // Endpoint for library book queries
-    QString libraryBooksPath() const { return QString("/libraries/%1/books").arg(m_libraryId); }
+    QString libraryBooksPath() const { return QString("/libraries/%1/books").arg(m_session.libraryId()); }
     // Looks up a collection's books from page onwards, for its covers, authors, formats,
     // count and book ids
     void lookUpCollection(int collectionId, int page, int generation);
@@ -487,36 +418,15 @@ private:
     void updateSavedBooks(const QJsonArray &items);
     // Offline: the local books matching the search text
     void searchLocalBooks(const QString &text);
-    // On the device, connects Wi-Fi silently if needed, then calls then(connected). That takes
-    // seconds, so it's done on another thread and the app carries on drawing. Calls made
-    // meanwhile wait for the same connection.
-    void whenNetwork(std::function<void(bool connected)> then);
-    // Refreshes the session to see whether the server can be reached
-    void checkServer();
-    // Fails a request without sending it
-    void failOffline(const ErrorHandler &onError);
-    void setOnline(bool online);
-    // withToken adds the access token (login, refresh and logout don't use it). Quiet
-    // requests don't set busy.
-    void send(const QByteArray &method, const QString &path, const QJsonDocument &body,
-              DataHandler onSuccess, ErrorHandler onError, bool withToken = false,
-              bool quiet = false);
-    // send() once Wi-Fi is connected
-    void sendNow(const QByteArray &method, const QString &path, const QJsonDocument &body,
-                 DataHandler onSuccess, ErrorHandler onError, bool withToken, bool quiet);
-    // Sends with the access token, refreshing and retrying once on a 401
-    void call(const QByteArray &method, const QString &path, const QJsonDocument &body,
-              DataHandler onSuccess, ErrorHandler onError, bool quiet = false,
-              bool retried = false);
-    // call() for JSON replies. A failure calls onFailed with its message, or an empty one
-    // when offline (the header shows that).
-    using FailedHandler = std::function<void(const QString &error)>;
-    void callJson(const QByteArray &method, const QString &path, const QJsonDocument &body,
-                  std::function<void(const QJsonDocument &)> onSuccess, FailedHandler onFailed);
     // Reads the accent colour from the user's synced theme, if any
     void loadAccent();
-    // Fetches the library id, then calls then, or onFailed as callJson() does
-    void loadLibrary(std::function<void()> then, FailedHandler onFailed);
+    // Calls then once the library id is known (see Session::withLibrary), or onFailed with
+    // the error to show
+    void loadLibrary(std::function<void()> then, Session::FailedHandler onFailed);
+    // Empties every list when the session ends, and forgets what was cached for it
+    void clearLists();
+    // Back online: rows built offline are to be fetched again
+    void forgetLocalRows();
     // Builds the BookOrbit query for a list's sort and filter
     static QJsonObject bookQuery(const PagedBooks &list);
     // Reloads from page one, or lists the local books
@@ -549,32 +459,9 @@ private:
     static bool isLetterSort(const QString &field) { return field == "title" || field == "author"; }
     // Sorts sectioned by each book's date. Last read has no date per book (see refreshList).
     static bool isDateSort(const QString &field) { return field == "addedAt"; }
-    // Exchanges the refresh token for a new access token, then runs any queued callbacks
-    void refreshSession(std::function<void()> then);
-    void applyCredentials(const QJsonObject &credentials);
-    void clearSession();
-    void setSignedIn(bool signedIn);
-    void setError(const QString &error);
 
     Database *m_database;
-    QNetworkAccessManager m_nam;
-    QString m_serverUrl;
-    QString m_username;
-    QString m_accessToken;
-    QString m_refreshToken;
-    bool m_signedIn = false;
-    bool m_online = true;
-    // Wi-Fi connected at the last look, and when that was (see eventFilter)
-    bool m_networkConnected = false;
-    QElapsedTimer m_networkLook;
-    // Waiting for whenNetwork()'s connection; not empty while it connects
-    QList<std::function<void(bool)>> m_afterConnect;
-    int m_pending = 0;
-    QString m_error;
-    int m_libraryId = -1;
-    // Waiting for loadLibrary()'s request, and what each does if it fails; not empty
-    // while it's in flight
-    QList<std::pair<std::function<void()>, FailedHandler>> m_afterLibrary;
+    Session m_session;
     // Main library list
     PagedBooks m_list;
     // Saves the book lists' caches once a refresh settles
@@ -597,10 +484,4 @@ private:
     QStringList m_recentSearches;
     QVariantList m_localBooks;
     QString m_accent;   // BookOrbit accent name, e.g. "teal"; empty for the default
-    bool m_refreshing = false;
-    QList<std::function<void()>> m_afterRefresh;
-    // Why the last refresh failed, if the server answered with an error, for the requests
-    // that waited for it
-    int m_refreshStatus = 0;
-    QString m_refreshError;
 };

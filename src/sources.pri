@@ -12,6 +12,7 @@ SOURCES += \
     $$PWD/core/launcherfiles.cpp \
     $$PWD/core/network.cpp \
     $$PWD/core/savefile.cpp \
+    $$PWD/core/session.cpp \
     $$PWD/core/systemlibrary.cpp \
     $$PWD/core/updater.cpp \
     $$PWD/core/zipreader.cpp \
@@ -34,6 +35,7 @@ HEADERS += \
     $$PWD/core/launcherfiles.h \
     $$PWD/core/network.h \
     $$PWD/core/savefile.h \
+    $$PWD/core/session.h \
     $$PWD/core/formats.h \
     $$PWD/core/systemlibrary.h \
     $$PWD/core/updater.h \

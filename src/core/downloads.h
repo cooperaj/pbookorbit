@@ -10,7 +10,7 @@
 
 #include <functional>
 
-class BookOrbitClient;
+class Session;
 class Database;
 class QNetworkReply;
 
@@ -37,7 +37,7 @@ class Downloads : public QObject
 
 public:
     // freeSpace gives the bytes free on the device's storage; the real figure by default
-    Downloads(BookOrbitClient *client, Database *database, std::function<qint64()> freeSpace = {},
+    Downloads(Session *session, Database *database, std::function<qint64()> freeSpace = {},
               QObject *parent = nullptr);
 
     int bookId() const { return m_bookId; }
@@ -105,7 +105,7 @@ private:
     void finish(const QString &error);
     void setPercent(int percent);
 
-    BookOrbitClient *m_client;
+    Session *m_session;
     Database *m_database;
     std::function<qint64()> m_freeSpace;
     int m_bookId = -1;

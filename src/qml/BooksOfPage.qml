@@ -30,6 +30,6 @@ BookListPage {
     empty: true
     emptyTitle: downloadedOnly ? "No downloaded books" : "No books found"
     emptyText: !downloadedOnly ? ""
-               : bookOrbit.online ? "Turn off Downloaded only to see them all." : offlineText()
+               : bookOrbit.session.online ? "Turn off Downloaded only to see them all." : offlineText()
     onRowsWanted: (first, last) => bookOrbit.loadBooksOf(first, last)
 }

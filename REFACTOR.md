@@ -64,8 +64,8 @@ QML moves to the nested objects (`bookOrbit.collections.error`,
 Each step ends with `make test` passing, an emulator run and a before/after screenshot
 comparison, then a pause for review.
 
-1. Extract `bookrecords` and unit test it.
-2. Extract `Session`. Downloads, BookFinder and Covers depend on it. QML for online,
+1. Done: extract `bookrecords` and unit test it.
+2. Done: extract `Session`. Downloads, BookFinder and Covers depend on it. QML for online,
    signedIn and busy moves to `bookOrbit.session`.
 3. Extract theme, recent searches and details.
 4. Promote `PagedBookList`. Library, search and booksOf move to it, with their QML.

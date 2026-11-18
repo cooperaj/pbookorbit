@@ -1,8 +1,8 @@
 #include "ui/covers.h"
 
-#include "core/bookorbitclient.h"
 #include "core/diagnostics.h"
 #include "core/savefile.h"
+#include "core/session.h"
 #include "ui/einkcolors.h"
 
 #include <QBuffer>
@@ -18,13 +18,13 @@
 // Concurrent downloads: enough to fill a screen quickly without swamping the device
 static const int MAX_DOWNLOADS = 3;
 
-Covers::Covers(BookOrbitClient *client, const QString &cacheDir, QObject *parent)
+Covers::Covers(Session *session, const QString &cacheDir, QObject *parent)
     : QObject(parent)
-    , m_client(client)
+    , m_session(session)
     , m_cacheDir(cacheDir)
 {
-    connect(m_client, &BookOrbitClient::onlineChanged, this, [this]() {
-        if (!m_client->online())
+    connect(m_session, &Session::onlineChanged, this, [this]() {
+        if (!m_session->online())
             return;
         for (const auto &[id, photo] : std::exchange(m_missed, {}))
             emit ready(id, photo);
@@ -204,7 +204,7 @@ QString Covers::fetch(Request request)
     const QString source = sourceFile(request);
     if (QFileInfo::exists(source))
         return fileUrl(sizeFrom(request, source));
-    if (!m_client->online()) {
+    if (!m_session->online()) {
         missed(request);
         return fileUrl(localCopy(request));
     }
@@ -245,7 +245,7 @@ void Covers::startDownloads()
     while (m_running < MAX_DOWNLOADS && !m_queue.isEmpty()) {
         const Request request = m_queue.takeFirst();
         m_running++;
-        m_client->download(request.path,
+        m_session->download(request.path,
             [this, request](const QByteArray &data) {
                 m_running--;
                 m_wanted.remove(sourceFile(request));
@@ -261,7 +261,7 @@ void Covers::startDownloads()
             [this, request](int status, const QString &message) {
                 m_running--;
                 m_wanted.remove(sourceFile(request));
-                if (!m_client->online())
+                if (!m_session->online())
                     missed(request);
                 else
                     diagnostics::log(QString("%1: %2 (%3)").arg(request.path, message).arg(status));

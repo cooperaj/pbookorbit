@@ -213,6 +213,6 @@ AppTestCase {
         tap("SeriesCell", info)
 
         tryVerify(() => rows() === "Hyperion Cantos (1)", 5000, "the downloaded book's series: " + rows())
-        verify(!bookOrbit.online, "offline")
+        verify(!bookOrbit.session.online, "offline")
     }
 }
