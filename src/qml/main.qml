@@ -446,7 +446,7 @@ Window {
         error: bookOrbit.authorsError
         // Filtered by format, authors appear once every author's books have been looked up.
         // Downloaded only uses the downloaded books.
-        loaded: bookOrbit.authorsLoaded && (bookOrbit.authorBooksLoaded || authorsQuery.filterIndex === 0
+        loaded: bookOrbit.authorsLoaded && (bookOrbit.allAuthorsLookedUp || authorsQuery.filterIndex === 0
                                             || authorsQuery.downloadedOnly)
         emptyTitle: authorsQuery.downloadedOnly || authorsQuery.filterIndex === 0 ? "No authors"
                     : "No authors with " + authorsQuery.filterName.toLowerCase()

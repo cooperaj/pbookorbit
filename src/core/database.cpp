@@ -340,7 +340,7 @@ QHash<int, QVariantMap> Database::groupDetails(const QString &kind) const
     return details;
 }
 
-void Database::clearListCaches()
+void Database::clearCaches()
 {
     exec("DELETE FROM list_cache");
     exec("DELETE FROM group_details");

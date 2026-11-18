@@ -99,7 +99,7 @@ class BookOrbitClient : public QObject
     Q_PROPERTY(bool authorsLoaded READ authorsLoaded NOTIFY authorsChanged)
     // Whether every author's books have been looked up this time. Filtering by format
     // needs this.
-    Q_PROPERTY(bool authorBooksLoaded READ authorBooksLoaded NOTIFY authorsChanged)
+    Q_PROPERTY(bool allAuthorsLookedUp READ allAuthorsLookedUp NOTIFY authorsChanged)
     // One author's series (see showAuthorSeries()), in rows like seriesList's
     Q_PROPERTY(BookListModel *authorSeriesList READ authorSeriesList CONSTANT)
     Q_PROPERTY(QVariantList authorSeriesJumpSections READ authorSeriesJumpSections NOTIFY authorSeriesChanged)
@@ -156,7 +156,7 @@ public:
     QVariantList seriesJumpSections() const { return m_series.jumpSections; }
     BookListModel *authorsList() { return &m_authors.model; }
     bool authorsLoaded() const { return m_authors.loaded; }
-    bool authorBooksLoaded() const { return m_authors.booksLoaded; }
+    bool allAuthorsLookedUp() const { return m_authors.allLookedUp; }
     QVariantList authorJumpSections() const { return m_authors.jumpSections; }
     BookListModel *authorSeriesList() { return &m_authorSeries.model; }
     bool authorSeriesLoaded() const { return m_authorSeries.loaded; }
@@ -231,8 +231,8 @@ public:
     // Looks up the books of rows first to last of a group list (collections, seriesList,
     // authorsList or authorSeriesList), for their formats, counts, cover versions and the
     // like, once each per load. Called while scrolling for the visible rows plus a screen
-    // either side; until the list has loaded, it waits for it. Only these rows are looked
-    // up: the ones asked for before are dropped. Series and authors go a few to a request,
+    // either side. Until the list has loaded, it waits for it. Rows asked for before and
+    // not yet looked up are dropped. Series and authors go a few to a request,
     // collections one each. With a format filter on the authors, every author is looked
     // up, those in view first.
     Q_INVOKABLE void lookUpRows(BookListModel *model, int first, int last);
@@ -351,8 +351,8 @@ private:
         QString error;
     };
 
-    // How a group list's rows have their books looked up: series and authors by name, a few
-    // to a request, a collection on its own
+    // How a group list's rows have their books looked up. Series and authors go by name, a
+    // few to a request, and a collection on its own.
     enum class Lookup { Series, Authors, Collection };
 
     // Collections, series or authors: one row each, sorted locally
@@ -379,7 +379,7 @@ private:
         QStringList formats;
         bool localOnly = false;
         // Whether every row's books have been looked up (series and authors only)
-        bool booksLoaded = false;
+        bool allLookedUp = false;
         // Rows whose books have been looked up since the list was loaded, by id
         QSet<int> lookedUp;
         // Ids of the rows to look up next, those on screen
@@ -388,7 +388,7 @@ private:
         int wantedFirst = 0;
         int wantedLast = -1;
         // The generation a lookup is in flight for, or -1
-        int lookingUp = -1;
+        int lookingUpGeneration = -1;
         // Rows built from the local books while offline, to fetch again once online
         bool local = false;
         // Rows from the list cache, shown instead of rows until a load finishes
@@ -416,7 +416,7 @@ private:
     QString libraryBooksPath() const { return QString("/libraries/%1/books").arg(m_libraryId); }
     // Looks up a collection's books from page onwards, for its covers, authors, formats,
     // count and book ids
-    void loadCollectionBooks(int collectionId, int page, int generation);
+    void lookUpCollection(int collectionId, int page, int generation);
     // Sorts rows into the model and builds the A-Z sections
     void showGroups(Groups &groups);
     // showGroups() for a load in progress: not while the cached rows are shown
@@ -424,13 +424,13 @@ private:
     // A load has finished: shows its rows in place of any cached ones and, if complete,
     // caches them
     void finishGroups(Groups &groups, bool complete);
-    // Starts loading a group list again: a new generation, nothing looked up yet, no error.
-    // Returns the generation.
+    // Starts loading a group list again, with a new generation, nothing looked up and no
+    // error. Returns the generation.
     int startLoad(Groups &groups);
     // Calls load once the library id is known, unless the list has been loaded again since
     void loadWithLibrary(Groups &groups, int generation, std::function<void()> load);
-    // A page of a group list has arrived: loads the next with loadNext if there are more,
-    // else finishes the list and looks up the rows in view
+    // After a page of a group list arrives, loads the next with loadNext if there are more,
+    // or else finishes the list and looks up the rows in view
     void listPageLoaded(Groups &groups, bool more, std::function<void()> loadNext);
     // Caches a group list's rows
     void saveListCache(const Groups &groups);
@@ -445,27 +445,27 @@ private:
     void loadSeriesPage(Groups *groups, int page, int generation);
     // Notes rows first to last of the model as wanted, and looks them up once the list has
     // loaded
-    void wantGroupDetails(Groups &groups, int first, int last);
-    void lookUpWanted(Groups &groups);
+    void wantRows(Groups &groups, int first, int last);
+    void lookUpWantedRows(Groups &groups);
     // Looks up the books of the rows with these ids, replacing any waiting, a request at a
     // time
-    void lookUpGroups(Groups *groups, const QList<int> &ids);
-    // Sends the next request for the waiting rows: as many as fit in one
-    void lookUpNext(Groups *groups, int generation);
-    // A lookup failed: stops, to try again when rows are next wanted
+    void queueLookUps(Groups *groups, const QList<int> &ids);
+    // Sends the next request for the waiting rows, as many as fit in one
+    void lookUpNextRows(Groups *groups, int generation);
+    // Stops after a failed lookup, to try again when rows are next wanted
     void stopLookingUp(Groups &groups);
     // Looks up the books of the series or authors with these ids, from page onwards, for
     // formats, counts and cover versions
-    void loadGroupBooks(Groups *groups, const QList<int> &ids, int page, int generation);
+    void lookUpByName(Groups *groups, const QList<int> &ids, int page, int generation);
     // Whether the authors are filtered by format, not just to the local books, so every
     // author needs looking up
     static bool filteringByFormat(const Groups &groups);
     // Saves what a row's lookup found, if its list's are saved
-    void saveDetails(const Groups &groups, const QVariantMap &row);
+    void saveRowDetails(const Groups &groups, const QVariantMap &row);
     // The saved details of a kind, read the first time
-    QHash<int, QVariantMap> &groupDetails(const QString &kind);
+    QHash<int, QVariantMap> &savedDetails(const QString &kind);
     // A row with any saved details of its group put in
-    QVariantMap withDetails(const Groups &groups, QVariantMap row);
+    QVariantMap withSavedDetails(const Groups &groups, QVariantMap row);
     // Loads authors one page at a time
     void loadAuthorsPage(int page, int generation);
     // Offline: rows for the series (the library's or the author's) or authors of the local
@@ -591,7 +591,7 @@ private:
     Groups m_authors;
     Groups m_authorSeries;
     // What looking up rows' books found, by kind and id (see Database::groupDetails)
-    QHash<QString, QHash<int, QVariantMap>> m_groupDetails;
+    QHash<QString, QHash<int, QVariantMap>> m_savedDetails;
     // Author whose series m_authorSeries holds
     QString m_authorSeriesName;
     QStringList m_recentSearches;
