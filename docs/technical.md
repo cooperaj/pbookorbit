@@ -324,7 +324,10 @@ audiobook databases with the tables the app reads. `savedSession` is a signed-in
 fixtures (three books by default), and `openLibrary(books, jumpBuckets, options)` does
 both and opens the app on the library. For the books in a list, `bookRow(title, listName)`
 finds a row, `titlesIn(list)` reads the titles, and `holdBook(title)` opens a row's menu
-without the second-long hold (`tst_bookmenu` holds for real once).
+without the second-long hold (`tst_bookmenu` holds for real once). For the Collections,
+Series and Authors lists, `groupRows(pageName)` reads the rows as `"Dune (3), ..."`,
+`groupRow(pageName, name)` finds one, `sortBy(pageName, option)` picks a sort, and
+`lookedUp(field)` lists the series or authors whose books have been asked for.
 `expectOnDevice(title, formats)` waits for a row to mark those formats, e.g. `"epub, m4b"`,
 as on the device, and `expectNotOnDevice(title)` for none. `expectOpenedInReader(file,
 app)` and `expectOpenedInPlayer(file)` wait for the app to ask the system to open that
@@ -334,7 +337,8 @@ and types, then waits for the result with `tryCompare` or `tryVerify`. With `mat
 reply is only for requests whose body has those fields, e.g. `{sort: [{field:
 "author"}]}`, so one path can answer each sort or filter with its own fixture; objects and
 arrays in it need only be part of the body's, and the latest reply that matches wins.
-`fakeServer.requests` lists what the client sent, `fakeServer.reachable = false` refuses
+`fakeServer.respondJson(method, path, status, body, match)` replies with a body made in
+the test instead, such as a list of 60 series. `fakeServer.requests` lists what the client sent, `fakeServer.reachable = false` refuses
 connections, as when the network is down, and `fakeServer.hold(method, path)` keeps those
 requests waiting until `fakeServer.release(method, path)`, for acting while a reply is on
 its way.

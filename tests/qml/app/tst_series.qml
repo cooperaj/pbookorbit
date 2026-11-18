@@ -34,47 +34,18 @@ AppTestCase {
         return page
     }
 
-    // The rows top to bottom, "name (count)"
     function rows() {
-        const list = find("seriesPage").list
-        const shown = []
-        for (let i = 0; i < list.count; i++) {
-            const row = list.itemAtIndex(i)
-            if (row && row.visible)
-                shown.push(row.group.name + " (" + row.group.bookCount + ")")
-        }
-        return shown.join(", ")
+        return groupRows("seriesPage")
     }
 
     function row(name) {
-        const list = find("seriesPage").list
-        let found = null
-        tryVerify(() => {
-            for (let i = 0; i < list.count; i++) {
-                const item = list.itemAtIndex(i)
-                if (item && item.visible && item.group.name === name)
-                    found = item
-            }
-            return found !== null
-        }, 5000, "a row for " + name)
-        return found
+        return groupRow("seriesPage", name)
     }
 
     function seriesRequests() {
         return fakeServer.requests.filter(r => r.method === "GET" && r.path === series).length
     }
 
-    // The series named in requests for their books, in the order asked
-    function lookedUp() {
-        return fakeServer.requests.filter(r => r.path === books && r.body.filter
-                                               && r.body.filter.rules[0].field === "series")
-                                  .reduce((names, r) => names.concat(Array.from(r.body.filter.rules[0].value)), [])
-    }
-
-    function sortBy(option) {
-        tap("sortButton", find("seriesPage"))
-        tap(option, find("sortMenu"))
-    }
 
     // Counts settle once each series' books are in
     function openLoadedSeries() {
@@ -102,7 +73,7 @@ AppTestCase {
     function test_sortByBookCount() {
         openLoadedSeries()
 
-        sortBy("Book count")
+        sortBy("seriesPage", "Book count")
 
         compare(rows(), "Dune (3), The Expanse (2), Hyperion Cantos (1)", "most first")
     }
@@ -110,7 +81,7 @@ AppTestCase {
     function test_sortByRecentlyAdded() {
         openLoadedSeries()
 
-        sortBy("Recently added")
+        sortBy("seriesPage", "Recently added")
 
         compare(rows(), "The Expanse (2), Dune (3), Hyperion Cantos (1)", "latest first")
     }
@@ -120,7 +91,7 @@ AppTestCase {
     function test_sortByReadProgress() {
         openLoadedSeries()
 
-        sortBy("Read progress")
+        sortBy("seriesPage", "Read progress")
 
         compare(rows(), "Hyperion Cantos (1), Dune (3), The Expanse (2)", "most read first")
     }
@@ -131,7 +102,7 @@ AppTestCase {
         const rail = find("jumpRail", find("seriesPage"))
         compare(rail.sections.map(s => s.label).join(""), "DHT")
 
-        sortBy("Book count")
+        sortBy("seriesPage", "Book count")
 
         compare(rail.sections.length, 0, "none by book count")
     }
@@ -157,13 +128,13 @@ AppTestCase {
     function test_reloadedEachTimeTheTabOpens() {
         openLoadedSeries()
         compare(seriesRequests(), 1)
-        const lookups = lookedUp().length
+        const lookups = lookedUp("series").length
 
         tap("LibraryTab")
         tap("SeriesTab")
 
         tryVerify(() => seriesRequests() === 2, 5000, "the list is asked for again")
-        tryVerify(() => lookedUp().length > lookups, 5000, "and the series in view looked up again")
+        tryVerify(() => lookedUp("series").length > lookups, 5000, "and the series in view looked up again")
         compare(rows(), "Dune (3), Hyperion Cantos (1), The Expanse (2)")
     }
 
@@ -175,10 +146,15 @@ AppTestCase {
         compare(row("The Expanse").group.covers[0].coverVersion, "v10")
     }
 
-    // Only the series on screen, and a screen either side, have their books looked up
+    // Only the series on screen, and a screen either side, have their books looked up. Every
+    // group list shares this, so it's tested here; collections, looked up their own way,
+    // have a test of their own.
     function test_onlySeriesInViewAreLookedUp() {
         openLibrary()
-        fakeServer.respond("GET", series, 200, "series/many.json")
+        fakeServer.respondJson("GET", series, 200, {total: 60, items: Array.from({length: 60}, (_, i) => ({
+            id: 101 + i, name: "Series " + String(i + 1).padStart(2, "0"), bookCount: 2, readCount: 0,
+            authors: [], coverBookIds: [], lastAddedAt: "2026-01-01 10:00:00+00"
+        }))})
         fakeServer.respond("POST", books, 200, "series/books.json", {filter: {rules: [{field: "series"}]}})
         bookRow("Dune")
 
@@ -186,13 +162,13 @@ AppTestCase {
 
         const list = find("seriesPage").list
         tryVerify(() => list.count === 60, 5000, "every series is listed")
-        tryVerify(() => lookedUp().includes("Series 01"), 5000, "the first are looked up")
+        tryVerify(() => lookedUp("series").includes("Series 01"), 5000, "the first are looked up")
         wait(300)
-        verify(!lookedUp().includes("Series 60"), "not the last: " + lookedUp())
+        verify(!lookedUp("series").includes("Series 60"), "not the last: " + lookedUp("series"))
 
         list.positionViewAtEnd()
 
-        tryVerify(() => lookedUp().includes("Series 60"), 5000, "the last once scrolled to")
+        tryVerify(() => lookedUp("series").includes("Series 60"), 5000, "the last once scrolled to")
     }
 
     // At the next start, what the series' books showed is there before they're looked up,
@@ -200,13 +176,13 @@ AppTestCase {
     function test_startShowsTheSavedDetails() {
         openLoadedSeries()
         fakeServer.respond("POST", books, 500, "server-error.json", {filter: {rules: [{field: "series"}]}})
-        const lookups = lookedUp().length
+        const lookups = lookedUp("series").length
 
         reopen()
         tap("SeriesTab")
 
         tryVerify(() => seriesRequests() === 2, 5000, "the list is asked for again")
-        tryVerify(() => lookedUp().length > lookups, 5000, "the books are asked for, and fail")
+        tryVerify(() => lookedUp("series").length > lookups, 5000, "the books are asked for, and fail")
         wait(300)
         compare(rows(), "Dune (3), Hyperion Cantos (1), The Expanse (2)", "the saved counts")
         compare(row("Dune").group.formats, ["epub", "m4b"])

@@ -40,15 +40,25 @@ void FakeServer::setReachable(bool reachable)
     emit reachableChanged();
 }
 
+// A JavaScript object arrives wrapped, and QJsonValue only reads plain maps and lists
+static QVariant plain(const QVariant &value)
+{
+    return value.metaType() == QMetaType::fromType<QJSValue>() ? value.value<QJSValue>().toVariant() : value;
+}
+
 void FakeServer::respond(const QString &method, const QString &path, int status, const QString &fixture,
                          const QVariant &match)
 {
     // {server} in a fixture is this server, for addresses it gives out, such as downloads
     const QByteArray body = fixture.isEmpty() ? QByteArray() : fixtureBytes(fixture).replace("{server}", url().toUtf8());
-    // A JavaScript object arrives wrapped, and QJsonValue only reads plain maps and lists
-    const QVariant plain = match.metaType() == QMetaType::fromType<QJSValue>() ? match.value<QJSValue>().toVariant()
-                                                                              : match;
-    m_responses[method + ' ' + path].append({status, body, QJsonValue::fromVariant(plain)});
+    m_responses[method + ' ' + path].append({status, body, QJsonValue::fromVariant(plain(match))});
+}
+
+void FakeServer::respondJson(const QString &method, const QString &path, int status, const QVariant &body,
+                             const QVariant &match)
+{
+    m_responses[method + ' ' + path].append({status, QJsonDocument::fromVariant(plain(body)).toJson(),
+                                             QJsonValue::fromVariant(plain(match))});
 }
 
 void FakeServer::respondFile(const QString &path, const QString &fixture, const QString &fileName)

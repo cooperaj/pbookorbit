@@ -36,6 +36,9 @@ public:
     // and one without match answers the rest. {server} in the fixture becomes url.
     Q_INVOKABLE void respond(const QString &method, const QString &path, int status,
                              const QString &fixture = QString(), const QVariant &match = QVariant());
+    // respond() with a body made in the test, e.g. a list too long for a fixture
+    Q_INVOKABLE void respondJson(const QString &method, const QString &path, int status, const QVariant &body,
+                                 const QVariant &match = QVariant());
     // A file download for GET path: the bytes of tests/fixtures/<fixture>, named fileName
     // the way BookOrbit names them, in a Content-Disposition header
     Q_INVOKABLE void respondFile(const QString &path, const QString &fixture, const QString &fileName);

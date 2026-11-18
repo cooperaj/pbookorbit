@@ -76,6 +76,19 @@ public:
         return files;
     }
 
+    // The versions of a cover or photo cached, as the hashes in its files' names
+    // ("<name>-<version hash>-..."), by name as for coverFiles()
+    Q_INVOKABLE QStringList coverVersions(const QString &name) const
+    {
+        QStringList versions;
+        for (const QString &file : coverFiles(name)) {
+            const QString version = file.mid(name.size() + 1).section('-', 0, 0);
+            if (!versions.contains(version))
+                versions.append(version);
+        }
+        return versions;
+    }
+
     // What a file on the device's storage holds, as text, e.g. "applications/pbookorbit.app"
     Q_INVOKABLE QString fileText(const QString &path) const
     {

@@ -51,9 +51,8 @@ UiTestCase {
                   "and shown")
         wait(200)
         compare(fetches("/api/v1/authors/7/thumbnail"), 1, "the first's isn't fetched for the second")
-        // "author-<id>-<version hash>-..."
-        const annVersion = testApp.coverFiles("author-7")[0].split("-")[2]
-        verify(!testApp.coverFiles("author-8").some(file => file.split("-")[2] === annVersion),
+        const annVersions = testApp.coverVersions("author-7")
+        verify(!testApp.coverVersions("author-8").some(version => annVersions.includes(version)),
                "nothing is kept as the second's under the first's version")
     }
 

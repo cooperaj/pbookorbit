@@ -33,30 +33,12 @@ AppTestCase {
         return page
     }
 
-    // The rows top to bottom, "name (count)"
     function rows() {
-        const list = find("collectionsPage").list
-        const shown = []
-        for (let i = 0; i < list.count; i++) {
-            const row = list.itemAtIndex(i)
-            if (row && row.visible)
-                shown.push(row.group.name + " (" + row.group.bookCount + ")")
-        }
-        return shown.join(", ")
+        return groupRows("collectionsPage")
     }
 
     function row(name) {
-        const list = find("collectionsPage").list
-        let found = null
-        tryVerify(() => {
-            for (let i = 0; i < list.count; i++) {
-                const item = list.itemAtIndex(i)
-                if (item && item.visible && item.group.name === name)
-                    found = item
-            }
-            return found !== null
-        }, 5000, "a row for " + name)
-        return found
+        return groupRow("collectionsPage", name)
     }
 
     function collectionRequests() {
@@ -132,7 +114,10 @@ AppTestCase {
     // Only the collections on screen, and a screen either side, have their books looked up,
     // and an empty one not at all
     function test_onlyCollectionsInViewAreLookedUp() {
-        fakeServer.respond("GET", collections, 200, "collections/many.json")
+        // Shelf 01 to Shelf 40, with ids 101 to 140
+        fakeServer.respondJson("GET", collections, 200, Array.from({length: 40}, (_, i) => ({
+            id: 101 + i, name: "Shelf " + String(i + 1).padStart(2, "0"), displayOrder: i, bookCount: 1
+        })))
         for (let id = 101; id <= 140; id++)
             fakeServer.respond("POST", collections + "/" + id + "/books/query", 200, "collections/1-books.json")
         openLibrary()

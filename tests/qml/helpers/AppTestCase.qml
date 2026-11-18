@@ -62,6 +62,48 @@ UiTestCase {
         return titles.join(", ")
     }
 
+    // A group list's rows made so far (a page such as "seriesPage"), top to bottom, "name
+    // (count)": "Dune (3), Hyperion Cantos (1)"
+    function groupRows(pageName) {
+        const list = find(pageName).list
+        const shown = []
+        for (let i = 0; i < list.count; i++) {
+            const row = list.itemAtIndex(i)
+            if (row && row.visible)
+                shown.push(row.group.name + " (" + row.group.bookCount + ")")
+        }
+        return shown.join(", ")
+    }
+
+    // A group list's row for a name, once it has loaded
+    function groupRow(pageName, name) {
+        const list = find(pageName).list
+        let found = null
+        tryVerify(() => {
+            for (let i = 0; i < list.count; i++) {
+                const item = list.itemAtIndex(i)
+                if (item && item.visible && item.group.name === name)
+                    found = item
+            }
+            return found !== null
+        }, 5000, "a row for " + name)
+        return found
+    }
+
+    // The series or authors (field "series" or "author") whose books have been asked for,
+    // in the order asked
+    function lookedUp(field) {
+        return fakeServer.requests.filter(r => r.path === "/api/v1/libraries/1/books" && r.body.filter
+                                               && r.body.filter.rules[0].field === field)
+                                  .reduce((names, r) => names.concat(Array.from(r.body.filter.rules[0].value)), [])
+    }
+
+    // Picks a sort from a list page's sort menu
+    function sortBy(pageName, option) {
+        tap("sortButton", find(pageName))
+        tap(option, find("sortMenu"))
+    }
+
     // Opens a book's menu as holding its row would, and returns it. A real hold takes over a
     // second, for the hold and then the frame on the row, so this skips the wait;
     // tst_bookmenu's test_holdingABookOpensItsMenu holds for real.
