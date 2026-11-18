@@ -4,8 +4,9 @@ import "../helpers"
 // The Collections tab. The server has Classics (Dune, and Project Hail Mary as an ebook and
 // a separate audiobook), Space Opera (Hyperion) and an empty Empty Shelf. Each row's
 // authors, formats and book count come from the collection's books, a book with an ebook
-// and audiobook counting once. The list reloads each time the tab opens, and offline shows
-// the collections with downloaded books.
+// and audiobook counting once, looked up for the collections in view and saved until
+// looked up again. The list reloads each time the tab opens, and offline shows the
+// collections with downloaded books.
 //
 // The page itself is tested in components/tst_grouplistpage.qml, and what every group list
 // shares in tst_series.qml.
@@ -62,6 +63,11 @@ AppTestCase {
         return fakeServer.requests.filter(r => r.method === "GET" && r.path === collections).length
     }
 
+    // Requests for a collection's books, by its id
+    function bookRequests(id) {
+        return fakeServer.requests.filter(r => r.path === collections + "/" + id + "/books/query").length
+    }
+
     function test_listsTheCollectionsByName() {
         openCollections()
 
@@ -114,10 +120,60 @@ AppTestCase {
         tryVerify(() => rows() !== "", 5000)
         compare(collectionRequests(), 1)
 
+        tryVerify(() => bookRequests(2) === 1, 5000, "Classics' books are looked up")
+
         tap("LibraryTab")
         tap("CollectionsTab")
 
         tryVerify(() => collectionRequests() === 2, 5000, "asked for again")
+        tryVerify(() => bookRequests(2) === 2, 5000, "and the books of those in view")
+    }
+
+    // Only the collections on screen, and a screen either side, have their books looked up,
+    // and an empty one not at all
+    function test_onlyCollectionsInViewAreLookedUp() {
+        fakeServer.respond("GET", collections, 200, "collections/many.json")
+        for (let id = 101; id <= 140; id++)
+            fakeServer.respond("POST", collections + "/" + id + "/books/query", 200, "collections/1-books.json")
+        openLibrary()
+        bookRow("Dune")
+
+        tap("CollectionsTab")
+
+        const list = find("collectionsPage").list
+        tryVerify(() => list.count === 40, 5000, "every collection is listed")
+        tryVerify(() => bookRequests(101) === 1, 5000, "the first are looked up")
+        wait(300)
+        compare(bookRequests(140), 0, "not the last")
+
+        list.positionViewAtEnd()
+
+        tryVerify(() => bookRequests(140) === 1, 5000, "the last once scrolled to")
+    }
+
+    function test_emptyCollectionIsntLookedUp() {
+        openCollections()
+        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000)
+
+        compare(bookRequests(4), 0)
+    }
+
+    // At the next start, what the collections' books showed is there before they're looked
+    // up, and stays if they can't be
+    function test_startShowsTheSavedDetails() {
+        openCollections()
+        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000)
+        fakeServer.respond("POST", collections + "/2/books/query", 500, "server-error.json")
+        const lookups = bookRequests(2)
+
+        reopen()
+        tap("CollectionsTab")
+
+        tryVerify(() => bookRequests(2) > lookups, 5000, "the books are asked for, and fail")
+        wait(300)
+        compare(rows(), "Classics (2), Empty Shelf (0), Space Opera (1)", "the saved counts")
+        compare(row("Classics").group.authors.slice().sort(), ["Andy Weir", "Frank Herbert"])
+        compare(row("Classics").group.formats, ["epub", "m4b"])
     }
 
     // Offline, from the collections saved when last online: only those with downloaded

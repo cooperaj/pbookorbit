@@ -1,0 +1,282 @@
+[
+  {
+    "id": 101,
+    "name": "Shelf 01",
+    "icon": null,
+    "displayOrder": 1,
+    "bookCount": 1
+  },
+  {
+    "id": 102,
+    "name": "Shelf 02",
+    "icon": null,
+    "displayOrder": 2,
+    "bookCount": 1
+  },
+  {
+    "id": 103,
+    "name": "Shelf 03",
+    "icon": null,
+    "displayOrder": 3,
+    "bookCount": 1
+  },
+  {
+    "id": 104,
+    "name": "Shelf 04",
+    "icon": null,
+    "displayOrder": 4,
+    "bookCount": 1
+  },
+  {
+    "id": 105,
+    "name": "Shelf 05",
+    "icon": null,
+    "displayOrder": 5,
+    "bookCount": 1
+  },
+  {
+    "id": 106,
+    "name": "Shelf 06",
+    "icon": null,
+    "displayOrder": 6,
+    "bookCount": 1
+  },
+  {
+    "id": 107,
+    "name": "Shelf 07",
+    "icon": null,
+    "displayOrder": 7,
+    "bookCount": 1
+  },
+  {
+    "id": 108,
+    "name": "Shelf 08",
+    "icon": null,
+    "displayOrder": 8,
+    "bookCount": 1
+  },
+  {
+    "id": 109,
+    "name": "Shelf 09",
+    "icon": null,
+    "displayOrder": 9,
+    "bookCount": 1
+  },
+  {
+    "id": 110,
+    "name": "Shelf 10",
+    "icon": null,
+    "displayOrder": 10,
+    "bookCount": 1
+  },
+  {
+    "id": 111,
+    "name": "Shelf 11",
+    "icon": null,
+    "displayOrder": 11,
+    "bookCount": 1
+  },
+  {
+    "id": 112,
+    "name": "Shelf 12",
+    "icon": null,
+    "displayOrder": 12,
+    "bookCount": 1
+  },
+  {
+    "id": 113,
+    "name": "Shelf 13",
+    "icon": null,
+    "displayOrder": 13,
+    "bookCount": 1
+  },
+  {
+    "id": 114,
+    "name": "Shelf 14",
+    "icon": null,
+    "displayOrder": 14,
+    "bookCount": 1
+  },
+  {
+    "id": 115,
+    "name": "Shelf 15",
+    "icon": null,
+    "displayOrder": 15,
+    "bookCount": 1
+  },
+  {
+    "id": 116,
+    "name": "Shelf 16",
+    "icon": null,
+    "displayOrder": 16,
+    "bookCount": 1
+  },
+  {
+    "id": 117,
+    "name": "Shelf 17",
+    "icon": null,
+    "displayOrder": 17,
+    "bookCount": 1
+  },
+  {
+    "id": 118,
+    "name": "Shelf 18",
+    "icon": null,
+    "displayOrder": 18,
+    "bookCount": 1
+  },
+  {
+    "id": 119,
+    "name": "Shelf 19",
+    "icon": null,
+    "displayOrder": 19,
+    "bookCount": 1
+  },
+  {
+    "id": 120,
+    "name": "Shelf 20",
+    "icon": null,
+    "displayOrder": 20,
+    "bookCount": 1
+  },
+  {
+    "id": 121,
+    "name": "Shelf 21",
+    "icon": null,
+    "displayOrder": 21,
+    "bookCount": 1
+  },
+  {
+    "id": 122,
+    "name": "Shelf 22",
+    "icon": null,
+    "displayOrder": 22,
+    "bookCount": 1
+  },
+  {
+    "id": 123,
+    "name": "Shelf 23",
+    "icon": null,
+    "displayOrder": 23,
+    "bookCount": 1
+  },
+  {
+    "id": 124,
+    "name": "Shelf 24",
+    "icon": null,
+    "displayOrder": 24,
+    "bookCount": 1
+  },
+  {
+    "id": 125,
+    "name": "Shelf 25",
+    "icon": null,
+    "displayOrder": 25,
+    "bookCount": 1
+  },
+  {
+    "id": 126,
+    "name": "Shelf 26",
+    "icon": null,
+    "displayOrder": 26,
+    "bookCount": 1
+  },
+  {
+    "id": 127,
+    "name": "Shelf 27",
+    "icon": null,
+    "displayOrder": 27,
+    "bookCount": 1
+  },
+  {
+    "id": 128,
+    "name": "Shelf 28",
+    "icon": null,
+    "displayOrder": 28,
+    "bookCount": 1
+  },
+  {
+    "id": 129,
+    "name": "Shelf 29",
+    "icon": null,
+    "displayOrder": 29,
+    "bookCount": 1
+  },
+  {
+    "id": 130,
+    "name": "Shelf 30",
+    "icon": null,
+    "displayOrder": 30,
+    "bookCount": 1
+  },
+  {
+    "id": 131,
+    "name": "Shelf 31",
+    "icon": null,
+    "displayOrder": 31,
+    "bookCount": 1
+  },
+  {
+    "id": 132,
+    "name": "Shelf 32",
+    "icon": null,
+    "displayOrder": 32,
+    "bookCount": 1
+  },
+  {
+    "id": 133,
+    "name": "Shelf 33",
+    "icon": null,
+    "displayOrder": 33,
+    "bookCount": 1
+  },
+  {
+    "id": 134,
+    "name": "Shelf 34",
+    "icon": null,
+    "displayOrder": 34,
+    "bookCount": 1
+  },
+  {
+    "id": 135,
+    "name": "Shelf 35",
+    "icon": null,
+    "displayOrder": 35,
+    "bookCount": 1
+  },
+  {
+    "id": 136,
+    "name": "Shelf 36",
+    "icon": null,
+    "displayOrder": 36,
+    "bookCount": 1
+  },
+  {
+    "id": 137,
+    "name": "Shelf 37",
+    "icon": null,
+    "displayOrder": 37,
+    "bookCount": 1
+  },
+  {
+    "id": 138,
+    "name": "Shelf 38",
+    "icon": null,
+    "displayOrder": 38,
+    "bookCount": 1
+  },
+  {
+    "id": 139,
+    "name": "Shelf 39",
+    "icon": null,
+    "displayOrder": 39,
+    "bookCount": 1
+  },
+  {
+    "id": 140,
+    "name": "Shelf 40",
+    "icon": null,
+    "displayOrder": 40,
+    "bookCount": 1
+  }
+]

@@ -406,8 +406,11 @@ Window {
         query: collectionsQuery
         railLayout: rails
         menus: listMenus
-        // Reloaded every time the view opens. Offline, the saved collections' downloaded books.
+        // Reloaded every time the view opens, showing the last rows until then, and the books
+        // of the collections in view looked up. Offline, the saved collections' downloaded
+        // books.
         onVisibleChanged: if (visible) bookOrbit.loadCollections()
+        onRowsWanted: (first, last) => { if (visible) bookOrbit.loadCollectionDetails(first, last) }
         onGroupClicked: (collection) => root.openBooksOf("collection", [String(collection.id)], collection.name)
     }
 

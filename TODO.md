@@ -1,10 +1,10 @@
 # To do
 
-- Cache what the views fetch, so they open at once: done for covers and the series (see
-  `group_details` in docs/technical.md). Still to do, the same way: collections (a request
-  per collection, on every load), authors (every author's books; only all of them when a
-  format filter is chosen), the books-of pages, and book info for downloaded books.
-  Offline stays downloaded books only.
+- Cache what the views fetch, so they open at once: done for covers, the series and the
+  collections (see `group_details` in docs/technical.md). Still to do, the same way:
+  authors (every author's books; only all of them when a format filter is chosen), the
+  books-of pages, and book info for downloaded books. Offline stays downloaded books only.
+  Offline collections only know the books of collections looked up while online.
 - Libraries: the list shows the first library (`loadLibrary()` in `src/core/bookorbitclient.cpp`).
   Choose one when the server has several.
 - Jump rail: dragging along it, and jumping by date for the date sorts (the jump-buckets

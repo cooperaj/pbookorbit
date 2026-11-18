@@ -29,9 +29,9 @@ struct sqlite3_stmt;
 //   collection_books
 //   list_cache   what the lists last showed, by name, as JSON: shown at startup while
 //                the server's lists load
-//   group_details what looking up a series' books found (formats, counts, cover versions),
-//                by kind and id, for the rows seen. Shown with the list until looked up
-//                again.
+//   group_details what looking up a series' or collection's books found (formats, counts,
+//                cover versions, a collection's authors), by kind and id, for the rows
+//                seen. Shown with the list until looked up again.
 //
 // Uses the system libsqlite3 (linked by libcommon_utilities), which every device has. Qt's
 // Sql module isn't used because the firmware may not ship it.
@@ -108,7 +108,7 @@ public:
     void saveListCache(const QString &name, const QVariantMap &data);
     QVariantMap listCache(const QString &name) const;
     void clearListCaches();
-    // What a group's books were found to have, kind being "series"
+    // What a group's books were found to have, kind being "series" or "collections"
     void saveGroupDetails(const QString &kind, int id, const QVariantMap &details);
     // Every saved group's of a kind, by id
     QHash<int, QVariantMap> groupDetails(const QString &kind) const;

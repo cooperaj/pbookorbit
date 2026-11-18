@@ -354,9 +354,10 @@ void BookOrbitClient::showBooksOf(const QString &field, const QStringList &value
     m_booksOfCollectionIds.clear();
     if (field == "collection") {
         const int collectionId = values.value(0).toInt();
-        for (const QVariantMap &row : shownRows(m_collections)) {
-            if (row.value("id").toInt() == collectionId)
-                m_booksOfCollectionIds = row.value("bookIds").toList();
+        // As last looked up and saved: a row only has them once looked up
+        for (const Database::Collection &collection : m_database->collections()) {
+            if (collection.entry.value("id").toInt() == collectionId)
+                m_booksOfCollectionIds = collection.bookIds;
         }
         const QString path = QString("/collections/%1/books").arg(collectionId);
         m_booksOf.path = path + "/query";
@@ -1249,9 +1250,21 @@ static void sortAuthors(QStringList &authors)
     });
 }
 
+// The row with this id, or nullptr
+static QVariantMap *rowWithId(QList<QVariantMap> &rows, int id)
+{
+    for (QVariantMap &row : rows) {
+        if (row.value("id").toInt() == id)
+            return &row;
+    }
+    return nullptr;
+}
+
 void BookOrbitClient::loadCollections()
 {
     const int generation = ++m_collections.generation;
+    m_collections.lookedUp.clear();
+    m_collections.wanted.clear();
     setListError(m_collections, QString());
     if (!m_online) {
         showLocalCollections();
@@ -1269,25 +1282,16 @@ void BookOrbitClient::loadCollections()
         for (const QJsonValue &value : doc.array()) {
             QVariantMap row = value.toObject().toVariantMap();
             entries.append(row);
+            row.insert("serverCount", row.value("bookCount"));
             row.insert("covers", QVariantList());
             row.insert("authors", QStringList());
             row.insert("formats", QStringList());
-            row.insert("bookIds", QVariantList());
-            row.insert("bookKeys", QStringList());
-            m_collections.rows.append(row);
+            m_collections.rows.append(withDetails(m_collections, row));
         }
         m_database->transaction([this, &entries]() { m_database->saveCollections(entries); });
         m_collections.loaded = true;
-        showLoadedGroups(m_collections);
-        m_collections.loadingBooks = 0;
-        for (const QVariantMap &row : std::as_const(m_collections.rows)) {
-            if (row.value("bookCount").toInt() > 0) {
-                m_collections.loadingBooks++;
-                loadCollectionBooks(row.value("id").toInt(), 0, generation);
-            }
-        }
-        if (m_collections.loadingBooks == 0)
-            finishGroups(m_collections, true);
+        finishGroups(m_collections, true);
+        lookUpWanted(m_collections);
     }, [this, generation](const QString &error) {
         if (generation == m_collections.generation)
             setListError(m_collections, error);
@@ -1309,14 +1313,15 @@ void BookOrbitClient::loadCollectionBooks(int collectionId, int page, int genera
             const QJsonObject result = QJsonDocument::fromJson(data).object();
             const QJsonArray items = result.value("items").toArray();
             updateSavedBooks(items);
-            for (QVariantMap &row : m_collections.rows) {
-                if (row.value("id").toInt() != collectionId)
-                    continue;
-                QVariantList covers = row.value("covers").toList();
-                QStringList authors = row.value("authors").toStringList();
-                QStringList formats = row.value("formats").toStringList();
-                QVariantList bookIds = row.value("bookIds").toList();
-                QStringList bookKeys = row.value("bookKeys").toStringList();
+            const bool more = (page + 1) * SERIES_NUMBERS_PAGE_SIZE < result.value("total").toInt() && !items.isEmpty();
+            QVariantMap *row = rowWithId(m_collections.rows, collectionId);
+            if (row) {
+                // What an earlier lookup found is replaced
+                QVariantList covers = page == 0 ? QVariantList() : row->value("covers").toList();
+                QStringList authors = page == 0 ? QStringList() : row->value("authors").toStringList();
+                QStringList formats = page == 0 ? QStringList() : row->value("formats").toStringList();
+                QVariantList bookIds = page == 0 ? QVariantList() : row->value("bookIds").toList();
+                QStringList bookKeys = page == 0 ? QStringList() : row->value("bookKeys").toStringList();
                 for (const QJsonValue &item : items) {
                     const QVariantMap book = item.toObject().toVariantMap();
                     bookIds.append(book.value("id"));
@@ -1338,39 +1343,31 @@ void BookOrbitClient::loadCollectionBooks(int collectionId, int page, int genera
                 }
                 sortAuthors(authors);
                 sortFormats(formats);
-                row.insert("covers", covers);
-                row.insert("authors", authors);
-                row.insert("formats", formats);
-                row.insert("bookIds", bookIds);
-                row.insert("bookKeys", bookKeys);
-            }
-            const bool more = (page + 1) * SERIES_NUMBERS_PAGE_SIZE < result.value("total").toInt() && !items.isEmpty();
-            // Counted once all its books are in
-            if (!more) {
-                for (QVariantMap &row : m_collections.rows) {
-                    if (row.value("id").toInt() != collectionId)
-                        continue;
-                    row.insert("bookCount", row.value("bookKeys").toStringList().size());
-                    const QVariantList bookIds = row.value("bookIds").toList();
-                    m_database->transaction([this, collectionId, &bookIds]() {
+                row->insert("covers", covers);
+                row->insert("authors", authors);
+                row->insert("formats", formats);
+                row->insert("bookIds", bookIds);
+                row->insert("bookKeys", bookKeys);
+                // Counted once all its books are in
+                if (!more) {
+                    row->insert("bookCount", bookKeys.size());
+                    m_collections.lookedUp.insert(collectionId);
+                    m_database->transaction([this, collectionId, row, &bookIds]() {
                         m_database->saveCollectionBooks(collectionId, bookIds);
+                        saveDetails(m_collections, *row);
                     });
                 }
             }
-            if (more) {
-                showLoadedGroups(m_collections);
+            showLoadedGroups(m_collections);
+            if (more && row)
                 loadCollectionBooks(collectionId, page + 1, generation);
-            } else if (--m_collections.loadingBooks == 0) {
-                finishGroups(m_collections, true);
-            } else {
-                showLoadedGroups(m_collections);
-            }
+            else
+                lookUpNext(&m_collections, generation);
         },
         [this, collectionId, generation](int status, const QString &message) {
             diagnostics::log(QString("collection %1 books: %2 (%3)").arg(collectionId).arg(message).arg(status));
-            // Show what did load, but don't cache it
-            if (generation == m_collections.generation && --m_collections.loadingBooks == 0)
-                finishGroups(m_collections, false);
+            if (generation == m_collections.generation)
+                stopLookingUp(m_collections);
         });
 }
 
@@ -1404,6 +1401,11 @@ void BookOrbitClient::loadSeries()
         if (generation == m_series.generation)
             setListError(m_series, error);
     });
+}
+
+void BookOrbitClient::loadCollectionDetails(int first, int last)
+{
+    wantGroupDetails(m_collections, first, last);
 }
 
 void BookOrbitClient::loadSeriesDetails(int first, int last)
@@ -1606,53 +1608,46 @@ void BookOrbitClient::lookUpWanted(Groups &groups)
     // Not the saved rows, nor ones built offline: once the list has loaded
     if (!m_online || groups.local || !groups.loaded || !groups.cached.isEmpty())
         return;
-    QStringList names;
+    QList<int> ids;
     for (int i = qMax(0, groups.wantedFirst); i <= groups.wantedLast && i < groups.model.count(); i++) {
-        const QString name = groups.model.book(i).value("name").toString();
-        if (!groups.lookedUp.contains(name))
-            names.append(name);
+        const int id = groups.model.book(i).value("id").toInt();
+        if (!groups.lookedUp.contains(id))
+            ids.append(id);
     }
-    lookUpGroups(&groups, names);
+    lookUpGroups(&groups, ids);
 }
 
-void BookOrbitClient::lookUpGroups(Groups *groups, const QStringList &names)
+void BookOrbitClient::lookUpGroups(Groups *groups, const QList<int> &ids)
 {
-    groups->wanted = names;
+    groups->wanted = ids;
     if (groups->lookingUp != groups->generation)
         lookUpNext(groups, groups->generation);
-}
-
-// The row with this name, or nullptr
-static QVariantMap *rowNamed(QList<QVariantMap> &rows, const QString &name)
-{
-    for (QVariantMap &row : rows) {
-        if (row.value("name").toString() == name)
-            return &row;
-    }
-    return nullptr;
 }
 
 void BookOrbitClient::lookUpNext(Groups *groups, int generation)
 {
     groups->lookingUp = -1;
-    // The names of as many series or authors as fit in one request (at least one, at most
-    // one rule's worth)
-    QStringList names;
+    // As many as fit in one request: a collection on its own, or the names of series or
+    // authors with up to a page of books between them (at least one, at most one rule's
+    // worth)
+    const bool collections = groups == &m_collections;
+    QList<int> ids;
     int books = 0;
     while (!groups->wanted.isEmpty()) {
-        const QString name = groups->wanted.first();
-        const QVariantMap *row = rowNamed(groups->rows, name);
-        if (!row || groups->lookedUp.contains(name)) {
+        const int id = groups->wanted.first();
+        const QVariantMap *row = rowWithId(groups->rows, id);
+        // An empty collection has nothing to look up
+        if (!row || groups->lookedUp.contains(id) || (collections && row->value("serverCount").toInt() == 0)) {
             groups->wanted.removeFirst();
             continue;
         }
         const int count = row->value("serverCount").toInt();
-        if (!names.isEmpty() && (books + count > SERIES_NUMBERS_PAGE_SIZE || names.size() == MAX_RULE_VALUES))
+        if (!ids.isEmpty() && (collections || books + count > SERIES_NUMBERS_PAGE_SIZE || ids.size() == MAX_RULE_VALUES))
             break;
-        names.append(groups->wanted.takeFirst());
+        ids.append(groups->wanted.takeFirst());
         books += count;
     }
-    if (names.isEmpty()) {
+    if (ids.isEmpty()) {
         groups->booksLoaded = groups->lookedUp.size() >= groups->rows.size();
         // The authors are cached once all are looked up, as filtering needs them all
         if (groups == &m_authors && groups->booksLoaded)
@@ -1660,19 +1655,53 @@ void BookOrbitClient::lookUpNext(Groups *groups, int generation)
         return;
     }
     groups->lookingUp = generation;
-    loadGroupBooks(groups, names, 0, generation);
+    if (collections)
+        loadCollectionBooks(ids.first(), 0, generation);
+    else
+        loadGroupBooks(groups, ids, 0, generation);
 }
 
-void BookOrbitClient::loadGroupBooks(Groups *groups, const QStringList &names, int page, int generation)
+void BookOrbitClient::stopLookingUp(Groups &groups)
+{
+    // Tried again when next wanted. The authors show what did load, uncached.
+    groups.lookingUp = -1;
+    groups.wanted.clear();
+    if (&groups == &m_authors)
+        finishGroups(groups, false);
+}
+
+void BookOrbitClient::saveDetails(const Groups &groups, const QVariantMap &row)
+{
+    const QString kind = detailsKind(groups);
+    if (kind.isEmpty())
+        return;
+    QVariantMap details{
+        {"bookCount", row.value("bookCount")},
+        {"formats", row.value("formats")},
+        {"covers", row.value("covers")},
+    };
+    if (&groups == &m_collections)
+        details.insert("authors", row.value("authors"));
+    const int id = row.value("id").toInt();
+    groupDetails(kind).insert(id, details);
+    m_database->saveGroupDetails(kind, id, details);
+}
+
+void BookOrbitClient::loadGroupBooks(Groups *groups, const QList<int> &ids, int page, int generation)
 {
     const bool series = groups != &m_authors;
+    QStringList names;
+    for (const int id : ids) {
+        if (const QVariantMap *row = rowWithId(groups->rows, id))
+            names.append(row->value("name").toString());
+    }
     const QJsonObject query{
         {"filter", group("AND", {rule(series ? "series" : "author", "includesAny", QJsonArray::fromStringList(names))})},
         {"pagination", QJsonObject{{"page", page}, {"size", SERIES_NUMBERS_PAGE_SIZE}}},
     };
     // Quiet: this only fills in existing rows
     request("POST", libraryBooksPath(), QJsonDocument(query),
-        [this, groups, series, names, page, generation](const QByteArray &data) {
+        [this, groups, series, ids, page, generation](const QByteArray &data) {
             if (generation != groups->generation)
                 return;
             const QJsonObject result = QJsonDocument::fromJson(data).object();
@@ -1707,13 +1736,13 @@ void BookOrbitClient::loadGroupBooks(Groups *groups, const QStringList &names, i
                 }
             }
             const bool more = (page + 1) * SERIES_NUMBERS_PAGE_SIZE < result.value("total").toInt() && !items.isEmpty();
-            const QString kind = detailsKind(*groups);
             m_database->transaction([&]() {
-                for (const QString &name : names) {
-                    QVariantMap *found = rowNamed(groups->rows, name);
+                for (const int id : ids) {
+                    QVariantMap *found = rowWithId(groups->rows, id);
                     if (!found)
                         continue;
                     QVariantMap &row = *found;
+                    const QString name = row.value("name").toString();
                     QVariantMap rowBooks = row.value("books").toMap();
                     QStringList formats = row.value("formats").toStringList();
                     // Formats from an earlier lookup may have gone
@@ -1766,40 +1795,27 @@ void BookOrbitClient::loadGroupBooks(Groups *groups, const QStringList &names, i
                             bookSeries.insert(it.key(), it.value().toStringList());
                         row.insert("seriesCount", seriesCount(bookSeries));
                     }
-                    groups->lookedUp.insert(name);
-                    if (!kind.isEmpty()) {
-                        const QVariantMap details{
-                            {"bookCount", row.value("bookCount")},
-                            {"formats", row.value("formats")},
-                            {"covers", row.value("covers")},
-                        };
-                        const int id = row.value("id").toInt();
-                        groupDetails(kind).insert(id, details);
-                        m_database->saveGroupDetails(kind, id, details);
-                    }
+                    groups->lookedUp.insert(id);
+                    saveDetails(*groups, row);
                 }
             });
             showLoadedGroups(*groups);
             if (more)
-                loadGroupBooks(groups, names, page + 1, generation);
+                loadGroupBooks(groups, ids, page + 1, generation);
             else
                 lookUpNext(groups, generation);
         },
         [this, groups, generation](int status, const QString &message) {
             diagnostics::log(QString("series or author books: %1 (%2)").arg(message).arg(status));
-            if (generation != groups->generation)
-                return;
-            // Tried again when next wanted. The authors show what did load, uncached.
-            groups->lookingUp = -1;
-            groups->wanted.clear();
-            if (groups == &m_authors)
-                finishGroups(*groups, false);
+            if (generation == groups->generation)
+                stopLookingUp(*groups);
         });
 }
 
 QString BookOrbitClient::detailsKind(const Groups &groups) const
 {
-    return &groups == &m_series || &groups == &m_authorSeries ? "series" : QString();
+    return &groups == &m_series || &groups == &m_authorSeries ? "series"
+         : &groups == &m_collections ? "collections" : QString();
 }
 
 QHash<int, QVariantMap> &BookOrbitClient::groupDetails(const QString &kind)
@@ -1815,10 +1831,13 @@ QVariantMap BookOrbitClient::withDetails(const Groups &groups, QVariantMap row)
     if (kind.isEmpty())
         return row;
     const QVariantMap details = groupDetails(kind).value(row.value("id").toInt());
-    if (details.isEmpty())
+    // Not for a collection since emptied
+    if (details.isEmpty() || row.value("serverCount").toInt() == 0)
         return row;
     row.insert("bookCount", details.value("bookCount"));
     row.insert("formats", details.value("formats"));
+    if (details.contains("authors"))
+        row.insert("authors", details.value("authors"));
     // The list's covers, with the versions looked up for the same books
     QHash<int, QVariant> versions;
     for (const QVariant &cover : details.value("covers").toList())
@@ -2173,10 +2192,10 @@ void BookOrbitClient::loadAuthorsPage(int page, int generation)
             loadAuthorsPage(page + 1, generation);
         } else {
             // Every author, as filtering needs them all
-            QStringList names;
+            QList<int> ids;
             for (const QVariantMap &row : std::as_const(m_authors.rows))
-                names.append(row.value("name").toString());
-            lookUpGroups(&m_authors, names);
+                ids.append(row.value("id").toInt());
+            lookUpGroups(&m_authors, ids);
         }
     }, [this, generation](const QString &error) {
         if (generation == m_authors.generation)

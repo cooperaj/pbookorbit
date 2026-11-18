@@ -64,7 +64,7 @@ static const char *SCHEMA = R"sql(
     ) WITHOUT ROWID;
 
     CREATE TABLE IF NOT EXISTS group_details (
-        kind TEXT NOT NULL,                         -- "series"
+        kind TEXT NOT NULL,                         -- "series" or "collections"
         id   INTEGER NOT NULL,                      -- BookOrbit's id for it
         data TEXT NOT NULL CHECK (json_valid(data)),
         PRIMARY KEY (kind, id)
