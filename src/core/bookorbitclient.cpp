@@ -1151,7 +1151,7 @@ void BookOrbitClient::lookUpCompanions(PagedBooks *list, const QVariantList &boo
                 {"pagination", QJsonObject{{"page", 0}, {"size", 4 * BOOKS_PAGE_SIZE}}},
             };
             callJson("POST", libraryBooksPath(), QJsonDocument(searchQuery),
-                [this, list, rows, merged, maybeHidden, generation, then](const QJsonDocument &doc) {
+                [list, rows, merged, maybeHidden, generation, then](const QJsonDocument &doc) {
                     if (generation != list->queryGeneration)
                         return;
                     QVariantList found;
