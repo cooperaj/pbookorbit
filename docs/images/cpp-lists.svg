@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="320" viewBox="0 0 960 320" role="img" aria-label="LibraryBooks, SearchResults and BooksOf extend PagedBookList. CollectionList, SeriesList and AuthorList extend GroupList, and AuthorSeriesList extends SeriesList. Both bases own a BookListModel; subclasses override how rows are fetched and filled.">
+  <style>
+    svg { font-family: "IBM Plex Mono", ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+    text { font-size: 12px; }
+    .name { font-size: 13px; font-weight: 500; }
+    .muted { font-size: 11px; }
+    .box, .hollow, .line { stroke-width: 1.2; }
+    .line { fill: none; }
+    svg { color: #1b1d1c; }
+    .bg { fill: #ffffff; }
+    text { fill: #1b1d1c; }
+    .muted { fill: #5d625f; }
+    .box { fill: #ffffff; stroke: #1b1d1c; }
+    .line { stroke: #1b1d1c; }
+    .hollow { fill: #ffffff; stroke: #1b1d1c; }
+    @media (prefers-color-scheme: dark) {
+      svg { color: #e6e8e5; }
+      .bg { fill: #1f2221; }
+      text { fill: #e6e8e5; }
+      .muted { fill: #a3a9a5; }
+      .box { fill: #1f2221; stroke: #e6e8e5; }
+      .line { stroke: #e6e8e5; }
+      .hollow { fill: #1f2221; stroke: #e6e8e5; }
+    }
+  </style>
+  <rect class="bg" width="960" height="320"/>
+  <defs>
+    <marker id="l-extends" markerWidth="14" markerHeight="14" refX="13" refY="7" orient="auto">
+      <path class="hollow" d="M1,1 L13,7 L1,13 z"/>
+    </marker>
+  </defs>
+
+  <!-- Book lists -->
+  <rect class="box" x="100" y="16" width="280" height="70" rx="4"/>
+  <text class="name" x="240" y="38" text-anchor="middle">PagedBookList</text>
+  <text class="muted" x="240" y="56" text-anchor="middle">model: BookListModel</text>
+  <text class="muted" x="240" y="73" text-anchor="middle">pages fetched as rows scroll in</text>
+
+  <line class="line" x1="88" y1="150" x2="196" y2="88" marker-end="url(#l-extends)"/>
+  <line class="line" x1="240" y1="150" x2="240" y2="88" marker-end="url(#l-extends)"/>
+  <line class="line" x1="392" y1="150" x2="284" y2="88" marker-end="url(#l-extends)"/>
+  <text class="muted" x="248" y="124">extends</text>
+
+  <rect class="box" x="20" y="150" width="136" height="60" rx="4"/>
+  <text class="name" x="88" y="173" text-anchor="middle">LibraryBooks</text>
+  <text class="muted" x="88" y="193" text-anchor="middle">setQuery()</text>
+  <rect class="box" x="172" y="150" width="136" height="60" rx="4"/>
+  <text class="name" x="240" y="173" text-anchor="middle">SearchResults</text>
+  <text class="muted" x="240" y="193" text-anchor="middle">find(text)</text>
+  <rect class="box" x="324" y="150" width="136" height="60" rx="4"/>
+  <text class="name" x="392" y="173" text-anchor="middle">BooksOf</text>
+  <text class="muted" x="392" y="193" text-anchor="middle">show(field, values)</text>
+
+  <!-- Group lists -->
+  <rect class="box" x="580" y="16" width="280" height="70" rx="4"/>
+  <text class="name" x="720" y="38" text-anchor="middle">GroupList</text>
+  <text class="muted" x="720" y="56" text-anchor="middle">model: BookListModel</text>
+  <text class="muted" x="720" y="73" text-anchor="middle">loaded whole, sorted locally</text>
+
+  <line class="line" x1="568" y1="150" x2="676" y2="88" marker-end="url(#l-extends)"/>
+  <line class="line" x1="720" y1="150" x2="720" y2="88" marker-end="url(#l-extends)"/>
+  <line class="line" x1="872" y1="150" x2="764" y2="88" marker-end="url(#l-extends)"/>
+  <text class="muted" x="728" y="124">extends</text>
+
+  <rect class="box" x="500" y="150" width="136" height="60" rx="4"/>
+  <text class="name" x="568" y="173" text-anchor="middle">CollectionList</text>
+  <text class="muted" x="568" y="193" text-anchor="middle">one per lookup</text>
+  <rect class="box" x="652" y="150" width="136" height="60" rx="4"/>
+  <text class="name" x="720" y="173" text-anchor="middle">SeriesList</text>
+  <text class="muted" x="720" y="193" text-anchor="middle">a few per lookup</text>
+  <rect class="box" x="804" y="150" width="136" height="60" rx="4"/>
+  <text class="name" x="872" y="173" text-anchor="middle">AuthorList</text>
+  <text class="muted" x="872" y="193" text-anchor="middle">setQuery(), row()</text>
+
+  <line class="line" x1="720" y1="244" x2="720" y2="212" marker-end="url(#l-extends)"/>
+  <text class="muted" x="736" y="233">extends</text>
+  <rect class="box" x="644" y="244" width="152" height="60" rx="4"/>
+  <text class="name" x="720" y="267" text-anchor="middle">AuthorSeriesList</text>
+  <text class="muted" x="720" y="287" text-anchor="middle">show(author)</text>
+</svg>

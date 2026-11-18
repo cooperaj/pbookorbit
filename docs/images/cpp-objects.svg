@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="610" viewBox="0 0 960 610" role="img" aria-label="QML reaches bookOrbit and the other context properties set in main.cpp. bookOrbit, the BookOrbitClient, owns theme, recentSearches, details, the book lists (library, search, booksOf), the group lists (collections, series, authors, authorSeries) with their shared GroupDetails, and the session. The lists call the BookOrbit server through Session. Covers, Downloads and BookFinder take a Session pointer, and BookFinder uses Downloads. Most parts take the Database. The updater fetches GitHub releases.">
+  <style>
+    svg { font-family: "IBM Plex Mono", ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+    text { font-size: 12px; }
+    .name { font-size: 13px; font-weight: 500; }
+    .muted { font-size: 11px; }
+    .box, .line, .keyline { stroke-width: 1.2; }
+    .chip { stroke-width: 1; }
+    .frame, .line, .keyline { fill: none; }
+    .frame, .key { stroke-width: 1.8; }
+    .dash { stroke-dasharray: 5 4; }
+    svg { color: #1b1d1c; }
+    .bg { fill: #ffffff; }
+    text { fill: #1b1d1c; }
+    .muted { fill: #5d625f; }
+    .accent-text { fill: #00796b; }
+    .box { fill: #ffffff; stroke: #1b1d1c; }
+    .chip { fill: #f1f3f0; stroke: #c9cec9; }
+    .frame { stroke: #1b1d1c; }
+    .key { fill: #ffffff; stroke: #00796b; }
+    .band { fill: #f1f3f0; }
+    .line { stroke: #1b1d1c; }
+    .keyline { stroke: #00796b; }
+    .head { fill: #1b1d1c; }
+    .keyhead { fill: #00796b; }
+    @media (prefers-color-scheme: dark) {
+      svg { color: #e6e8e5; }
+      .bg { fill: #1f2221; }
+      text { fill: #e6e8e5; }
+      .muted { fill: #a3a9a5; }
+      .accent-text { fill: #4db6a6; }
+      .box { fill: #1f2221; stroke: #e6e8e5; }
+      .chip { fill: #161817; stroke: #3d423f; }
+      .frame { stroke: #e6e8e5; }
+      .key { fill: #1f2221; stroke: #4db6a6; }
+      .band { fill: #161817; }
+      .line { stroke: #e6e8e5; }
+      .keyline { stroke: #4db6a6; }
+      .head { fill: #e6e8e5; }
+      .keyhead { fill: #4db6a6; }
+    }
+  </style>
+  <rect class="bg" width="960" height="610"/>
+  <defs>
+    <marker id="o-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path class="head" d="M0,0 L9,4.5 L0,9 z"/>
+    </marker>
+    <marker id="o-key" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path class="keyhead" d="M0,0 L9,4.5 L0,9 z"/>
+    </marker>
+  </defs>
+
+  <!-- QML -->
+  <rect class="band" x="20" y="16" width="920" height="40" rx="4"/>
+  <text class="name" x="480" y="41" text-anchor="middle">QML: qrc:/qml/main.qml</text>
+  <line class="line" x1="320" y1="56" x2="320" y2="94" marker-end="url(#o-arrow)"/>
+  <line class="line" x1="800" y1="56" x2="800" y2="94" marker-end="url(#o-arrow)"/>
+  <text class="muted" x="480" y="80" text-anchor="middle">context properties, set in main.cpp</text>
+
+  <!-- BookOrbitClient -->
+  <rect class="band" x="20" y="96" width="600" height="400" rx="6"/>
+  <text class="name" x="36" y="120">bookOrbit</text>
+  <text class="muted" x="118" y="120">BookOrbitClient: owns the parts, keeps them in step</text>
+
+  <rect class="box" x="36" y="134" width="180" height="50" rx="4"/>
+  <text x="48" y="155">theme</text>
+  <text class="muted" x="48" y="173">accent, monograms</text>
+  <rect class="box" x="230" y="134" width="180" height="50" rx="4"/>
+  <text x="242" y="155">recentSearches</text>
+  <text class="muted" x="242" y="173">kept until sign-out</text>
+  <rect class="box" x="424" y="134" width="180" height="50" rx="4"/>
+  <text x="436" y="155">details</text>
+  <text class="muted" x="436" y="173">saved for offline</text>
+
+  <!-- Book lists -->
+  <rect class="box" x="36" y="204" width="270" height="156" rx="4"/>
+  <text class="name" x="48" y="225">PagedBookList</text>
+  <rect class="chip" x="48" y="236" width="78" height="28" rx="3"/>
+  <text x="87" y="254" text-anchor="middle">library</text>
+  <rect class="chip" x="132" y="236" width="78" height="28" rx="3"/>
+  <text x="171" y="254" text-anchor="middle">search</text>
+  <rect class="chip" x="216" y="236" width="78" height="28" rx="3"/>
+  <text x="255" y="254" text-anchor="middle">booksOf</text>
+  <text class="muted" x="48" y="292">40 a page, as rows scroll in</text>
+  <text class="muted" x="48" y="310">last rows cached for next start</text>
+  <text class="muted" x="48" y="328">local-only: downloaded books</text>
+
+  <!-- Group lists -->
+  <rect class="box" x="320" y="204" width="284" height="156" rx="4"/>
+  <text class="name" x="332" y="225">GroupList</text>
+  <rect class="chip" x="332" y="236" width="126" height="28" rx="3"/>
+  <text x="395" y="254" text-anchor="middle">collections</text>
+  <rect class="chip" x="466" y="236" width="126" height="28" rx="3"/>
+  <text x="529" y="254" text-anchor="middle">series</text>
+  <rect class="chip" x="332" y="272" width="126" height="28" rx="3"/>
+  <text x="395" y="290" text-anchor="middle">authors</text>
+  <rect class="chip" x="466" y="272" width="126" height="28" rx="3"/>
+  <text x="529" y="290" text-anchor="middle">authorSeries</text>
+  <rect class="box dash" x="332" y="314" width="260" height="30" rx="3"/>
+  <text class="muted" x="462" y="333" text-anchor="middle">GroupDetails: shared lookups</text>
+
+  <!-- Into Session -->
+  <line class="keyline" x1="171" y1="360" x2="171" y2="416" marker-end="url(#o-key)"/>
+  <text class="muted" x="181" y="392">callJson</text>
+  <line class="keyline" x1="462" y1="360" x2="462" y2="416" marker-end="url(#o-key)"/>
+  <text class="muted" x="472" y="392">callJson, request</text>
+
+  <rect class="key" x="36" y="420" width="568" height="56" rx="4"/>
+  <text class="name accent-text" x="48" y="443">session: Session</text>
+  <text class="muted" x="48" y="462">tokens, refresh, Wi-Fi, online, busy, library id</text>
+
+  <!-- Other context properties -->
+  <rect class="box" x="660" y="96" width="280" height="50" rx="4"/>
+  <text x="672" y="117">covers</text>
+  <text class="muted" x="672" y="135">thumbnails, cached per size</text>
+  <rect class="box" x="660" y="166" width="280" height="50" rx="4"/>
+  <text x="672" y="187">downloads</text>
+  <text class="muted" x="672" y="205">one at a time, opens reader</text>
+  <rect class="box" x="660" y="236" width="280" height="50" rx="4"/>
+  <text x="672" y="257">bookFinder</text>
+  <text class="muted" x="672" y="275">finds books already on device</text>
+  <line class="line" x1="900" y1="236" x2="900" y2="218" marker-end="url(#o-arrow)"/>
+  <text class="muted" x="908" y="231">uses</text>
+
+  <!-- Session * -->
+  <polyline class="keyline" points="660,121 640,121"/>
+  <polyline class="keyline" points="660,191 640,191"/>
+  <polyline class="keyline" points="660,261 640,261"/>
+  <polyline class="keyline" points="640,121 640,448 606,448" marker-end="url(#o-key)"/>
+  <text class="muted" transform="rotate(-90 652 360)" x="652" y="360" text-anchor="middle">takes Session *</text>
+
+  <rect class="chip" x="660" y="306" width="134" height="30" rx="3"/>
+  <text x="727" y="325" text-anchor="middle">browser</text>
+  <rect class="chip" x="806" y="306" width="134" height="30" rx="3"/>
+  <text x="873" y="325" text-anchor="middle">eink</text>
+  <rect class="chip" x="660" y="344" width="134" height="30" rx="3"/>
+  <text x="727" y="363" text-anchor="middle">diagnostics</text>
+  <rect class="chip" x="806" y="344" width="134" height="30" rx="3"/>
+  <text x="873" y="363" text-anchor="middle">launcherTile</text>
+  <rect class="box dash" x="660" y="382" width="134" height="30" rx="3"/>
+  <text x="727" y="401" text-anchor="middle">image://theme</text>
+  <rect class="box dash" x="806" y="382" width="134" height="30" rx="3"/>
+  <text x="873" y="401" text-anchor="middle">image://inverted</text>
+
+  <rect class="box" x="660" y="432" width="280" height="50" rx="4"/>
+  <text x="672" y="453">updater</text>
+  <text class="muted" x="672" y="471">installs via launcher.sh</text>
+
+  <!-- Outside the app -->
+  <line class="line" x1="160" y1="496" x2="160" y2="538" marker-end="url(#o-arrow)"/>
+  <text class="muted" x="170" y="522">Database *, to most parts</text>
+  <line class="keyline" x1="465" y1="476" x2="465" y2="538" marker-end="url(#o-key)"/>
+  <text class="muted" x="475" y="522">HTTPS</text>
+  <line class="line" x1="800" y1="482" x2="800" y2="538" marker-end="url(#o-arrow)"/>
+  <text class="muted" x="810" y="514">release zip</text>
+
+  <rect class="box" x="20" y="540" width="280" height="50" rx="4"/>
+  <text class="name" x="32" y="561">Database</text>
+  <text class="muted" x="32" y="579">pbookorbit.db, system SQLite</text>
+  <rect class="box" x="330" y="540" width="274" height="50" rx="4"/>
+  <text class="name" x="342" y="561">BookOrbit server</text>
+  <text class="muted" x="342" y="579">/api/v1, Bearer token</text>
+  <rect class="box" x="660" y="540" width="280" height="50" rx="4"/>
+  <text class="name" x="672" y="561">GitHub releases</text>
+  <text class="muted" x="672" y="579">pre-releases until 1.0</text>
+</svg>

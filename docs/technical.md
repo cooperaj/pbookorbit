@@ -218,6 +218,50 @@ Every frame on e-ink is a slow screen update, so `frames` should be 0 when the a
 idle. Anything that animates (a blinking cursor, `BusyIndicator`, transitions, Flickable
 momentum) keeps the display busy and makes the whole device feel frozen.
 
+## C++ objects
+
+`main.cpp` builds the long-lived objects and gives them to QML as context properties. The
+largest, `bookOrbit` (`BookOrbitClient`), owns one object per job and keeps them in step:
+the session, theme, recent searches, details, three book lists and four group lists. QML
+reaches them through it, as `bookOrbit.session.online` or `bookOrbit.collections.load()`.
+Every request to the server goes through `Session`, which Covers, Downloads and BookFinder
+also take, rather than the whole client.
+
+![The context properties QML sees, the parts of bookOrbit, and the one path to the server through Session](images/cpp-objects.svg)
+
+The book lists (`PagedBookList`) load the server's results a page at a time as rows
+scroll in. The group lists (`GroupList`) load every row at once, sort them locally, and
+look up each row's books as it comes into view, saving what they find in `GroupDetails`,
+which lists of the same kind share. Both own a `BookListModel` and expose `model`, `error`
+and `jumpSections`, so `ListPage` binds to either the same way. Each starts a new
+generation when its query changes and ignores replies to older ones. Offline, each list
+builds its rows from the downloaded books.
+
+![The book list and group list classes and what each subclass adds](images/cpp-lists.svg)
+
+`Session` holds the tokens, `online`, `busy` and the library id. A list request reconnects
+Wi-Fi if it has gone idle, refreshes the access token when needed and retries once on a
+401. `request()` and `download()` don't set `busy`, and `startStream()` refreshes the
+token first so it outlasts a large download.
+
+![A list request's path through Session, and where it fails, waits or retries](images/cpp-requests.svg)
+
+These keep the parts in step:
+
+| When | Then | Connected in |
+|---|---|---|
+| First frame drawn | `start()`: reload the library and theme, if a session was saved | `main.cpp` |
+| `Session::started` | `start()`, after signing in | `BookOrbitClient` |
+| `Session::ended` | `clearLists()`: database caches, `GroupDetails` and every list emptied, before QML's handlers run | `BookOrbitClient` |
+| Back online | Group lists forget the rows they built offline | `BookOrbitClient` |
+| `bookOrbit.setLocalBooks()` | Every list takes the downloaded books; local-only lists relist | QML |
+| `Downloads::downloaded` | `Details::loadBook`, saving the book's details for offline | `main.cpp` |
+| `Details::savedBooksChanged` | `Downloads::entriesChanged`, so downloaded lists show the latest status | `main.cpp` |
+
+Helpers without state live in namespaces or plain functions: `bookrecords` (companions,
+variants, format files, sort keys), `formats.h`, `network`, `systemlibrary`, `zip`,
+`saveFile`, `LauncherFiles`, `einkcolors` and `accents`.
+
 ## List pages
 
 Every list in the app shares one frame, `ListPage` (`src/qml/ListPage.qml`): a ListView

@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="270" viewBox="0 0 960 270" role="img" aria-label="A list request goes callJson, call, send, whenNetwork, sendNow. call fails at once offline, refreshes first without an access token, and queues during a refresh. whenNetwork connects Wi-Fi silently on a thread, shared by the callers waiting, and goes offline if that fails. On the reply, no status means offline, a 401 refreshes the session and calls again once, and anything else sets busy back.">
+  <style>
+    svg { font-family: "IBM Plex Mono", ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+    text { font-size: 12px; }
+    .name { font-size: 13px; font-weight: 500; }
+    .muted { font-size: 11px; }
+    .box, .line, .keyline { stroke-width: 1.2; }
+    .chip { stroke-width: 1; }
+    .line, .keyline { fill: none; }
+    .key { stroke-width: 1.8; }
+    svg { color: #1b1d1c; }
+    .bg { fill: #ffffff; }
+    text { fill: #1b1d1c; }
+    .muted { fill: #5d625f; }
+    .accent-text { fill: #00796b; }
+    .box { fill: #ffffff; stroke: #1b1d1c; }
+    .chip { fill: #f1f3f0; stroke: #c9cec9; }
+    .key { fill: #ffffff; stroke: #00796b; }
+    .line { stroke: #1b1d1c; }
+    .keyline { stroke: #00796b; }
+    .head { fill: #1b1d1c; }
+    .keyhead { fill: #00796b; }
+    @media (prefers-color-scheme: dark) {
+      svg { color: #e6e8e5; }
+      .bg { fill: #1f2221; }
+      text { fill: #e6e8e5; }
+      .muted { fill: #a3a9a5; }
+      .accent-text { fill: #4db6a6; }
+      .box { fill: #1f2221; stroke: #e6e8e5; }
+      .chip { fill: #161817; stroke: #3d423f; }
+      .key { fill: #1f2221; stroke: #4db6a6; }
+      .line { stroke: #e6e8e5; }
+      .keyline { stroke: #4db6a6; }
+      .head { fill: #e6e8e5; }
+      .keyhead { fill: #4db6a6; }
+    }
+  </style>
+  <rect class="bg" width="960" height="270"/>
+  <defs>
+    <marker id="r-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path class="head" d="M0,0 L9,4.5 L0,9 z"/>
+    </marker>
+    <marker id="r-key" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path class="keyhead" d="M0,0 L9,4.5 L0,9 z"/>
+    </marker>
+  </defs>
+
+  <!-- The path -->
+  <rect class="box" x="20" y="30" width="152" height="56" rx="4"/>
+  <text class="name" x="96" y="54" text-anchor="middle">callJson()</text>
+  <text class="muted" x="96" y="73" text-anchor="middle">parses JSON</text>
+  <rect class="key" x="212" y="30" width="152" height="56" rx="4"/>
+  <text class="name accent-text" x="288" y="54" text-anchor="middle">call()</text>
+  <text class="muted" x="288" y="73" text-anchor="middle">needs a token</text>
+  <rect class="box" x="404" y="30" width="152" height="56" rx="4"/>
+  <text class="name" x="480" y="54" text-anchor="middle">send()</text>
+  <text class="muted" x="480" y="73" text-anchor="middle">busy + 1</text>
+  <rect class="box" x="596" y="30" width="152" height="56" rx="4"/>
+  <text class="name" x="672" y="54" text-anchor="middle">whenNetwork()</text>
+  <text class="muted" x="672" y="73" text-anchor="middle">Wi-Fi up?</text>
+  <rect class="box" x="788" y="30" width="152" height="56" rx="4"/>
+  <text class="name" x="864" y="54" text-anchor="middle">sendNow()</text>
+  <text class="muted" x="864" y="73" text-anchor="middle">/api/v1, Bearer</text>
+  <line class="keyline" x1="172" y1="58" x2="210" y2="58" marker-end="url(#r-key)"/>
+  <line class="keyline" x1="364" y1="58" x2="402" y2="58" marker-end="url(#r-key)"/>
+  <line class="keyline" x1="556" y1="58" x2="594" y2="58" marker-end="url(#r-key)"/>
+  <line class="keyline" x1="748" y1="58" x2="786" y2="58" marker-end="url(#r-key)"/>
+
+  <!-- Where it turns back -->
+  <line class="line" x1="288" y1="86" x2="288" y2="128" marker-end="url(#r-arrow)"/>
+  <rect class="chip" x="190" y="130" width="196" height="72" rx="3"/>
+  <text class="muted" x="202" y="150">offline → NO_CONNECTION</text>
+  <text class="muted" x="202" y="168">no token → refresh first</text>
+  <text class="muted" x="202" y="186">refreshing → queued</text>
+
+  <line class="line" x1="672" y1="86" x2="672" y2="128" marker-end="url(#r-arrow)"/>
+  <rect class="chip" x="574" y="130" width="196" height="72" rx="3"/>
+  <text class="muted" x="586" y="150">down → NetConnectSilent</text>
+  <text class="muted" x="586" y="168">on a thread, shared</text>
+  <text class="muted" x="586" y="186">fails → offline</text>
+
+  <line class="line" x1="864" y1="86" x2="864" y2="128" marker-end="url(#r-arrow)"/>
+  <rect class="chip" x="784" y="130" width="156" height="72" rx="3"/>
+  <text class="muted" x="796" y="150">no status → offline</text>
+  <text class="muted" x="796" y="168">401 → refresh</text>
+  <text class="muted" x="796" y="186">else → busy − 1</text>
+
+  <polyline class="keyline" points="862,202 862,236 288,236 288,206" marker-end="url(#r-key)"/>
+  <text class="muted" x="575" y="256" text-anchor="middle">after a 401: refreshSession(), then call() again, once</text>
+</svg>
