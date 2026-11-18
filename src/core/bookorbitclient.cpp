@@ -49,6 +49,15 @@ static bool morePages(int page, int pageSize, const QJsonObject &result)
     return (page + 1) * pageSize < result.value("total").toInt() && !result.value("items").toArray().isEmpty();
 }
 
+// Adds those of values not already in list, in order
+static void addNew(QStringList &list, const QStringList &values)
+{
+    for (const QString &value : values) {
+        if (!list.contains(value))
+            list.append(value);
+    }
+}
+
 static QJsonObject rule(const QString &field, const QString &op, const QJsonValue &value)
 {
     return QJsonObject{{"type", "rule"}, {"field", field}, {"operator", op}, {"value", value}};
@@ -647,8 +656,7 @@ static QStringList ownFormats(const QVariantMap &book)
     QStringList formats;
     for (const QVariantMap &file : bookFiles(book)) {
         const QString format = file.value("format").toString().toLower();
-        if (!formats.contains(format))
-            formats.append(format);
+        addNew(formats, {format});
     }
     return formats;
 }
@@ -691,10 +699,7 @@ void BookOrbitClient::addCompanions(QVariantMap &row, const QList<QVariantMap> &
                 variants.append(value);
             }
         }
-        for (const QString &format : ownFormats(companion)) {
-            if (!formats.contains(format))
-                formats.append(format);
-        }
+        addNew(formats, ownFormats(companion));
     }
     // Ebook versions first: a downloaded ebook opens before its audiobook. The formats
     // follow, so an audiobook's row reads like its ebook's.
@@ -1287,6 +1292,95 @@ static void sortAuthors(QStringList &authors)
 }
 
 // The row with this id, or nullptr
+// Every series a book is in
+static QStringList seriesNames(const QVariantMap &book)
+{
+    QStringList names;
+    for (const QVariant &membership : book.value("seriesMemberships").toList())
+        names.append(membership.toMap().value("seriesName").toString());
+    if (names.isEmpty() && !book.value("seriesName").toString().isEmpty())
+        names.append(book.value("seriesName").toString());
+    return names;
+}
+
+// How many series a group's books are in, books being key -> series names
+static int seriesCount(const QHash<QString, QStringList> &bookSeries)
+{
+    QSet<QString> series;
+    for (const QStringList &names : bookSeries) {
+        for (const QString &name : names)
+            series.insert(name);
+    }
+    return int(series.size());
+}
+
+// The books a lookup has found for a group row so far: each book's formats by its companion
+// key, so a separate ebook and audiobook count once, and for an author the series each is in
+struct FoundBooks {
+    QHash<QString, QStringList> formatsOf;
+    QHash<QString, QStringList> seriesOf;
+    QStringList formats;
+
+    // What earlier pages of the same lookup found
+    static FoundBooks in(const QVariantMap &row)
+    {
+        FoundBooks found;
+        const QVariantMap books = row.value("books").toMap();
+        for (auto it = books.constBegin(); it != books.constEnd(); ++it)
+            found.formatsOf.insert(it.key(), it.value().toStringList());
+        const QVariantMap bookSeries = row.value("bookSeries").toMap();
+        for (auto it = bookSeries.constBegin(); it != bookSeries.constEnd(); ++it)
+            found.seriesOf.insert(it.key(), it.value().toStringList());
+        found.formats = row.value("formats").toStringList();
+        return found;
+    }
+
+    void add(const QVariantMap &book, bool withSeries)
+    {
+        const QString key = companionKey(book);
+        addNew(formatsOf[key], ownFormats(book));
+        addNew(formats, ownFormats(book));
+        if (withSeries)
+            addNew(seriesOf[key], seriesNames(book));
+    }
+
+    // Sets the row's books, formats and, withSeries, bookSeries. Once complete, its counts
+    // too.
+    void putIn(QVariantMap &row, bool withSeries, bool complete) const
+    {
+        QVariantMap books;
+        for (auto it = formatsOf.constBegin(); it != formatsOf.constEnd(); ++it)
+            books.insert(it.key(), it.value());
+        row.insert("books", books);
+        QStringList sorted = formats;
+        sortFormats(sorted);
+        row.insert("formats", sorted);
+        if (withSeries) {
+            QVariantMap bookSeries;
+            for (auto it = seriesOf.constBegin(); it != seriesOf.constEnd(); ++it)
+                bookSeries.insert(it.key(), it.value());
+            row.insert("bookSeries", bookSeries);
+        }
+        if (!complete || formatsOf.isEmpty())
+            return;
+        row.insert("bookCount", int(formatsOf.size()));
+        if (withSeries)
+            row.insert("seriesCount", seriesCount(seriesOf));
+    }
+};
+
+// A row's covers, with the versions known for their books
+static QVariantList withCoverVersions(QVariantList covers, const QHash<int, QVariant> &versions)
+{
+    for (QVariant &cover : covers) {
+        QVariantMap map = cover.toMap();
+        if (versions.contains(map.value("id").toInt()))
+            map.insert("coverVersion", versions.value(map.value("id").toInt()));
+        cover = map;
+    }
+    return covers;
+}
+
 static QVariantMap *rowWithId(QList<QVariantMap> &rows, int id)
 {
     for (QVariantMap &row : rows) {
@@ -1349,40 +1443,24 @@ void BookOrbitClient::lookUpCollection(int collectionId, int page, int generatio
             QVariantMap *row = rowWithId(m_collections.rows, collectionId);
             if (row) {
                 // What an earlier lookup found is replaced
+                FoundBooks found = page == 0 ? FoundBooks() : FoundBooks::in(*row);
                 QVariantList covers = page == 0 ? QVariantList() : row->value("covers").toList();
                 QStringList authors = page == 0 ? QStringList() : row->value("authors").toStringList();
-                QStringList formats = page == 0 ? QStringList() : row->value("formats").toStringList();
                 QVariantList bookIds = page == 0 ? QVariantList() : row->value("bookIds").toList();
-                QStringList bookKeys = page == 0 ? QStringList() : row->value("bookKeys").toStringList();
                 for (const QJsonValue &item : items) {
                     const QVariantMap book = item.toObject().toVariantMap();
+                    found.add(book, false);
                     bookIds.append(book.value("id"));
-                    // A separately stored ebook and audiobook count once, as in the
-                    // collection's book list
-                    const QString key = companionKey(book);
-                    if (!bookKeys.contains(key))
-                        bookKeys.append(key);
                     if (covers.size() < 2 && book.value("hasCover").toBool())
                         covers.append(QVariantMap{{"id", book.value("id")}, {"coverVersion", book.value("coverVersion")}});
-                    for (const QString &author : book.value("authors").toStringList()) {
-                        if (!authors.contains(author))
-                            authors.append(author);
-                    }
-                    for (const QString &format : ownFormats(book)) {
-                        if (!formats.contains(format))
-                            formats.append(format);
-                    }
+                    addNew(authors, book.value("authors").toStringList());
                 }
                 sortAuthors(authors);
-                sortFormats(formats);
+                found.putIn(*row, false, !more);
                 row->insert("covers", covers);
                 row->insert("authors", authors);
-                row->insert("formats", formats);
                 row->insert("bookIds", bookIds);
-                row->insert("bookKeys", bookKeys);
-                // Counted once all its books are in
                 if (!more) {
-                    row->insert("bookCount", bookKeys.size());
                     m_collections.lookedUp.insert(collectionId);
                     m_database->transaction([this, collectionId, row, &bookIds]() {
                         m_database->saveCollectionBooks(collectionId, bookIds);
@@ -1576,28 +1654,6 @@ void BookOrbitClient::loadSeriesPage(Groups *groups, int page, int generation)
     });
 }
 
-// Every series a book is in
-static QStringList seriesNames(const QVariantMap &book)
-{
-    QStringList names;
-    for (const QVariant &membership : book.value("seriesMemberships").toList())
-        names.append(membership.toMap().value("seriesName").toString());
-    if (names.isEmpty() && !book.value("seriesName").toString().isEmpty())
-        names.append(book.value("seriesName").toString());
-    return names;
-}
-
-// How many series a group's books are in, books being key -> series names
-static int seriesCount(const QHash<QString, QStringList> &bookSeries)
-{
-    QSet<QString> series;
-    for (const QStringList &names : bookSeries) {
-        for (const QString &name : names)
-            series.insert(name);
-    }
-    return int(series.size());
-}
-
 void BookOrbitClient::wantRows(Groups &groups, int first, int last)
 {
     groups.wantedFirst = first;
@@ -1710,100 +1766,40 @@ void BookOrbitClient::lookUpByName(Groups *groups, const QList<int> &ids, int pa
             const QJsonObject result = QJsonDocument::fromJson(data).object();
             const QJsonArray items = result.value("items").toArray();
             updateSavedBooks(items);
-            // Each row's books, with a separately stored ebook and audiobook counted once
-            // and their formats combined
-            QHash<QString, QHash<QString, QStringList>> booksOf;   // name -> key -> formats
-            // For the authors, the series each of their books is in: name -> key -> series
-            QHash<QString, QHash<QString, QStringList>> seriesOf;
-            // The cover versions of the books found
+            const bool more = morePages(page, LOOKUP_PAGE_SIZE, result);
+            // What earlier pages found for each row, by name. A first page replaces what an
+            // earlier lookup found.
+            QHash<QString, int> idNamed;
+            QHash<int, FoundBooks> found;
+            for (const int id : ids) {
+                if (const QVariantMap *row = rowWithId(groups->rows, id)) {
+                    idNamed.insert(row->value("name").toString(), id);
+                    found.insert(id, page == 0 ? FoundBooks() : FoundBooks::in(*row));
+                }
+            }
             QHash<int, QVariant> coverVersions;
             for (const QJsonValue &item : items) {
                 const QVariantMap book = item.toObject().toVariantMap();
                 coverVersions.insert(book.value("id").toInt(), book.value("coverVersion"));
                 // Every series a book is in, or every author it has
-                const QStringList bookNames = series ? seriesNames(book) : book.value("authors").toStringList();
-                const QString key = companionKey(book);
-                for (const QString &name : bookNames) {
-                    QStringList &formats = booksOf[name][key];
-                    for (const QString &format : ownFormats(book)) {
-                        if (!formats.contains(format))
-                            formats.append(format);
-                    }
-                    if (!series) {
-                        QStringList &names = seriesOf[name][key];
-                        for (const QString &seriesName : seriesNames(book)) {
-                            if (!names.contains(seriesName))
-                                names.append(seriesName);
-                        }
-                    }
+                for (const QString &name : series ? seriesNames(book) : book.value("authors").toStringList()) {
+                    if (idNamed.contains(name))
+                        found[idNamed.value(name)].add(book, !series);
                 }
             }
-            const bool more = morePages(page, LOOKUP_PAGE_SIZE, result);
-            m_database->transaction([&]() {
-                for (const int id : ids) {
-                    QVariantMap *found = rowWithId(groups->rows, id);
-                    if (!found)
-                        continue;
-                    QVariantMap &row = *found;
-                    const QString name = row.value("name").toString();
-                    // What an earlier lookup found is replaced
-                    if (page == 0) {
-                        row.insert("formats", QStringList());
-                        row.insert("books", QVariantMap());
-                        row.insert("bookSeries", QVariantMap());
-                    }
-                    QVariantMap rowBooks = row.value("books").toMap();
-                    QStringList formats = row.value("formats").toStringList();
-                    const QHash<QString, QStringList> foundBooks = booksOf.value(name);
-                    for (auto it = foundBooks.constBegin(); it != foundBooks.constEnd(); ++it) {
-                        QStringList bookFormats = rowBooks.value(it.key()).toStringList();
-                        for (const QString &format : it.value()) {
-                            if (!bookFormats.contains(format))
-                                bookFormats.append(format);
-                            if (!formats.contains(format))
-                                formats.append(format);
-                        }
-                        rowBooks.insert(it.key(), bookFormats);
-                    }
-                    sortFormats(formats);
-                    row.insert("formats", formats);
-                    row.insert("books", rowBooks);
-                    QVariantList covers = row.value("covers").toList();
-                    for (QVariant &cover : covers) {
-                        QVariantMap map = cover.toMap();
-                        if (coverVersions.contains(map.value("id").toInt()))
-                            map.insert("coverVersion", coverVersions.value(map.value("id").toInt()));
-                        cover = map;
-                    }
-                    row.insert("covers", covers);
-                    if (!series) {
-                        QVariantMap bookSeries = row.value("bookSeries").toMap();
-                        const QHash<QString, QStringList> foundSeries = seriesOf.value(name);
-                        for (auto it = foundSeries.constBegin(); it != foundSeries.constEnd(); ++it) {
-                            QStringList inSeries = bookSeries.value(it.key()).toStringList();
-                            for (const QString &seriesName : it.value()) {
-                                if (!inSeries.contains(seriesName))
-                                    inSeries.append(seriesName);
-                            }
-                            bookSeries.insert(it.key(), inSeries);
-                        }
-                        row.insert("bookSeries", bookSeries);
-                    }
-                    if (more)
-                        continue;
-                    // Counted once all its books are in
-                    if (!rowBooks.isEmpty())
-                        row.insert("bookCount", rowBooks.size());
-                    if (!series && !rowBooks.isEmpty()) {
-                        QHash<QString, QStringList> bookSeries;
-                        const QVariantMap stored = row.value("bookSeries").toMap();
-                        for (auto it = stored.constBegin(); it != stored.constEnd(); ++it)
-                            bookSeries.insert(it.key(), it.value().toStringList());
-                        row.insert("seriesCount", seriesCount(bookSeries));
-                    }
-                    groups->lookedUp.insert(id);
-                    saveRowDetails(*groups, row);
+            QList<const QVariantMap *> complete;
+            for (auto it = found.constBegin(); it != found.constEnd(); ++it) {
+                QVariantMap *row = rowWithId(groups->rows, it.key());
+                it.value().putIn(*row, !series, !more);
+                row->insert("covers", withCoverVersions(row->value("covers").toList(), coverVersions));
+                if (!more) {
+                    groups->lookedUp.insert(it.key());
+                    complete.append(row);
                 }
+            }
+            m_database->transaction([&]() {
+                for (const QVariantMap *row : std::as_const(complete))
+                    saveRowDetails(*groups, *row);
             });
             showLoadedGroups(*groups);
             if (more)
@@ -1841,14 +1837,7 @@ QVariantMap BookOrbitClient::withSavedDetails(const Groups &groups, QVariantMap 
     QHash<int, QVariant> versions;
     for (const QVariant &cover : details.value("covers").toList())
         versions.insert(cover.toMap().value("id").toInt(), cover.toMap().value("coverVersion"));
-    QVariantList covers = row.value("covers").toList();
-    for (QVariant &cover : covers) {
-        QVariantMap map = cover.toMap();
-        if (versions.contains(map.value("id").toInt()))
-            map.insert("coverVersion", versions.value(map.value("id").toInt()));
-        cover = map;
-    }
-    row.insert("covers", covers);
+    row.insert("covers", withCoverVersions(row.value("covers").toList(), versions));
     return row;
 }
 
@@ -1918,19 +1907,12 @@ void BookOrbitClient::showLocalSeries(Groups &groups)
         for (const QVariantMap &book : std::as_const(books)) {
             const QString key = companionKey(book);
             QStringList bookFormats = keyed.value(key).toStringList();
-            for (const QString &format : book.value("downloadedFormats").toStringList()) {
-                if (!bookFormats.contains(format))
-                    bookFormats.append(format);
-                if (!formats.contains(format))
-                    formats.append(format);
-            }
+            addNew(bookFormats, book.value("downloadedFormats").toStringList());
+            addNew(formats, book.value("downloadedFormats").toStringList());
             keyed.insert(key, bookFormats);
             if (isFinished(book))
                 finished.insert(key);
-            for (const QString &author : book.value("authors").toStringList()) {
-                if (!authors.contains(author))
-                    authors.append(author);
-            }
+            addNew(authors, book.value("authors").toStringList());
             if (covers.size() < 2 && book.value("hasCover").toBool())
                 covers.append(QVariantMap{{"id", book.value("id")}, {"coverVersion", book.value("coverVersion")}});
             lastAddedAt = qMax(lastAddedAt, book.value("addedAt").toString());
@@ -1985,18 +1967,11 @@ void BookOrbitClient::showLocalAuthors()
         for (const QVariantMap &book : it.value()) {
             const QString key = companionKey(book);
             QStringList bookFormats = keyed.value(key).toStringList();
-            for (const QString &format : book.value("downloadedFormats").toStringList()) {
-                if (!bookFormats.contains(format))
-                    bookFormats.append(format);
-                if (!formats.contains(format))
-                    formats.append(format);
-            }
+            addNew(bookFormats, book.value("downloadedFormats").toStringList());
+            addNew(formats, book.value("downloadedFormats").toStringList());
             keyed.insert(key, bookFormats);
             QStringList &series = seriesOfBooks[key];
-            for (const QString &name : seriesNames(book)) {
-                if (!series.contains(name))
-                    series.append(name);
-            }
+            addNew(series, seriesNames(book));
             bookSeries.insert(key, series);
             lastAddedAt = qMax(lastAddedAt, book.value("addedAt").toString());
         }
@@ -2043,18 +2018,11 @@ void BookOrbitClient::showLocalCollections()
                 continue;
             const QVariantMap &book = *found;
             const QString key = companionKey(book);
-            if (!bookKeys.contains(key))
-                bookKeys.append(key);
+            addNew(bookKeys, {key});
             if (covers.size() < 2 && book.value("hasCover").toBool())
                 covers.append(QVariantMap{{"id", book.value("id")}, {"coverVersion", book.value("coverVersion")}});
-            for (const QString &author : book.value("authors").toStringList()) {
-                if (!authors.contains(author))
-                    authors.append(author);
-            }
-            for (const QString &format : book.value("downloadedFormats").toStringList()) {
-                if (!formats.contains(format))
-                    formats.append(format);
-            }
+            addNew(authors, book.value("authors").toStringList());
+            addNew(formats, book.value("downloadedFormats").toStringList());
         }
         if (bookKeys.isEmpty())
             continue;
@@ -2066,7 +2034,6 @@ void BookOrbitClient::showLocalCollections()
         row.insert("formats", formats);
         // All of them, for the collection's order
         row.insert("bookIds", collection.bookIds);
-        row.insert("bookKeys", bookKeys);
         row.insert("bookCount", int(bookKeys.size()));
         m_collections.rows.append(row);
     }
@@ -2219,15 +2186,9 @@ void BookOrbitClient::showGroups(Groups &groups)
                 continue;
             for (const QString &author : book.value("authors").toStringList()) {
                 QStringList &formats = downloaded[author][companionKey(book)];
-                for (const QString &format : ownFormats(book)) {
-                    if (!formats.contains(format))
-                        formats.append(format);
-                }
+                addNew(formats, ownFormats(book));
                 QStringList &series = downloadedSeries[author][companionKey(book)];
-                for (const QString &name : seriesNames(book)) {
-                    if (!series.contains(name))
-                        series.append(name);
-                }
+                addNew(series, seriesNames(book));
             }
         }
         for (QVariantMap row : shownRows(groups)) {
@@ -2255,10 +2216,7 @@ void BookOrbitClient::showGroups(Groups &groups)
                 continue;
             QStringList formats;
             for (const QStringList &bookFormats : std::as_const(wantedBooks)) {
-                for (const QString &format : bookFormats) {
-                    if (!formats.contains(format))
-                        formats.append(format);
-                }
+                addNew(formats, bookFormats);
             }
             sortFormats(formats);
             row.insert("bookCount", int(wantedBooks.size()));

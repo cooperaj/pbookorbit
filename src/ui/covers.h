@@ -56,6 +56,8 @@ private:
     // The folder for a cover or photo's files, one of 256 picked by the name's hash. name is
     // "<bookId>" for a cover or "author-<authorId>" for a photo.
     QString folder(const QString &name) const;
+    // A file of the name's in its folder, "<name>-<rest>"
+    QString filePath(const QString &name, const QString &rest) const;
     // A size made for the screen, "<name>-<version hash>-<width>x<height>.png"
     QString sizedFile(const Request &request) const;
     // The download, as it came (JPEG or PNG), "<name>-<version hash>-source"
