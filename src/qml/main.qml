@@ -410,7 +410,6 @@ Window {
         // of the collections in view looked up. Offline, the saved collections' downloaded
         // books.
         onVisibleChanged: if (visible) bookOrbit.loadCollections()
-        onRowsWanted: (first, last) => { if (visible) bookOrbit.lookUpCollectionRows(first, last) }
         onGroupClicked: (collection) => root.openBooksOf("collection", [String(collection.id)], collection.name)
     }
 
@@ -435,7 +434,6 @@ Window {
         // Reloaded every time the view opens, showing the last rows until then, and the books
         // of the series in view looked up. Offline, the downloaded books'.
         onVisibleChanged: if (visible) bookOrbit.loadSeries()
-        onRowsWanted: (first, last) => { if (visible) bookOrbit.lookUpSeriesRows(first, last) }
         onGroupClicked: (series) => root.openBooksOf("series", [series.name])
     }
 
@@ -465,7 +463,6 @@ Window {
         menus: listMenus
         // Reloaded every time the view opens, like the series
         onVisibleChanged: if (visible) bookOrbit.loadAuthors()
-        onRowsWanted: (first, last) => { if (visible) bookOrbit.lookUpAuthorRows(first, last) }
         onGroupClicked: (author) => {
             authorInfoPage.show(author.id)
             root.showingAuthor = true

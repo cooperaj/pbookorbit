@@ -15,6 +15,8 @@ ListPage {
 
     loading: !loaded && online
     empty: loaded
+    // The rows in view have their books looked up, not while hidden
+    onRowsWanted: (first, last) => { if (visible) bookOrbit.lookUpRows(model, first, last) }
 
     delegate: GroupRow {
         required property var book
