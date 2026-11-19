@@ -26,7 +26,7 @@ UiTestCase {
                 visible: true
                 heading: "Find your books?"
                 message: "There are 3 books on this device already."
-                buttons: [["Find books", "search"], ["Not now", "close"]]
+                buttons: [["Not now", "close"], ["Find books", "search"]]
             }
         }
     }

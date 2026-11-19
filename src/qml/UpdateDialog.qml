@@ -25,21 +25,21 @@ SystemDialog {
             upToDate: {heading: "PBookOrbit is up to date",
                        message: "You have the latest version, " + installed + ".", buttons: [["OK", "close"]]},
             failed: {heading: "Couldn't check for updates", message: updater.error, error: true,
-                     buttons: [["Try again", "check"]].concat(close)},
+                     buttons: close.concat([["Try again", "check"]])},
             noBuild: {heading: "Version " + latest + " isn't ready for this device",
                       message: "It has no build for this device yet. You have version " + installed + ".",
-                      buttons: changelog.concat(close)},
+                      buttons: close.concat(changelog)},
             // Installing needs the launcher, otherwise it's the GitHub page
             available: {heading: "Version " + latest + " is available",
                         message: "You have version " + installed + "."
                                  + (updater.canInstall ? "" : " Get the new one from its GitHub page."),
-                        buttons: (updater.canInstall ? [["Update", "install"]] : []).concat(changelog, close)},
+                        buttons: close.concat(changelog, updater.canInstall ? [["Update", "install"]] : [])},
             downloading: {heading: "Downloading version " + latest, buttons: [["Cancel", "close"]]},
             installFailed: {heading: "Couldn't update", message: updater.error, error: true,
-                            buttons: [["Try again", "install"]].concat(close)},
+                            buttons: close.concat([["Try again", "install"]])},
             ready: {heading: "Version " + latest + " is ready",
                     message: "Restart PBookOrbit to finish. Otherwise it updates the next time you open it.",
-                    buttons: [["Restart now", "restart"], ["Later", "close"]]},
+                    buttons: [["Later", "close"], ["Restart now", "restart"]]},
             restarting: {heading: "Restarting…", message: "PBookOrbit will open again in a moment.", buttons: []},
         }
         // Before the first check, and after one is cancelled, the dialog is hidden

@@ -56,9 +56,9 @@ SystemDialog {
 
     icon: step === "failed" ? "icon_error" : "icon_question"
     percent: step === "searching" ? bookFinder.percent : -1
-    buttons: step === "offer" ? [["Find books", "search"], ["Not now", "close"]]
+    buttons: step === "offer" ? [["Not now", "close"], ["Find books", "search"]]
              : step === "searching" ? [["Cancel", "close"]]
-             : step === "failed" ? [["Try again", "search"], ["Close", "close"]]
+             : step === "failed" ? [["Close", "close"], ["Try again", "search"]]
              : [["OK", "close"]]
 
     onPressed: (action) => {

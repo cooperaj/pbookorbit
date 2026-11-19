@@ -748,7 +748,7 @@ Window {
 
         icon: failed ? "icon_error" : "icon_question"
         buttons: failed ? [["Close", "no"]]
-                 : kinds.length > 1 ? kinds.map(k => [k, k]).concat([["Cancel", "no"]])
+                 : kinds.length > 1 ? [["Cancel", "no"]].concat(kinds.map(k => [k, k]))
                  : [["No", "no"], ["Yes", onlyKind !== "" ? onlyKind : "all"]]
         onPressed: (action) => {
             if (action !== "no") {
@@ -810,7 +810,7 @@ Window {
         property bool restarting: false
         visible: launcherTile.added
         icon: "icon_information"
-        buttons: restarting ? [] : [["Restart now", "restart"], ["Later", "close"]]
+        buttons: restarting ? [] : [["Later", "close"], ["Restart now", "restart"]]
         onPressed: (action) => {
             if (action === "restart") {
                 restarting = true
