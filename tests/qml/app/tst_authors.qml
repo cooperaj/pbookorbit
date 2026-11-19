@@ -70,9 +70,10 @@ AppTestCase {
         return list
     }
 
-    function filterBy(option) {
+    // Shows only "Ebooks" or "Audiobooks", by unticking the other
+    function showOnly(option) {
         tap("filterButton", find("authorsPage"))
-        tap(option, find("filterMenu"))
+        tap(option === "Ebooks" ? "Audiobooks" : "Ebooks", find("filterMenu"))
     }
 
     function setDownloadedOnly() {
@@ -163,7 +164,7 @@ AppTestCase {
         wait(300)
         verify(!lookedUp("author").includes("Author 60"), "not the last")
 
-        filterBy("Audiobooks")
+        showOnly("Audiobooks")
 
         tryVerify(() => lookedUp("author").includes("Author 60"), 5000, "every author, without scrolling")
     }
@@ -203,7 +204,7 @@ AppTestCase {
     function test_audiobooksFilter() {
         openLoadedAuthors()
 
-        filterBy("Audiobooks")
+        showOnly("Audiobooks")
 
         compare(rows(), "Frank Herbert (1), James S. A. Corey (1)")
         compare(row("Frank Herbert").group.formats, ["epub", "m4b"])
@@ -213,7 +214,7 @@ AppTestCase {
     function test_ebooksFilter() {
         openLoadedAuthors()
 
-        filterBy("Ebooks")
+        showOnly("Ebooks")
 
         compare(rows(), "Ann Leckie (1), Dan Simmons (2), Frank Herbert (3), James S. A. Corey (3)",
                 "all but the audiobook-only Leviathan Wakes")

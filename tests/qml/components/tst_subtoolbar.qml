@@ -42,7 +42,7 @@ UiTestCase {
     }
 
     function test_showsItsLabels() {
-        make({}, {filterIndex: 1, sortIndex: 1})
+        make({}, {audiobooks: false, sortIndex: 1})
 
         compare(find("filterButton").text, "Ebooks")
         compare(find("sortButton").text, "By Author")
@@ -79,9 +79,9 @@ UiTestCase {
         compare(find("sortButton").icon, "sorting_ascending")
     }
 
-    // Collections and series have no content type to filter by
+    // Collections have no content type or library to filter by
     function test_filterCanBeLeftOut() {
-        make({}, {hasFilter: false})
+        make({}, {hasContentType: false})
 
         verify(!find("filterButton").visible, "no filter button")
         verify(find("sortButton").visible, "the sort button")

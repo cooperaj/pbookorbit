@@ -175,9 +175,9 @@ UiTestCase {
 
         compare(find("sortButton").text, "By Title")
         compare(find("filterButton").text, "All titles")
-        root.query.chooseFilter(2)
+        root.query.showContent("ebook", false)
         compare(find("filterButton").text, "Audiobooks")
-        root.query.hasFilter = false
+        root.query.hasContentType = false
         verify(!find("filterButton").visible, "no filter when the query has none")
     }
 

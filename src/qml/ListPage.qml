@@ -67,6 +67,7 @@ Rectangle {
     Connections {
         target: page.query
         function onApplied() { rows.positionViewAtBeginning() }
+        function onLibraryChosen() { rows.positionViewAtBeginning() }
     }
 
     PageHeader {

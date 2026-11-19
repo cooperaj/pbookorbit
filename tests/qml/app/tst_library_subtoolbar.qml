@@ -19,7 +19,8 @@ AppTestCase {
         openLibrary("libraries/mixed.json", "libraries/mixed-jump-buckets.json", options)
     }
 
-    function chooseFilter(option) {
+    // Unticks a content type, leaving the other
+    function untick(option) {
         tap("filterButton", find("bookList"))
         tap(option, find("filterMenu"))
     }
@@ -33,7 +34,7 @@ AppTestCase {
         openMixedLibrary()
         tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer, The Martian", 5000, "the whole library")
 
-        chooseFilter("Audiobooks")
+        untick("Ebooks")
 
         tryVerify(() => titlesIn(find("bookList")) === "The Martian", 5000, "only The Martian")
         compare(find("filterButton", find("bookList")).text, "Audiobooks")
@@ -43,10 +44,24 @@ AppTestCase {
         openMixedLibrary()
         tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer, The Martian", 5000, "the whole library")
 
-        chooseFilter("Ebooks")
+        untick("Audiobooks")
 
         tryVerify(() => titlesIn(find("bookList")) === "Dune, Neuromancer", 5000, "only the ebooks")
         compare(find("filterButton", find("bookList")).text, "Ebooks")
+    }
+
+    // Something is always listed, and the menu stays open for the other box
+    function test_theLastContentTypeCantBeUnticked() {
+        openMixedLibrary()
+        untick("Ebooks")
+        const menu = find("filterMenu")
+        verify(menu.visible, "the menu stays open")
+        verify(find("Audiobooks", menu).locked, "Audiobooks is locked")
+
+        tap("Audiobooks", menu)
+
+        verify(find("Audiobooks", menu).checked, "still ticked")
+        tryVerify(() => titlesIn(find("bookList")) === "The Martian", 5000, "still the audiobooks")
     }
 
     function test_sortByAuthor() {

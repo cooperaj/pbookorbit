@@ -22,6 +22,7 @@ UiTestCase {
     }
 
     SignalSpy { id: applied; signalName: "applied" }
+    SignalSpy { id: libraryChosen; signalName: "libraryChosen" }
 
     property var query
 
@@ -31,6 +32,8 @@ UiTestCase {
         verify(query)
         applied.target = query
         applied.clear()
+        libraryChosen.target = query
+        libraryChosen.clear()
     }
 
     function test_eachSortStartsInItsOwnDirection() {
@@ -69,9 +72,11 @@ UiTestCase {
         make()
 
         query.chooseSort(1)
-        query.chooseFilter(0)
+        query.showContent("ebook", true)
+        query.chooseLibrary(-1)
 
         compare(applied.count, 0)
+        compare(libraryChosen.count, 0)
     }
 
     // The chosen sort's name and field, for the sub-toolbar and the request
@@ -87,33 +92,70 @@ UiTestCase {
         compare(query.sortField, "author")
     }
 
-    // The content type's name and the formats it stands for; all titles is no filter
-    function test_chosenFilter() {
+    // Both content types is no filter
+    function test_bothContentTypesToStartWith() {
         make()
+
+        verify(query.ebooks && query.audiobooks, "both")
         compare(query.filterName, "All titles")
         compare(query.formats, [])
+        compare(query.contentNoun, "books")
+    }
 
-        query.chooseFilter(1)
+    function test_justEbooks() {
+        make()
+
+        query.showContent("audiobook", false)
 
         compare(query.filterName, "Ebooks")
+        compare(query.contentNoun, "ebooks")
         verify(query.formats.indexOf("epub") >= 0, "ebook formats")
         verify(query.formats.indexOf("cbz") >= 0, "comics too")
         verify(query.formats.indexOf("m4b") < 0, "not audiobook ones")
+        compare(applied.count, 1)
+    }
 
-        query.chooseFilter(2)
+    function test_justAudiobooks() {
+        make()
+
+        query.showContent("ebook", false)
 
         compare(query.filterName, "Audiobooks")
+        compare(query.contentNoun, "audiobooks")
         verify(query.formats.indexOf("m4b") >= 0, "audiobook formats")
         verify(query.formats.indexOf("epub") < 0, "not ebook ones")
     }
 
-    function test_choosingAFilter() {
+    // Something is always shown
+    function test_theLastContentTypeStays() {
+        make()
+        query.showContent("ebook", false)
+
+        query.showContent("audiobook", false)
+
+        verify(query.audiobooks, "audiobooks stay")
+        compare(applied.count, 1, "only the first changed anything")
+    }
+
+    function test_bothAgain() {
+        make()
+        query.showContent("ebook", false)
+
+        query.showContent("ebook", true)
+
+        compare(query.filterName, "All titles")
+        compare(query.formats, [])
+    }
+
+    // Choosing a library is the view's to act on
+    function test_choosingALibrary() {
         make()
 
-        query.chooseFilter(2)
+        query.chooseLibrary(2)
 
-        compare(query.filterIndex, 2)
-        compare(applied.count, 1)
+        compare(libraryChosen.count, 1)
+        compare(libraryChosen.signalArguments[0][0], 2)
+        compare(applied.count, 0)
     }
 
     function test_downloadedOnlyAsChosen() {

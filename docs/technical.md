@@ -59,8 +59,9 @@ Data lives in an SQLite database, `pbookorbit.db`, in the system config folder
 the emulator). Set `PBOOKORBIT_DB` to use a different file, for example in tests. With
 the device plugged in, `sqlite3 <mount>/system/config/pbookorbit.db` opens it from a PC.
 
-- `settings` is key/value: `serverUrl`, `username`, `refreshToken`, `accent` (the
-  BookOrbit accent colour), `recentSearches` (JSON array), `findBooksOffered` (0/1) and
+- `settings` is key/value: `serverUrl`, `username`, `refreshToken`, `libraryId` (the
+  library chosen for the book list, forgotten on signing out), `accent` (the BookOrbit
+  accent colour), `recentSearches` (JSON array), `findBooksOffered` (0/1) and
   `diagnosticsLogging` (0/1).
 - `books` caches BookOrbit books by id. `data` holds the book's list entry as JSON, so
   new fields don't need a schema change. `title` and `series` are generated columns for
@@ -77,12 +78,15 @@ the device plugged in, `sqlite3 <mount>/system/config/pbookorbit.db` opens it fr
   one's book ids, newest first.
 - `list_cache` keeps what each list last showed, by name (`library`, `collections`,
   `series`, `authors`, and `booksOf:<field>:<values>` for an author's, series' or
-  collection's books), as JSON. A list shows these rows when first opened, until the
+  collection's books, with `:<libraryId>` after the series, authors and books-of names
+  when they show one library), as JSON. Choosing another library for the book list
+  empties `library`. A list shows these rows when first opened, until the
   server's arrive. A book list keeps its first two screens of rows, with its sort and
   filter, and shows them only for the same ones. The 20 books-of pages loaded most
   recently are kept.
 - `group_details` keeps what looking up a series', collection's or author's books found,
-  by kind (`series`, `collections`, `authors`) and id: the count with an ebook and
+  by kind (`series`, `collections`, `authors`, with `:<libraryId>` for one library's, as
+  counts differ by library) and id: the count with an ebook and
   audiobook as one, the formats, the cover versions, a collection's authors, and an
   author's books' formats and series (for the format filter and their info page). Only
   rows that have been on screen are looked up, each once per time their list loads,
@@ -239,7 +243,11 @@ builds its rows from the downloaded books.
 
 ![The book list and group list classes and what each subclass adds](images/cpp-lists.svg)
 
-`Session` holds the tokens, `online`, `busy` and the library id. A list request reconnects
+`Session` holds the tokens, `online`, `busy`, the user's libraries and the book list's
+library: the one saved in `libraryId` if the server still has it, otherwise the first.
+Search and Find books use it too. Series, authors and books-of lists each have their own
+library, or -1 for every library's, which `Session::booksPath()` turns into
+`/books/query`. A list request reconnects
 Wi-Fi if it has gone idle, refreshes the access token when needed and retries once on a
 401. `request()` and `download()` don't set `busy`, and `startStream()` refreshes the
 token first so it outlasts a large download.
@@ -252,6 +260,8 @@ These keep the parts in step:
 |---|---|---|
 | First frame drawn | `start()`: reload the library and theme, if a session was saved | `main.cpp` |
 | `Session::started` | `start()`, after signing in | `BookOrbitClient` |
+| `Session::libraryChanged` | The book list reloads without its cached rows; search results are cleared | `BookOrbitClient` |
+| Leaving Series or Authors | Back to every library's groups, loaded when next shown | QML |
 | `Session::ended` | `clearLists()`: database caches, `GroupDetails` and every list emptied, before QML's handlers run | `BookOrbitClient` |
 | Back online | Group lists forget the rows they built offline | `BookOrbitClient` |
 | `bookOrbit.setLocalBooks()` | Every list takes the downloaded books; local-only lists relist | QML |
@@ -271,7 +281,11 @@ views gives it a `title`, shown in a `PageHeader` with a back button. It asks fo
 they come into view with `rowsWanted(first, last)`, and takes its sort and filter labels,
 and the rail's direction, from its query, going back to the top whenever the query
 changes. A query's `sorts` are `{name, field, descending}`, and it gives the chosen
-`sortField` and content type `formats` for the request. Two components extend it with
+`sortField` and content type `formats` for the request. Ebooks and Audiobooks are
+checkboxes, and the last one ticked can't be unticked. A query with `hasLibraries` puts a
+Libraries section (radio buttons, plus All libraries with `allLibraries`) above them
+when the server has several and can be reached, and its filter button then names the
+library; it says `libraryChosen(id)` and leaves the view to act on it. Two components extend it with
 their row:
 
 - `BookListPage` has a `BookRow` per book and reports taps and holds. The library, a
@@ -491,8 +505,8 @@ On a 401 the client refreshes and retries the request once.
 
 ### Libraries and books
 
-- `GET /libraries` returns the user's libraries, `[{id, name, bookCount, ...}]`. The app
-  uses the first one.
+- `GET /libraries` returns the user's libraries, `[{id, name, bookCount, ...}]`, in the
+  user's order.
 - `POST /libraries/:id/books` takes a `BookQuery` (`packages/types/src/query.ts`) and
   returns a page of books:
 
@@ -501,9 +515,13 @@ On a 401 the client refreshes and retries the request once.
    "q": "optional search text", "filter": {"optional": "GroupRule"}}
   ```
 
-  The response is `{items, total, page, size}`. Items include `id`, `title`, `authors`,
-  `seriesName`, `seriesIndex`, `files: [{id, format, role, sizeBytes}]`, `hasCover`,
-  `readingProgress` and `readStatus`. Sort fields are listed in `StaticSortField`.
+  The response is `{items, total, page, size}`. Items include `id`, `libraryId`, `title`,
+  `authors`, `seriesName`, `seriesIndex`, `files: [{id, format, role, sizeBytes}]`,
+  `hasCover`, `readingProgress` and `readStatus`. Sort fields are listed in
+  `StaticSortField`.
+- `POST /books/query` takes the same query across every library the user can see. It has
+  no jump buckets, and its title order uses a sort title the items don't include, so
+  lists from it sorted by title or author have no A-Z sections.
 - `POST /libraries/:id/books/jump-buckets` takes the same query plus `maxBuckets` (8 to
   64) and returns `{buckets: [{key, label, index, isUnknown}], kind, granularity}`, each
   bucket's `index` being its first row. Letter sorts give the A-Z rail's sections. Date
@@ -526,11 +544,13 @@ On a 401 the client refreshes and retries the request once.
 
 ### Authors and series
 
-- `GET /authors?libraryId=&sort=name&order=asc&page=&size=` lists a library's authors.
+- `GET /authors?libraryId=&sort=name&order=asc&page=&size=` lists a library's authors,
+  or every library's without `libraryId`.
 - `GET /authors/:id` returns one author, including `name`, `sortName`, `description`
   (plain text), `bookCount`, `birthDate`/`birthYear`, `deathDate`/`deathYear`,
   `website`, `genres` and `imageUrl`.
-- `GET /series?libraryId=&sort=name&order=asc&page=&size=` lists a library's series, each
+- `GET /series?libraryId=&sort=name&order=asc&page=&size=` lists a library's series, or
+  every library's without `libraryId`, with `libraryNames` for the libraries each is in,
   with `coverBookIds` for its covers but no cover versions, formats or ebook and
   audiobook pairs. The client gets those from the series' books, `POST
   /libraries/:id/books` filtered on `series includesAny [names]`.

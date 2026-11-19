@@ -180,7 +180,7 @@ AppTestCase {
         openLibrary30()
 
         tap("filterButton", find("bookList"))
-        tap("Ebooks", find("filterMenu"))
+        tap("Audiobooks", find("filterMenu"))
 
         const empty = find("libraryEmptyState")
         tryVerify(() => empty.visible, 5000, "No ebooks")

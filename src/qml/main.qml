@@ -130,6 +130,10 @@ Window {
             { name: "Recently read", field: "lastReadAt", descending: true }
         ]
         sortIndex: 1   // Title, matching bookOrbit's default
+        // The session's, kept until signing out
+        hasLibraries: true
+        libraryId: bookOrbit.session.libraryId
+        onLibraryChosen: (id) => bookOrbit.session.chooseLibrary(id)
         onApplied: bookOrbit.library.setQuery(sortField, descending(), formats, downloadedOnly)
     }
     // Collection sorts from BookOrbit's collections page, minus "Custom order": A-Z, and
@@ -140,7 +144,7 @@ Window {
             { name: "Name", field: "name", descending: false },
             { name: "Book count", field: "bookCount", descending: true }
         ]
-        hasFilter: false
+        hasContentType: false
         onApplied: bookOrbit.collections.setSort(sortField, descending())
     }
     // Series sorts from BookOrbit's series page: A-Z, then most books, latest added and
@@ -153,7 +157,10 @@ Window {
             { name: "Recently added", field: "lastAddedAt", descending: true },
             { name: "Read progress", field: "readProgress", descending: true }
         ]
-        hasFilter: false
+        hasContentType: false
+        hasLibraries: true
+        allLibraries: true
+        onLibraryChosen: (id) => root.chooseGroupLibrary(seriesQuery, bookOrbit.series, id)
         onApplied: bookOrbit.series.setSort(sortField, descending())
     }
     // Author sorts from BookOrbit's authors page: A-Z by name or surname, most books and
@@ -166,17 +173,36 @@ Window {
             { name: "Book count", field: "bookCount", descending: true },
             { name: "Recently added", field: "lastAddedAt", descending: true }
         ]
+        hasLibraries: true
+        allLibraries: true
+        onLibraryChosen: (id) => root.chooseGroupLibrary(authorsQuery, bookOrbit.authors, id)
         onApplied: bookOrbit.authors.setQuery(sortField, descending(), formats, downloadedOnly)
+    }
+    // Shows the groups of one library, or all for -1, in Series or Authors
+    function chooseGroupLibrary(query, groups, id) {
+        query.libraryId = id
+        groups.setLibrary(id)
+        groups.load()
+    }
+    // Leaving Series or Authors, they go back to every library's groups, loaded when next
+    // shown
+    onShowingSeriesChanged: if (!showingSeries) resetGroupLibrary(seriesQuery, bookOrbit.series)
+    onShowingAuthorsChanged: if (!showingAuthors) resetGroupLibrary(authorsQuery, bookOrbit.authors)
+    function resetGroupLibrary(query, groups) {
+        query.libraryId = -1
+        groups.setLibrary(-1)
     }
     // An author's series: the Series view's sorts, kept between authors
     ListQuery {
         id: authorSeriesQuery
         sorts: seriesQuery.sorts
-        hasFilter: false
+        hasContentType: false
         onApplied: bookOrbit.authorSeries.setSort(sortField, descending())
     }
+    // In the library Authors shows
     function openAuthorSeries(name) {
         authorSeriesPage.name = name
+        bookOrbit.authorSeries.setLibrary(authorsQuery.libraryId)
         bookOrbit.authorSeries.show(name)
         authorSeriesPage.list.positionViewAtBeginning()
         showingAuthorSeries = true
@@ -395,9 +421,7 @@ Window {
         // books says so.
         loading: bookOrbit.session.busy
         empty: bookOrbit.library.total === 0
-        emptyTitle: libraryQuery.downloadedOnly
-                    ? ["No downloaded books", "No downloaded ebooks", "No downloaded audiobooks"][libraryQuery.filterIndex]
-                    : ["No books", "No ebooks", "No audiobooks"][libraryQuery.filterIndex]
+        emptyTitle: (libraryQuery.downloadedOnly ? "No downloaded " : "No ") + libraryQuery.contentNoun
         emptyText: !bookOrbit.session.online ? offlineText()
                    : libraryQuery.downloadedOnly ? "Books you download show here, and can be read offline."
                    : "Books in your BookOrbit library show here."
@@ -446,7 +470,8 @@ Window {
         // Reloaded every time the view opens, showing the last rows until then, and the books
         // of the series in view looked up. Offline, the downloaded books'.
         onVisibleChanged: if (visible) bookOrbit.series.load()
-        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "", root.seriesLibrary(series, -1))
+        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "",
+                                                     root.seriesLibrary(series, seriesQuery.libraryId))
     }
 
     GroupListPage {
@@ -456,13 +481,13 @@ Window {
         groups: bookOrbit.authors
         // Filtered by format, authors appear once every author's books have been looked up.
         // Downloaded only uses the downloaded books.
-        loaded: bookOrbit.authors.loaded && (bookOrbit.authors.allLookedUp || authorsQuery.filterIndex === 0
+        loaded: bookOrbit.authors.loaded && (bookOrbit.authors.allLookedUp || authorsQuery.allContent
                                              || authorsQuery.downloadedOnly)
-        emptyTitle: authorsQuery.downloadedOnly || authorsQuery.filterIndex === 0 ? "No authors"
-                    : "No authors with " + authorsQuery.filterName.toLowerCase()
+        emptyTitle: authorsQuery.downloadedOnly || authorsQuery.allContent ? "No authors"
+                    : "No authors with " + authorsQuery.contentNoun
         emptyText: !bookOrbit.session.online ? offlineText("authors of downloaded books")
                    : authorsQuery.downloadedOnly ? "Turn off Downloaded only to see every author."
-                   : authorsQuery.filterIndex !== 0 ? "Choose All titles to see every author."
+                   : !authorsQuery.allContent ? "Tick Ebooks and Audiobooks to see every author."
                    : "Authors show here once the library has books."
         anchors.top: header.bottom
         anchors.bottom: footer.top
@@ -535,25 +560,52 @@ Window {
         joinedCorner: "topLeft"
         sidePadding: 0
 
-        MenuHeading { text: "Content type" }
+        // Only with a choice of libraries
+        MenuHeading {
+            objectName: "libraries heading"
+            visible: root.activeQuery.libraryOptions.length > 0
+            text: "Libraries"
+        }
         Repeater {
-            model: root.activeQuery.filterOptions
-            RadioMenuItem {
-                required property string modelData
+            model: root.activeQuery.libraryOptions
+            OptionMenuItem {
+                required property var modelData
                 required property int index
-                objectName: modelData
-                text: modelData
-                checked: index === root.activeQuery.filterIndex
-                showSeparator: index < root.activeQuery.filterOptions.length - 1
+                objectName: "library " + modelData.name
+                text: modelData.name
+                checked: modelData.id === root.activeQuery.libraryId
+                showSeparator: index < root.activeQuery.libraryOptions.length - 1
                 onClicked: {
-                    root.activeQuery.chooseFilter(index)
+                    root.activeQuery.chooseLibrary(modelData.id)
                     root.closeDropdowns()
                 }
+            }
+        }
+        // Either or both, so the menu stays open
+        MenuHeading {
+            visible: root.activeQuery.hasContentType
+            text: "Content type"
+        }
+        Repeater {
+            model: root.activeQuery.hasContentType ? [["ebook", "Ebooks", root.activeQuery.ebooks],
+                                                      ["audiobook", "Audiobooks", root.activeQuery.audiobooks]] : []
+            OptionMenuItem {
+                required property var modelData
+                required property int index
+                objectName: modelData[1]
+                text: modelData[1]
+                checkbox: true
+                checked: modelData[2]
+                // The last one ticked
+                locked: !root.activeQuery.ebooks || !root.activeQuery.audiobooks
+                showSeparator: index === 0
+                onClicked: root.activeQuery.showContent(modelData[0], !checked)
             }
         }
         // Tied to the content type, so the menu stays open for that choice too
         SwitchMenuItem {
             objectName: "downloadedOnly"
+            visible: root.activeQuery.hasContentType
             text: "Downloaded only"
             checked: root.activeQuery.downloadedOnly
             // Always on offline
@@ -574,7 +626,7 @@ Window {
         MenuHeading { text: "Sort by" }
         Repeater {
             model: root.activeQuery.sortOptions
-            RadioMenuItem {
+            OptionMenuItem {
                 required property string modelData
                 required property int index
                 objectName: modelData
@@ -666,14 +718,15 @@ Window {
         anchors.fill: parent
         visible: root.showingAuthor
         onBack: root.showingAuthor = false
+        // In the library Authors shows
         onBooksClicked: {
-            root.openBooksOf("author", [authorInfoPage.author.name])
+            root.openBooksOf("author", [authorInfoPage.author.name], "", authorsQuery.libraryId)
         }
         // Go straight to the series if there's only one
         onSeriesClicked: {
             const names = authorInfoPage.seriesNames
             if (authorInfoPage.seriesCount === 1 && names.length === 1)
-                root.openBooksOf("series", [names[0]])
+                root.openBooksOf("series", [names[0]], "", authorsQuery.libraryId)
             else
                 root.openAuthorSeries(authorInfoPage.author.name)
         }
@@ -692,7 +745,8 @@ Window {
             root.closeDropdowns()
             root.showingAuthorSeries = false
         }
-        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "", root.seriesLibrary(series, -1))
+        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "",
+                                                     root.seriesLibrary(series, authorsQuery.libraryId))
     }
 
     BooksOfPage {

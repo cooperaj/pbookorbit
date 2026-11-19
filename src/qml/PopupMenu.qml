@@ -6,7 +6,7 @@ import "units.js" as Units
 // corner only where a menu joins a tab (the library's "ALL BOOKS", Libby's filter tab); set
 // joinedCorner for that. Menus opened from buttons keep all four corners rounded.
 //
-// Fill with PopupMenuItems, or MenuHeadings and RadioMenuItems with sidePadding: 0 for a
+// Fill with PopupMenuItems, or MenuHeadings and OptionMenuItems with sidePadding: 0 for a
 // Libby-style options menu. The last visible row has no line below it.
 Panel {
     id: menu
