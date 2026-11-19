@@ -272,15 +272,25 @@ Window {
             if (!authorsQuery.downloadedChosen)
                 authorsQuery.applied()
             // Offline, series are the downloaded books'
-            if (showingSeries)
-                bookOrbit.series.load()
-            if (showingAuthorSeries)
-                bookOrbit.authorSeries.show(authorSeriesPage.name)
-            if (showingAuthors)
-                bookOrbit.authors.load()
-            if (showingCollections)
-                bookOrbit.collections.load()
+            root.reloadGroupLists()
         }
+        // The library list reloads itself; pages opened over the lists were the old library's
+        function onLibraryChanged() {
+            root.closePages()
+            root.reloadGroupLists()
+        }
+    }
+
+    // Loads the group lists on screen again
+    function reloadGroupLists() {
+        if (showingSeries)
+            bookOrbit.series.load()
+        if (showingAuthorSeries)
+            bookOrbit.authorSeries.show(authorSeriesPage.name)
+        if (showingAuthors)
+            bookOrbit.authors.load()
+        if (showingCollections)
+            bookOrbit.collections.load()
     }
     Component.onCompleted: {
         bookOrbit.setLocalBooks(downloads.downloadedBooks())
@@ -609,6 +619,17 @@ Window {
             onClicked: {
                 menu.visible = false
                 findBooksDialog.search()
+            }
+        }
+        // Only when there's another to choose
+        PopupMenuItem {
+            objectName: "changeLibrary"
+            visible: bookOrbit.session.signedIn && bookOrbit.session.online
+                     && bookOrbit.session.libraryCount > 1
+            text: "Change library"
+            onClicked: {
+                menu.visible = false
+                bookOrbit.session.changeLibrary()
             }
         }
         // Signed out too, in case an update is what signing in needs

@@ -2,7 +2,9 @@ import QtQuick
 import "../helpers"
 
 // Choosing which library to use when the server has several: Books, Audiobooks and Comics
-// (libraries/several.json). Asked once, after signing in, and kept until signing out.
+// (libraries/several.json). Asked once, after signing in, and kept until signing out or
+// changed from the menu. Books has Dune, Hyperion and Neuromancer; Audiobooks has Dune and
+// Dune Messiah.
 AppTestCase {
     name: "ChoosingLibrary"
 
@@ -14,7 +16,7 @@ AppTestCase {
         fakeServer.respond("POST", "/api/v1/auth/refresh", 200, "auth/refresh-success.json")
         serveLibrary()
         fakeServer.respond("GET", "/api/v1/libraries", 200, "libraries/several.json")
-        fakeServer.respond("POST", audiobooks, 200, "libraries/books.json")
+        fakeServer.respond("POST", audiobooks, 200, "libraries/search-dune.json")
         fakeServer.respond("POST", audiobooks + "/jump-buckets", 200, "libraries/jump-buckets.json")
     }
 
@@ -37,6 +39,18 @@ AppTestCase {
             rows.push(row.selected ? "[" + row.modelData.name + "]" : row.modelData.name)
         }
         return rows.join(", ")
+    }
+
+    // Signed in with Books chosen, and its books listed
+    function openOnBooks() {
+        open(Object.assign({libraryId: "1"}, savedSession))
+        bookRow("Hyperion")
+    }
+
+    function openChangeLibrary() {
+        tap("menuButton")
+        tap("changeLibrary")
+        tryVerify(() => find("libraryDialog").visible, 5000, "the dialog shows")
     }
 
     function chooseLibrary(name) {
@@ -156,5 +170,90 @@ AppTestCase {
         compare(list.height, 5 * list.rowHeight)
         verify(list.contentHeight > list.height, "the list scrolls")
         verify(find("library Library 1").visible)
+    }
+
+    function test_changeLibraryIsInTheMenuWithSeveral() {
+        openOnBooks()
+
+        tap("menuButton")
+
+        verify(find("changeLibrary").visible)
+    }
+
+    function test_noChangeLibraryWithOne() {
+        fakeServer.respond("GET", "/api/v1/libraries", 200, "libraries/list.json")
+        openOnBooks()
+
+        tap("menuButton")
+
+        verify(!find("changeLibrary").visible)
+    }
+
+    function test_changingStartsOnTheLibraryInUse() {
+        openOnBooks()
+
+        openChangeLibrary()
+
+        compare(libraryRows(), "[Books], Audiobooks, Comics")
+        verify(find("cancelButton").visible, "a change can be cancelled")
+    }
+
+    function test_changingLibraryListsItsBooks() {
+        openOnBooks()
+        openChangeLibrary()
+
+        chooseLibrary("Audiobooks")
+
+        bookRow("Dune Messiah")
+        compare(titlesIn(find("bookList")), "Dune, Dune Messiah", "only Audiobooks' books")
+    }
+
+    function test_aChangeIsKeptWhenTheAppStartsAgain() {
+        openOnBooks()
+        openChangeLibrary()
+        chooseLibrary("Audiobooks")
+        bookRow("Dune Messiah")
+
+        reopen()
+
+        bookRow("Dune Messiah")
+        verify(!find("libraryDialog").visible, "not asked")
+    }
+
+    function test_cancellingKeepsTheLibrary() {
+        openOnBooks()
+        openChangeLibrary()
+        tap("library Audiobooks")
+
+        tap("cancelButton")
+
+        verify(!find("libraryDialog").visible, "the dialog closes")
+        compare(booksAskedFor(audiobooks), 0, "Audiobooks' books aren't asked for")
+        bookRow("Hyperion")
+    }
+
+    function test_choosingTheSameLibraryLoadsNothing() {
+        openOnBooks()
+        const asked = booksAskedFor("/api/v1/libraries/1/")
+        openChangeLibrary()
+
+        tap("continueButton", find("libraryDialog"))
+
+        verify(!find("libraryDialog").visible, "the dialog closes")
+        compare(booksAskedFor("/api/v1/libraries/1/"), asked, "no books asked for again")
+    }
+
+    // The series on screen are looked up again in the new library
+    function test_changingLibraryReloadsTheSeriesTab() {
+        fakeServer.respond("GET", "/api/v1/series", 200, "series/list.json")
+        openOnBooks()
+        tap("SeriesTab")
+        tryVerify(() => fakeServer.requests.some(r => r.path === "/api/v1/series"), 5000, "series asked for")
+
+        openChangeLibrary()
+        chooseLibrary("Audiobooks")
+
+        tryVerify(() => fakeServer.requests.some(r => r.path === "/api/v1/series" && r.query.libraryId === "2"),
+                  5000, "Audiobooks' series asked for")
     }
 }

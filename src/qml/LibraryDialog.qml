@@ -2,23 +2,33 @@ import QtQuick
 import "units.js" as Units
 import "format.js" as Format
 
-// Asks which library to use when the server has several and none has been chosen (see
-// Session::libraryChoices). Opens by itself, with the first library selected; a tap selects
-// another, and Continue uses it.
+// Asks which library to use when the server has several and none has been chosen, or when
+// changing library from the menu (see Session::libraryChoices). Opens by itself, with the
+// library in use selected, or the first; a tap selects another, and Continue uses it. Only
+// a change can be cancelled.
 SystemDialog {
     id: dialog
     readonly property var choices: bookOrbit.session.libraryChoices
+    readonly property bool changing: bookOrbit.session.libraryId >= 0
     property int selectedId: -1
     // Rows shown before the list scrolls
     readonly property int maxRows: 5
 
     visible: choices.length > 0
-    onChoicesChanged: selectedId = choices.length > 0 ? choices[0].id : -1
+    onChoicesChanged: {
+        const current = choices.find(choice => choice.id === bookOrbit.session.libraryId)
+        selectedId = current ? current.id : choices.length > 0 ? choices[0].id : -1
+    }
 
     heading: "Choose your library"
     icon: "icon_question"
-    buttons: [["Continue", "continue"]]
-    onPressed: bookOrbit.session.chooseLibrary(selectedId)
+    buttons: changing ? [["Continue", "continue"], ["Cancel", "cancel"]] : [["Continue", "continue"]]
+    onPressed: (action) => {
+        if (action === "cancel")
+            bookOrbit.session.cancelLibraryChoice()
+        else
+            bookOrbit.session.chooseLibrary(selectedId)
+    }
 
     SystemDialog.DialogText {
         text: "Your BookOrbit server has " + Format.count(dialog.choices.length, "library", "libraries")

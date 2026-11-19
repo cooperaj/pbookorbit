@@ -63,7 +63,8 @@ public:
 private:
     QList<PagedBookList *> bookLists() { return {&m_library, &m_search, &m_booksOf}; }
     QList<GroupList *> groupLists() { return {&m_collections, &m_series, &m_authors, &m_authorSeries}; }
-    // Empties every list when the session ends, and forgets what was cached for it
+    // Empties every list when the session ends or the library changes, and forgets what was
+    // cached for it
     void clearLists();
 
     Database *m_database;

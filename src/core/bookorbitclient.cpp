@@ -20,6 +20,11 @@ BookOrbitClient::BookOrbitClient(Database *database, QObject *parent)
     // Connected before QML's handlers, so the lists are ready for them
     connect(&m_session, &Session::started, this, &BookOrbitClient::start);
     connect(&m_session, &Session::ended, this, &BookOrbitClient::clearLists);
+    // Another library's lists start afresh; QML reloads the group list on screen
+    connect(&m_session, &Session::libraryChanged, this, [this]() {
+        clearLists();
+        m_library.reload();
+    });
     connect(&m_session, &Session::onlineChanged, this, [this]() {
         if (!m_session.online())
             return;

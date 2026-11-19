@@ -241,7 +241,8 @@ builds its rows from the downloaded books.
 
 `Session` holds the tokens, `online`, `busy` and the library id. The library is the one
 saved in `libraryId` if the server still has it, or its only one; with several, requests
-for it wait while `LibraryDialog` asks which to use, and Find books is offered after that. A list request reconnects
+for it wait while `LibraryDialog` asks which to use, and Find books is offered after that.
+The menu's Change library opens the same dialog when the server has several. A list request reconnects
 Wi-Fi if it has gone idle, refreshes the access token when needed and retries once on a
 401. `request()` and `download()` don't set `busy`, and `startStream()` refreshes the
 token first so it outlasts a large download.
@@ -255,6 +256,7 @@ These keep the parts in step:
 | First frame drawn | `start()`: reload the library and theme, if a session was saved | `main.cpp` |
 | `Session::started` | `start()`, after signing in | `BookOrbitClient` |
 | `Session::libraryReady` | Find books is offered, after the first sign-in | QML |
+| `Session::libraryChanged` | `clearLists()` and the library reloads; QML closes pages over the lists and reloads the group list on screen | `BookOrbitClient`, QML |
 | `Session::ended` | `clearLists()`: database caches, `GroupDetails` and every list emptied, before QML's handlers run | `BookOrbitClient` |
 | Back online | Group lists forget the rows they built offline | `BookOrbitClient` |
 | `bookOrbit.setLocalBooks()` | Every list takes the downloaded books; local-only lists relist | QML |

@@ -194,33 +194,20 @@ void Session::withLibrary(std::function<void(int libraryId)> then, ErrorHandler 
             queued.second(status, error);
     };
 
-    // [{id, name, icon, bookCount, ...}] in the user's order
     call("GET", "/libraries", QJsonDocument(),
         [this, fail](const QByteArray &data) {
-            const QJsonArray libraries = QJsonDocument::fromJson(data).array();
-            if (libraries.isEmpty()) {
+            const QVariantList choices = librariesFrom(data);
+            if (choices.isEmpty()) {
                 // The server replied, so not offline
                 fail(200, "No libraries on this server");
                 return;
             }
 
-            const QString saved = m_database->text("libraryId");
-            QVariantList choices;
-            for (const QJsonValue &value : libraries) {
-                const QJsonObject library = value.toObject();
-                const int id = library.value("id").toInt();
-                if (QString::number(id) == saved) {
-                    setLibrary(id);
-                    return;
-                }
-                choices.append(QVariantMap{
-                    {"id", id},
-                    {"name", library.value("name").toString()},
-                    {"bookCount", library.value("bookCount").toInt()},
-                });
-            }
-
-            if (choices.size() == 1)
+            bool wasSaved = false;
+            const int saved = m_database->text("libraryId").toInt(&wasSaved);
+            if (wasSaved && offers(choices, saved))
+                setLibrary(saved);
+            else if (choices.size() == 1)
                 setLibrary(choices.first().toMap().value("id").toInt());
             else
                 setLibraryChoices(choices);
@@ -228,12 +215,61 @@ void Session::withLibrary(std::function<void(int libraryId)> then, ErrorHandler 
         fail, quiet);
 }
 
+QVariantList Session::librariesFrom(const QByteArray &data)
+{
+    // [{id, name, icon, bookCount, ...}] in the user's order
+    QVariantList libraries;
+    for (const QJsonValue &value : QJsonDocument::fromJson(data).array()) {
+        const QJsonObject library = value.toObject();
+        libraries.append(QVariantMap{
+            {"id", library.value("id").toInt()},
+            {"name", library.value("name").toString()},
+            {"bookCount", library.value("bookCount").toInt()},
+        });
+    }
+
+    if (m_libraryCount != libraries.size()) {
+        m_libraryCount = libraries.size();
+        emit libraryCountChanged();
+    }
+    return libraries;
+}
+
+bool Session::offers(const QVariantList &choices, int libraryId)
+{
+    return std::any_of(choices.cbegin(), choices.cend(),
+        [libraryId](const QVariant &choice) { return choice.toMap().value("id").toInt() == libraryId; });
+}
+
+void Session::changeLibrary()
+{
+    if (m_libraryId < 0)
+        return;
+
+    call("GET", "/libraries", QJsonDocument(),
+        [this](const QByteArray &data) { setLibraryChoices(librariesFrom(data)); },
+        [](int, const QString &) {});
+}
+
 void Session::chooseLibrary(int libraryId)
 {
-    const bool offered = std::any_of(m_libraryChoices.cbegin(), m_libraryChoices.cend(),
-        [libraryId](const QVariant &choice) { return choice.toMap().value("id").toInt() == libraryId; });
-    if (offered)
-        setLibrary(libraryId);
+    if (!offers(m_libraryChoices, libraryId))
+        return;
+    if (libraryId == m_libraryId) {
+        setLibraryChoices({});
+        return;
+    }
+
+    const bool changing = m_libraryId >= 0;
+    setLibrary(libraryId);
+    if (changing)
+        emit libraryChanged();
+}
+
+void Session::cancelLibraryChoice()
+{
+    if (m_libraryId >= 0)
+        setLibraryChoices({});
 }
 
 void Session::setLibrary(int libraryId)
@@ -241,6 +277,7 @@ void Session::setLibrary(int libraryId)
     m_libraryId = libraryId;
     m_database->setText("libraryId", QString::number(libraryId));
     setLibraryChoices({});
+    emit libraryIdChanged();
     emit libraryReady();
 
     for (const auto &queued : std::exchange(m_afterLibrary, {}))
@@ -537,6 +574,7 @@ void Session::clearSession()
     m_libraryId = -1;
     m_afterLibrary.clear();
     setLibraryChoices({});
+    emit libraryIdChanged();
     emit ended();
     setSignedIn(false);
 }

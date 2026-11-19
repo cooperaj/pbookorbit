@@ -3,10 +3,6 @@
 - Offline collections only know the books of collections looked up while online (see
   `group_details` in docs/technical.md), so a collection never scrolled to online won't
   list its downloaded books offline.
-- Libraries: change library after signing in (the choice is only asked for at first
-  sign-in, see `Session::libraryChoices`), clearing the list caches. Show each library's
-  BookOrbit icon in the dialog (a Lucide name, or `custom:<slug>` served at
-  `/custom-icons/<slug>.svg`); every row has the theme's library icon for now.
 - Jump rail: dragging along it, and jumping by date for the date sorts (the jump-buckets
   endpoint returns days or months for those).
 - Test data for reading status: the `app` test account has no reading progress or

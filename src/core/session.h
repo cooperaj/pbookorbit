@@ -44,6 +44,10 @@ class Session : public QObject
     // The libraries to choose from, [{id, name, bookCount}] in the user's order, while the
     // server has several and none is chosen. Empty otherwise.
     Q_PROPERTY(QVariantList libraryChoices READ libraryChoices NOTIFY libraryChoicesChanged)
+    // The library in use, or -1 until it's known
+    Q_PROPERTY(int libraryId READ libraryId NOTIFY libraryIdChanged)
+    // How many libraries the server had when last asked, or 0 before then
+    Q_PROPERTY(int libraryCount READ libraryCount NOTIFY libraryCountChanged)
 
 public:
     using DataHandler = std::function<void(const QByteArray &)>;
@@ -66,6 +70,7 @@ public:
     bool networkConnected() const;
     QString error() const { return m_error; }
     QVariantList libraryChoices() const { return m_libraryChoices; }
+    int libraryCount() const { return m_libraryCount; }
     // The library's id, or -1 until withLibrary() has fetched it
     int libraryId() const { return m_libraryId; }
     // Endpoint for the library's book queries
@@ -78,8 +83,12 @@ public:
     Q_INVOKABLE void signOut();
     // Asks the system to connect Wi-Fi (its own dialog), then checks the server is there
     Q_INVOKABLE void goOnline();
+    // Fetches the libraries into libraryChoices, to choose another
+    Q_INVOKABLE void changeLibrary();
     // Uses one of libraryChoices from now on, and sends the requests waiting for it
     Q_INVOKABLE void chooseLibrary(int libraryId);
+    // Keeps the library in use, if there is one, and clears libraryChoices
+    Q_INVOKABLE void cancelLibraryChoice();
 
     // Authenticated GET for raw data such as thumbnails. Doesn't set busy.
     void download(const QString &path, DataHandler onSuccess, ErrorHandler onError);
@@ -112,8 +121,12 @@ signals:
     void onlineChanged();
     void errorChanged();
     void libraryChoicesChanged();
+    void libraryIdChanged();
+    void libraryCountChanged();
     // The library id is known, so requests for its books can be sent
     void libraryReady();
+    // Another library was chosen in place of the one in use, after libraryReady
+    void libraryChanged();
     // A sign-in succeeded
     void started();
     // The session ended, signed out or expired. Sent before signedInChanged.
@@ -152,6 +165,9 @@ private:
     // Uses and saves the library, and sends the requests waiting for it
     void setLibrary(int libraryId);
     void setLibraryChoices(const QVariantList &choices);
+    // The libraries in a /libraries reply, as in libraryChoices. Updates libraryCount.
+    QVariantList librariesFrom(const QByteArray &data);
+    static bool offers(const QVariantList &choices, int libraryId);
 
     Database *m_database;
     QNetworkAccessManager m_nam;
@@ -172,6 +188,7 @@ private:
     // Waiting for withLibrary()'s request; not empty while it's in flight
     QList<std::pair<std::function<void(int)>, ErrorHandler>> m_afterLibrary;
     QVariantList m_libraryChoices;
+    int m_libraryCount = 0;
     bool m_refreshing = false;
     QList<std::function<void()>> m_afterRefresh;
     // Why the last refresh failed, if the server answered with an error, for the requests
