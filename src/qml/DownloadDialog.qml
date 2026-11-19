@@ -94,9 +94,9 @@ SystemDialog {
     // Buttons left to right, as [label, action]; an option's index downloads it
     buttons: downloading ? [["Cancel", "close"]]
              : !hasFile || tooBig ? [["Close", "close"]]
-             : error !== "" ? [["Try again", chosenIndex], ["Cancel", "close"]]
-             : chosen === null ? options.map((o, i) => [o.kind, i]).concat([["Cancel", "close"]])
-             : [["Download", 0], ["Cancel", "close"]]
+             : error !== "" ? [["Cancel", "close"], ["Try again", chosenIndex]]
+             : chosen === null ? [["Cancel", "close"]].concat(options.map((o, i) => [o.kind, i]))
+             : [["Cancel", "close"], ["Download", 0]]
 
     function press(action) {
         if (action === "close") {

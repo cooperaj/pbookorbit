@@ -16,7 +16,9 @@ Item {
     property int messageGap: 0
     // Theme icon: icon_question, icon_error, icon_info...
     property string icon: "icon_question"
-    // Buttons left to right, as [label, action]. Leave empty for a status-only dialog.
+    // Buttons left to right, as [label, action]: as in the system's dialogs, the way out
+    // (Cancel, No, Close) first and the one that goes ahead last. Leave empty for a
+    // status-only dialog.
     property var buttons: []
     // Progress 0-100 for a bar under the message, or -1 for none
     property int percent: -1

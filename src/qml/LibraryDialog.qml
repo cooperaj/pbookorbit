@@ -22,7 +22,7 @@ SystemDialog {
 
     heading: "Choose your library"
     icon: "icon_question"
-    buttons: changing ? [["Continue", "continue"], ["Cancel", "cancel"]] : [["Continue", "continue"]]
+    buttons: changing ? [["Cancel", "cancel"], ["Continue", "continue"]] : [["Continue", "continue"]]
     onPressed: (action) => {
         if (action === "cancel")
             bookOrbit.session.cancelLibraryChoice()
