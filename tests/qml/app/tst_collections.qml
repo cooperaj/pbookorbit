@@ -159,6 +159,8 @@ AppTestCase {
         compare(rows(), "Classics (2), Empty Shelf (0), Space Opera (1)", "the saved counts")
         compare(row("Classics").group.authors.slice().sort(), ["Andy Weir", "Frank Herbert"])
         compare(row("Classics").group.formats, ["epub", "m4b"])
+        compare(row("Classics").group.covers.length, 1)
+        compare(row("Classics").group.covers[0].coverVersion, "v1")
     }
 
     // Offline, from the collections saved when last online: only those with downloaded
@@ -216,6 +218,8 @@ AppTestCase {
 
         tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000,
                   "the saved rows: " + rows())
+        compare(row("Classics").group.covers.length, 1, "the saved covers")
+        compare(row("Classics").group.covers[0].coverVersion, "v1")
         verify(!find("spinner", find("collectionsPage")).visible, "no spinner over them")
         fakeServer.release("GET", collections)
     }

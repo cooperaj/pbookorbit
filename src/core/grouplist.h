@@ -144,7 +144,8 @@ protected:
     QString m_cacheName;
     // The kind its rows' looked up details are saved as, or empty if they aren't
     QString m_detailsKind;
-    // Fields saved with the details besides bookCount, formats and covers
+    // Fields restored from the saved details besides bookCount and formats. Covers are
+    // always saved, but only their versions restored unless listed here.
     QStringList m_detailFields;
     // Only some of its kind's rows (an author's series), so its loads don't say which saved
     // details have gone

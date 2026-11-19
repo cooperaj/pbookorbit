@@ -24,7 +24,8 @@ CollectionList::CollectionList(Session *session, Database *database, Details *de
 {
     m_cacheName = "collections";
     m_detailsKind = "collections";
-    m_detailFields = {"authors"};
+    // The list has no covers, so the saved ones show until the books are looked up
+    m_detailFields = {"authors", "covers"};
 }
 
 void CollectionList::loadPage(int, int generation)
