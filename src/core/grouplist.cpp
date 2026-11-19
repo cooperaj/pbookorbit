@@ -35,10 +35,7 @@ void GroupList::load()
     }
 
     restoreCache();
-    if (needsLibrary())
-        withLibrary(generation, [this, generation]() { loadPage(0, generation); });
-    else
-        loadPage(0, generation);
+    loadPage(0, generation);
 }
 
 void GroupList::setSort(const QString &field, bool descending)
@@ -46,6 +43,22 @@ void GroupList::setSort(const QString &field, bool descending)
     m_sort = field;
     m_descending = descending;
     show();
+}
+
+void GroupList::setLibrary(int libraryId)
+{
+    if (libraryId == m_libraryId)
+        return;
+
+    // The names without any library, then with the new one
+    const auto scoped = [libraryId](const QString &name) {
+        const QString base = name.section(':', 0, 0);
+        return base.isEmpty() || libraryId < 0 ? base : QString("%1:%2").arg(base).arg(libraryId);
+    };
+    m_libraryId = libraryId;
+    m_cacheName = scoped(m_cacheName);
+    m_detailsKind = scoped(m_detailsKind);
+    clear();
 }
 
 void GroupList::lookUpRows(int first, int last)
@@ -91,17 +104,6 @@ int GroupList::startLoad()
     m_wanted.clear();
     setError(QString());
     return ++m_generation;
-}
-
-void GroupList::withLibrary(int generation, std::function<void()> load)
-{
-    m_session->loadLibrary([this, generation, load]() {
-        if (generation == m_generation)
-            load();
-    }, [this, generation](const QString &error) {
-        if (generation == m_generation)
-            setError(error);
-    });
 }
 
 void GroupList::pageLoaded(bool more, std::function<void()> loadNext)
@@ -285,7 +287,7 @@ void GroupList::lookUpByName(const QList<int> &ids, bool authors, int page, int 
     };
 
     // Quiet: this only fills in existing rows
-    m_session->request("POST", m_session->libraryBooksPath(), QJsonDocument(query),
+    m_session->request("POST", Session::booksPath(m_libraryId), QJsonDocument(query),
         [this, authors, ids, page, generation](const QByteArray &data) {
             if (generation != m_generation)
                 return;
@@ -419,6 +421,22 @@ int GroupList::seriesCount(const QHash<QString, QStringList> &bookSeries)
             series.insert(name);
     }
     return int(series.size());
+}
+
+QString GroupList::libraryParameter() const
+{
+    return m_libraryId < 0 ? QString() : QString("&libraryId=%1").arg(m_libraryId);
+}
+
+QVariantList GroupList::libraryIds(const QStringList &names) const
+{
+    QVariantList ids;
+    for (const QVariant &value : m_session->libraries()) {
+        const QVariantMap library = value.toMap();
+        if (names.contains(library.value("name").toString()))
+            ids.append(library.value("id"));
+    }
+    return ids;
 }
 
 int GroupList::localId(const QString &name)

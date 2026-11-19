@@ -50,6 +50,8 @@ public:
     virtual void setLocalBooks(const QVariantList &books);
     // Empties the list when the session ends
     void clear();
+    // Stops the list cache's rows being shown, as when they're from another library
+    void forgetCache();
 
 signals:
     void changed();
@@ -87,6 +89,11 @@ protected:
 
     // When the library is known: sets the endpoints and mergePairs for the query
     virtual void setPaths();
+    // setPaths() for the books in a library, or in every library for -1
+    void setLibraryPaths(int libraryId);
+    // The local books in a library (all for -1, or offline), and those whose library isn't
+    // known
+    QVariantList localBooksIn(int libraryId) const;
     // The local books this list shows when set to local books only
     virtual QVariantList localBooks() const { return m_localBooks; }
     // Whether A-Z sorts get letter sections. Search results have none, as from the server.
@@ -110,9 +117,12 @@ protected:
     BookListModel m_model;
     // BookOrbit query: sort, filter and search text
     QJsonObject m_query;
-    // Endpoint: the library's books or a collection's
+    // Endpoint: a library's books, every library's or a collection's. Without a jump path,
+    // the server can't section A-Z or last read sorts, and they go unsectioned.
     QString m_path;
     QString m_jumpPath;
+    // Where a page's other records of the same books are looked for
+    QString m_companionsPath;
     // Sort and filter (see setQuery), plus fixed rules such as booksOf's author or series
     QJsonArray m_rules;
     QString m_sortField = "title";

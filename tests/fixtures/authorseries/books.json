@@ -2,6 +2,7 @@
   "items": [
     {
       "id": 1,
+      "libraryId": 1,
       "title": "Dune",
       "authors": [
         "Frank Herbert"
@@ -23,6 +24,7 @@
     },
     {
       "id": 6,
+      "libraryId": 1,
       "title": "Dune Messiah",
       "authors": [
         "Frank Herbert"
@@ -44,6 +46,7 @@
     },
     {
       "id": 8,
+      "libraryId": 1,
       "title": "The Jesus Incident",
       "authors": [
         "Frank Herbert"
@@ -65,6 +68,7 @@
     },
     {
       "id": 2,
+      "libraryId": 1,
       "title": "Hyperion",
       "authors": [
         "Dan Simmons"
@@ -86,6 +90,7 @@
     },
     {
       "id": 3,
+      "libraryId": 1,
       "title": "The Fall of Hyperion",
       "authors": [
         "Dan Simmons"
@@ -107,6 +112,7 @@
     },
     {
       "id": 4,
+      "libraryId": 1,
       "title": "Endymion",
       "authors": [
         "Dan Simmons"
@@ -128,6 +134,7 @@
     },
     {
       "id": 5,
+      "libraryId": 1,
       "title": "The Rise of Endymion",
       "authors": [
         "Dan Simmons"
@@ -149,6 +156,7 @@
     },
     {
       "id": 7,
+      "libraryId": 1,
       "title": "Ilium",
       "authors": [
         "Dan Simmons"
@@ -170,6 +178,7 @@
     },
     {
       "id": 20,
+      "libraryId": 1,
       "title": "Ancillary Justice",
       "authors": [
         "Ann Leckie"

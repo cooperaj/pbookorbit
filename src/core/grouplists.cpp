@@ -176,8 +176,8 @@ void SeriesList::loadPage(int page, int generation)
     // lastAddedAt, ...}], total}. For an author, author= matches any series with an author
     // whose name contains it, ignoring case.
     const bool ofAuthor = !m_author.isEmpty();
-    QString path = QString("/series?libraryId=%1&sort=name&order=asc&page=%2&size=%3")
-                       .arg(m_session->libraryId()).arg(page).arg(GROUPS_PAGE_SIZE);
+    QString path = QString("/series?sort=name&order=asc&page=%1&size=%2%3")
+                       .arg(page).arg(GROUPS_PAGE_SIZE).arg(libraryParameter());
     if (ofAuthor)
         path += "&author=" + QString::fromUtf8(QUrl::toPercentEncoding(m_author));
 
@@ -216,6 +216,7 @@ void SeriesList::loadPage(int page, int generation)
                 {"books", QVariantMap()},
                 {"lastAddedAt", series.value("lastAddedAt").toString()},
                 {"readProgress", bookCount > 0 ? series.value("readCount").toDouble() / bookCount : 0.0},
+                {"libraryIds", libraryIds(series.value("libraryNames").toVariant().toStringList())},
             }));
         }
         m_loaded = true;
@@ -353,8 +354,8 @@ void AuthorList::setLocalBooks(const QVariantList &books)
 void AuthorList::loadPage(int page, int generation)
 {
     // {items: [{id, name, sortName, bookCount, lastAddedAt, imageUrl (or null), ...}], total}
-    const QString path = QString("/authors?libraryId=%1&sort=name&order=asc&page=%2&size=%3")
-                             .arg(m_session->libraryId()).arg(page).arg(GROUPS_PAGE_SIZE);
+    const QString path = QString("/authors?sort=name&order=asc&page=%1&size=%2%3")
+                             .arg(page).arg(GROUPS_PAGE_SIZE).arg(libraryParameter());
     m_session->callJson("GET", path, QJsonDocument(), [this, page, generation](const QJsonDocument &doc) {
         if (generation != m_generation)
             return;

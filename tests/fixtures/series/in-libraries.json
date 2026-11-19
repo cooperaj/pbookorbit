@@ -1,0 +1,55 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Dune",
+      "bookCount": 4,
+      "readCount": 2,
+      "authors": [
+        "Frank Herbert"
+      ],
+      "coverBookIds": [
+        1,
+        6
+      ],
+      "lastAddedAt": "2026-01-05 10:00:00+00",
+      "libraryNames": [
+        "Audiobooks"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Hyperion Cantos",
+      "bookCount": 1,
+      "readCount": 1,
+      "authors": [
+        "Dan Simmons"
+      ],
+      "coverBookIds": [
+        2
+      ],
+      "lastAddedAt": "2026-01-02 10:00:00+00",
+      "libraryNames": [
+        "Books",
+        "Audiobooks"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "The Expanse",
+      "bookCount": 2,
+      "readCount": 0,
+      "authors": [
+        "James S. A. Corey"
+      ],
+      "coverBookIds": [
+        10
+      ],
+      "lastAddedAt": "2026-01-09 10:00:00+00",
+      "libraryNames": [
+        "Books"
+      ]
+    }
+  ],
+  "total": 3
+}

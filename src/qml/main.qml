@@ -185,23 +185,27 @@ Window {
     // keeps its own sort and filter between uses, like the library.
     property string booksOfField
     property var booksOfValues: []
+    property int booksOfLibraryId: -1
     readonly property ListQuery booksOfQuery: booksOfField === "series" ? seriesBooksQuery
                                               : booksOfField === "collection" ? collectionBooksQuery
                                               : authorBooksQuery
     // field is "author", "series" or "collection", values the names (or collection id) to
-    // match, and title the name shown, if not the values
-    function openBooksOf(field, values, title) {
-        booksOfBack.push({ booksOf: showingBooksOf ? { field: booksOfField, values: booksOfValues, title: booksOfPage.name }
+    // match, title the name shown, if not the values, and libraryId the library whose books
+    // to show, or -1 for every library's
+    function openBooksOf(field, values, title, libraryId) {
+        booksOfBack.push({ booksOf: showingBooksOf ? { field: booksOfField, values: booksOfValues, title: booksOfPage.name,
+                                                       libraryId: booksOfLibraryId }
                                                    : null,
                            info: null })
-        showBooksOf(field, values, title)
+        showBooksOf(field, values, title, libraryId)
     }
-    function showBooksOf(field, values, title) {
+    function showBooksOf(field, values, title, libraryId) {
         booksOfPage.kind = field === "series" ? "Series" : field === "collection" ? "Collection"
                            : values.length > 1 ? "Authors" : "Author"
         booksOfPage.name = title || values.join(", ")
         booksOfField = field
         booksOfValues = values
+        booksOfLibraryId = libraryId ?? -1
         booksOfQuery.applied()
         showingBooksOf = true
     }
@@ -210,7 +214,7 @@ Window {
     function openBooksOfFromInfo(field, values) {
         const info = { book: bookInfoPage.book, kind: bookInfoPage.kind }
         showingInfo = false
-        openBooksOf(field, values)
+        openBooksOf(field, values, "", libraryOf(bookInfoPage.book))
         booksOfBack[booksOfBack.length - 1].info = info
     }
     // What each books-of list replaced, for Back: the list before it, if any, and the info
@@ -219,7 +223,8 @@ Window {
     function closeBooksOf() {
         const previous = booksOfBack.pop()
         if (previous?.booksOf)
-            showBooksOf(previous.booksOf.field, previous.booksOf.values, previous.booksOf.title)
+            showBooksOf(previous.booksOf.field, previous.booksOf.values, previous.booksOf.title,
+                        previous.booksOf.libraryId)
         else
             showingBooksOf = false
         if (previous?.info) {
@@ -232,7 +237,20 @@ Window {
     }
     function applyBooksOf(query) {
         bookOrbit.booksOf.show(booksOfField, booksOfValues, query.sortField, query.descending(), query.formats,
-                               query.downloadedOnly)
+                               query.downloadedOnly, booksOfLibraryId)
+    }
+    // A book's library, as its other books are looked for there: the one in its record, or
+    // the book list's
+    function libraryOf(book) {
+        return book.libraryId ?? bookOrbit.session.libraryId
+    }
+    // A series' library, for its books: the one its list shows, or failing that the only
+    // one it's in, or else -1 for all of them
+    function seriesLibrary(series, listLibraryId) {
+        if (listLibraryId >= 0)
+            return listLibraryId
+        const ids = series.libraryIds || []
+        return ids.length === 1 ? ids[0] : -1
     }
     // An author's books use the library's sorts
     ListQuery {
@@ -428,7 +446,7 @@ Window {
         // Reloaded every time the view opens, showing the last rows until then, and the books
         // of the series in view looked up. Offline, the downloaded books'.
         onVisibleChanged: if (visible) bookOrbit.series.load()
-        onGroupClicked: (series) => root.openBooksOf("series", [series.name])
+        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "", root.seriesLibrary(series, -1))
     }
 
     GroupListPage {
@@ -674,7 +692,7 @@ Window {
             root.closeDropdowns()
             root.showingAuthorSeries = false
         }
-        onGroupClicked: (series) => root.openBooksOf("series", [series.name])
+        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "", root.seriesLibrary(series, -1))
     }
 
     BooksOfPage {
@@ -716,7 +734,7 @@ Window {
             bookInfoPage.show(book)
             root.showingInfo = true
         }
-        onBooksOfChosen: (field, values) => root.openBooksOf(field, values)
+        onBooksOfChosen: (field, values) => root.openBooksOf(field, values, "", root.libraryOf(bookMenu.book))
         onDeleteChosen: (book) => deleteDialog.ask(book)
         onOpenWithChosen: (target, app) => root.openWith(target, app)
     }

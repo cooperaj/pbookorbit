@@ -2,6 +2,7 @@
   "items": [
     {
       "id": 1080,
+      "libraryId": 1,
       "title": "U Book 1",
       "authors": [
         "Paging Author"
@@ -23,6 +24,7 @@
     },
     {
       "id": 1081,
+      "libraryId": 1,
       "title": "U Book 2",
       "authors": [
         "Paging Author"
@@ -44,6 +46,7 @@
     },
     {
       "id": 1082,
+      "libraryId": 1,
       "title": "U Book 3",
       "authors": [
         "Paging Author"
@@ -65,6 +68,7 @@
     },
     {
       "id": 1083,
+      "libraryId": 1,
       "title": "U Book 4",
       "authors": [
         "Paging Author"
@@ -86,6 +90,7 @@
     },
     {
       "id": 1084,
+      "libraryId": 1,
       "title": "V Book 1",
       "authors": [
         "Paging Author"
@@ -107,6 +112,7 @@
     },
     {
       "id": 1085,
+      "libraryId": 1,
       "title": "V Book 2",
       "authors": [
         "Paging Author"
@@ -128,6 +134,7 @@
     },
     {
       "id": 1086,
+      "libraryId": 1,
       "title": "V Book 3",
       "authors": [
         "Paging Author"
@@ -149,6 +156,7 @@
     },
     {
       "id": 1087,
+      "libraryId": 1,
       "title": "V Book 4",
       "authors": [
         "Paging Author"
@@ -170,6 +178,7 @@
     },
     {
       "id": 1088,
+      "libraryId": 1,
       "title": "W Book 1",
       "authors": [
         "Paging Author"
@@ -191,6 +200,7 @@
     },
     {
       "id": 1089,
+      "libraryId": 1,
       "title": "W Book 2",
       "authors": [
         "Paging Author"
@@ -212,6 +222,7 @@
     },
     {
       "id": 1090,
+      "libraryId": 1,
       "title": "W Book 3",
       "authors": [
         "Paging Author"
@@ -233,6 +244,7 @@
     },
     {
       "id": 1091,
+      "libraryId": 1,
       "title": "W Book 4",
       "authors": [
         "Paging Author"
@@ -254,6 +266,7 @@
     },
     {
       "id": 1092,
+      "libraryId": 1,
       "title": "X Book 1",
       "authors": [
         "Paging Author"
@@ -275,6 +288,7 @@
     },
     {
       "id": 1093,
+      "libraryId": 1,
       "title": "X Book 2",
       "authors": [
         "Paging Author"
@@ -296,6 +310,7 @@
     },
     {
       "id": 1094,
+      "libraryId": 1,
       "title": "X Book 3",
       "authors": [
         "Paging Author"
@@ -317,6 +332,7 @@
     },
     {
       "id": 1095,
+      "libraryId": 1,
       "title": "X Book 4",
       "authors": [
         "Paging Author"
@@ -338,6 +354,7 @@
     },
     {
       "id": 1096,
+      "libraryId": 1,
       "title": "Y Book 1",
       "authors": [
         "Paging Author"
@@ -359,6 +376,7 @@
     },
     {
       "id": 1097,
+      "libraryId": 1,
       "title": "Y Book 2",
       "authors": [
         "Paging Author"
@@ -380,6 +398,7 @@
     },
     {
       "id": 1098,
+      "libraryId": 1,
       "title": "Y Book 3",
       "authors": [
         "Paging Author"
@@ -401,6 +420,7 @@
     },
     {
       "id": 1099,
+      "libraryId": 1,
       "title": "Y Book 4",
       "authors": [
         "Paging Author"

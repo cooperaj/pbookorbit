@@ -2,6 +2,7 @@
   "items": [
     {
       "id": 1000,
+      "libraryId": 1,
       "title": "A Book 1",
       "authors": [
         "Paging Author"
@@ -23,6 +24,7 @@
     },
     {
       "id": 1001,
+      "libraryId": 1,
       "title": "A Book 2",
       "authors": [
         "Paging Author"
@@ -44,6 +46,7 @@
     },
     {
       "id": 1002,
+      "libraryId": 1,
       "title": "A Book 3",
       "authors": [
         "Paging Author"
@@ -65,6 +68,7 @@
     },
     {
       "id": 1003,
+      "libraryId": 1,
       "title": "A Book 4",
       "authors": [
         "Paging Author"
@@ -86,6 +90,7 @@
     },
     {
       "id": 1004,
+      "libraryId": 1,
       "title": "B Book 1",
       "authors": [
         "Paging Author"
@@ -107,6 +112,7 @@
     },
     {
       "id": 1005,
+      "libraryId": 1,
       "title": "B Book 2",
       "authors": [
         "Paging Author"
@@ -128,6 +134,7 @@
     },
     {
       "id": 1006,
+      "libraryId": 1,
       "title": "B Book 3",
       "authors": [
         "Paging Author"
@@ -149,6 +156,7 @@
     },
     {
       "id": 1007,
+      "libraryId": 1,
       "title": "B Book 4",
       "authors": [
         "Paging Author"
@@ -170,6 +178,7 @@
     },
     {
       "id": 1008,
+      "libraryId": 1,
       "title": "C Book 1",
       "authors": [
         "Paging Author"
@@ -191,6 +200,7 @@
     },
     {
       "id": 1009,
+      "libraryId": 1,
       "title": "C Book 2",
       "authors": [
         "Paging Author"
@@ -212,6 +222,7 @@
     },
     {
       "id": 1010,
+      "libraryId": 1,
       "title": "C Book 3",
       "authors": [
         "Paging Author"
@@ -233,6 +244,7 @@
     },
     {
       "id": 1011,
+      "libraryId": 1,
       "title": "C Book 4",
       "authors": [
         "Paging Author"
@@ -254,6 +266,7 @@
     },
     {
       "id": 1012,
+      "libraryId": 1,
       "title": "D Book 1",
       "authors": [
         "Paging Author"
@@ -275,6 +288,7 @@
     },
     {
       "id": 1013,
+      "libraryId": 1,
       "title": "D Book 2",
       "authors": [
         "Paging Author"
@@ -296,6 +310,7 @@
     },
     {
       "id": 1014,
+      "libraryId": 1,
       "title": "D Book 3",
       "authors": [
         "Paging Author"
@@ -317,6 +332,7 @@
     },
     {
       "id": 1015,
+      "libraryId": 1,
       "title": "D Book 4",
       "authors": [
         "Paging Author"
@@ -338,6 +354,7 @@
     },
     {
       "id": 1016,
+      "libraryId": 1,
       "title": "E Book 1",
       "authors": [
         "Paging Author"
@@ -359,6 +376,7 @@
     },
     {
       "id": 1017,
+      "libraryId": 1,
       "title": "E Book 2",
       "authors": [
         "Paging Author"
@@ -380,6 +398,7 @@
     },
     {
       "id": 1018,
+      "libraryId": 1,
       "title": "E Book 3",
       "authors": [
         "Paging Author"
@@ -401,6 +420,7 @@
     },
     {
       "id": 1019,
+      "libraryId": 1,
       "title": "E Book 4",
       "authors": [
         "Paging Author"
@@ -422,6 +442,7 @@
     },
     {
       "id": 1020,
+      "libraryId": 1,
       "title": "F Book 1",
       "authors": [
         "Paging Author"
@@ -443,6 +464,7 @@
     },
     {
       "id": 1021,
+      "libraryId": 1,
       "title": "F Book 2",
       "authors": [
         "Paging Author"
@@ -464,6 +486,7 @@
     },
     {
       "id": 1022,
+      "libraryId": 1,
       "title": "F Book 3",
       "authors": [
         "Paging Author"
@@ -485,6 +508,7 @@
     },
     {
       "id": 1023,
+      "libraryId": 1,
       "title": "F Book 4",
       "authors": [
         "Paging Author"
@@ -506,6 +530,7 @@
     },
     {
       "id": 1024,
+      "libraryId": 1,
       "title": "G Book 1",
       "authors": [
         "Paging Author"
@@ -527,6 +552,7 @@
     },
     {
       "id": 1025,
+      "libraryId": 1,
       "title": "G Book 2",
       "authors": [
         "Paging Author"
@@ -548,6 +574,7 @@
     },
     {
       "id": 1026,
+      "libraryId": 1,
       "title": "G Book 3",
       "authors": [
         "Paging Author"
@@ -569,6 +596,7 @@
     },
     {
       "id": 1027,
+      "libraryId": 1,
       "title": "G Book 4",
       "authors": [
         "Paging Author"
@@ -590,6 +618,7 @@
     },
     {
       "id": 1028,
+      "libraryId": 1,
       "title": "H Book 1",
       "authors": [
         "Paging Author"
@@ -611,6 +640,7 @@
     },
     {
       "id": 1029,
+      "libraryId": 1,
       "title": "H Book 2",
       "authors": [
         "Paging Author"
@@ -632,6 +662,7 @@
     },
     {
       "id": 1030,
+      "libraryId": 1,
       "title": "H Book 3",
       "authors": [
         "Paging Author"
@@ -653,6 +684,7 @@
     },
     {
       "id": 1031,
+      "libraryId": 1,
       "title": "H Book 4",
       "authors": [
         "Paging Author"
@@ -674,6 +706,7 @@
     },
     {
       "id": 1032,
+      "libraryId": 1,
       "title": "I Book 1",
       "authors": [
         "Paging Author"
@@ -695,6 +728,7 @@
     },
     {
       "id": 1033,
+      "libraryId": 1,
       "title": "I Book 2",
       "authors": [
         "Paging Author"
@@ -716,6 +750,7 @@
     },
     {
       "id": 1034,
+      "libraryId": 1,
       "title": "I Book 3",
       "authors": [
         "Paging Author"
@@ -737,6 +772,7 @@
     },
     {
       "id": 1035,
+      "libraryId": 1,
       "title": "I Book 4",
       "authors": [
         "Paging Author"
@@ -758,6 +794,7 @@
     },
     {
       "id": 1036,
+      "libraryId": 1,
       "title": "J Book 1",
       "authors": [
         "Paging Author"
@@ -779,6 +816,7 @@
     },
     {
       "id": 1037,
+      "libraryId": 1,
       "title": "J Book 2",
       "authors": [
         "Paging Author"
@@ -800,6 +838,7 @@
     },
     {
       "id": 1038,
+      "libraryId": 1,
       "title": "J Book 3",
       "authors": [
         "Paging Author"
@@ -821,6 +860,7 @@
     },
     {
       "id": 1039,
+      "libraryId": 1,
       "title": "J Book 4",
       "authors": [
         "Paging Author"

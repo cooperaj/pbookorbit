@@ -14,7 +14,8 @@ AppTestCase {
     name: "AuthorSeries"
 
     readonly property string series: "/api/v1/series"
-    readonly property string books: "/api/v1/libraries/1/books"
+    // Every library's, as Series and Authors list them all to start with
+    readonly property string books: "/api/v1/books/query"
     readonly property string danSimmonsSeries: "Endymion (2), Hyperion Cantos (2), Ilium (1)"
 
     function openAuthors(options) {

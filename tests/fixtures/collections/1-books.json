@@ -2,6 +2,7 @@
   "items": [
     {
       "id": 2,
+      "libraryId": 1,
       "title": "Hyperion",
       "authors": [
         "Dan Simmons"

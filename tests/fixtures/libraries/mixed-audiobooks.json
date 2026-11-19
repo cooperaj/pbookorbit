@@ -2,6 +2,7 @@
   "items": [
     {
       "id": 4,
+      "libraryId": 1,
       "title": "The Martian",
       "authors": [
         "Andy Weir"

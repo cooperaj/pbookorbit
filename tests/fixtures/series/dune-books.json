@@ -2,6 +2,7 @@
   "items": [
     {
       "id": 1,
+      "libraryId": 1,
       "title": "Dune",
       "authors": [
         "Frank Herbert"
@@ -23,6 +24,7 @@
     },
     {
       "id": 6,
+      "libraryId": 1,
       "title": "Dune Messiah",
       "authors": [
         "Frank Herbert"
@@ -44,6 +46,7 @@
     },
     {
       "id": 8,
+      "libraryId": 1,
       "title": "Children of Dune",
       "authors": [
         "Frank Herbert"
@@ -65,6 +68,7 @@
     },
     {
       "id": 9,
+      "libraryId": 1,
       "title": "Children of Dune",
       "authors": [
         "Frank Herbert"

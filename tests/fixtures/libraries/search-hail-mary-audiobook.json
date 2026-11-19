@@ -2,6 +2,7 @@
   "items": [
     {
       "id": 7,
+      "libraryId": 1,
       "title": "Project Hail Mary",
       "authors": [
         "Andy Weir"

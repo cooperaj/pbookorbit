@@ -16,7 +16,8 @@ AppTestCase {
     name: "Authors"
 
     readonly property string authors: "/api/v1/authors"
-    readonly property string books: "/api/v1/libraries/1/books"
+    // Every library's, as Series and Authors list them all to start with
+    readonly property string books: "/api/v1/books/query"
     readonly property string allByName: "Ann Leckie (1), Dan Simmons (2), Frank Herbert (3), James S. A. Corey (4)"
     readonly property var dune: ({id: 1, title: "Dune", authors: ["Frank Herbert"], seriesName: "Dune",
                                   seriesIndex: 1, formats: ["epub"], file: "Dune.epub"})

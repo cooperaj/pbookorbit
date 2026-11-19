@@ -64,6 +64,12 @@ void PagedBookList::clear()
     emit changed();
 }
 
+void PagedBookList::forgetCache()
+{
+    if (!m_cacheName.isEmpty())
+        m_database->saveListCache(m_cacheName, QVariantMap());
+}
+
 void PagedBookList::setSortAndFilter(const QString &sortField, bool descending, const QStringList &formats,
                                      bool localOnly)
 {
@@ -94,7 +100,7 @@ void PagedBookList::refresh()
 
         // A-Z and last read sorts need their sections first, to know which rows start one.
         // List entries have no last read date, so only its jump buckets can section it.
-        if (isLetterSort(m_sortField) || m_sortField == "lastReadAt") {
+        if ((isLetterSort(m_sortField) || m_sortField == "lastReadAt") && !m_jumpPath.isEmpty()) {
             m_sections = Sections::Starts;
             loadJumpSections([this]() { loadPage(0); });
         } else if (m_sortField == "seriesIndex") {
@@ -105,7 +111,8 @@ void PagedBookList::refresh()
             loadSeriesSections();
         } else {
             // No sections for collection order: the server doesn't say when each book was
-            // added
+            // added. None for A-Z across libraries either, as only a library has jump
+            // buckets, and its title order can't be matched locally.
             m_sections = isDateSort(m_sortField) ? Sections::Days : Sections::None;
             clearJumpSections();
             loadPage(0);
@@ -115,10 +122,30 @@ void PagedBookList::refresh()
 
 void PagedBookList::setPaths()
 {
-    m_path = m_session->libraryBooksPath();
-    m_jumpPath = m_path + "/jump-buckets";
+    setLibraryPaths(m_session->libraryId());
+}
+
+void PagedBookList::setLibraryPaths(int libraryId)
+{
+    m_path = Session::booksPath(libraryId);
+    m_jumpPath = libraryId < 0 ? QString() : m_path + "/jump-buckets";
+    m_companionsPath = m_path;
     // With every type listed, an audiobook's ebook record is in the list too
     m_mergePairs = m_formats.isEmpty();
+}
+
+QVariantList PagedBookList::localBooksIn(int libraryId) const
+{
+    // Offline, where no library can be chosen, all of them
+    if (libraryId < 0 || !m_session->online())
+        return m_localBooks;
+    QVariantList books;
+    for (const QVariant &book : m_localBooks) {
+        const QVariant id = book.toMap().value("libraryId");
+        if (!id.isValid() || id.toInt() == libraryId)
+            books.append(book);
+    }
+    return books;
 }
 
 void PagedBookList::withLibrary(std::function<void()> then)
@@ -464,7 +491,7 @@ void PagedBookList::lookUpCompanions(const QVariantList &books, const QVariantLi
         {"filter", companionsFilter(books)},
         {"pagination", QJsonObject{{"page", 0}, {"size", COMPANIONS_PAGE_SIZE}}},
     };
-    m_session->callJson("POST", m_session->libraryBooksPath(), QJsonDocument(query),
+    m_session->callJson("POST", m_companionsPath, QJsonDocument(query),
         [this, books, rows, generation, then](const QJsonDocument &doc) {
             if (generation != m_queryGeneration)
                 return;

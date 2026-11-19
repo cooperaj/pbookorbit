@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "name": "Books",
+    "icon": "LibraryBig",
+    "bookCount": 3
+  },
+  {
+    "id": 2,
+    "name": "Audiobooks",
+    "icon": "Headphones",
+    "bookCount": 1
+  },
+  {
+    "id": 3,
+    "name": "Comics",
+    "icon": "custom:comics",
+    "bookCount": 0
+  }
+]

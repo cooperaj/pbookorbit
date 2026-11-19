@@ -16,7 +16,6 @@ public:
 
 protected:
     void loadPage(int page, int generation) override;
-    bool needsLibrary() const override { return false; }
     // The saved collections with local books, counting only those
     void showLocal() override;
     void lookUp(const QList<int> &ids, int generation) override;
@@ -28,10 +27,10 @@ private:
     void lookUpCollection(int collectionId, int page, int generation);
 };
 
-// The library's series: {id, name, bookCount, covers (first two books), authors, formats,
-// lastAddedAt, readProgress (0 to 1)}. Formats, cover versions and a bookCount that counts
-// an ebook/audiobook pair once come from looking up a series' books, a few series to a
-// request.
+// The series: {id, name, bookCount, covers (first two books), authors, formats,
+// lastAddedAt, readProgress (0 to 1), libraryIds (the libraries its books are in; empty
+// offline)}. Formats, cover versions and a bookCount that counts an ebook/audiobook pair
+// once come from looking up a series' books, a few series to a request.
 class SeriesList : public GroupList
 {
     Q_OBJECT
@@ -45,7 +44,7 @@ protected:
     void showLocal() override;
     void lookUp(const QList<int> &ids, int generation) override;
 
-    // The author whose series these are, or empty for the library's
+    // The author whose series these are, or empty for all
     QString m_author;
 };
 
@@ -62,7 +61,7 @@ public:
     Q_INVOKABLE void show(const QString &author);
 };
 
-// The library's authors: {kind: "author", id, name, sortName ("Martin, George R.R."),
+// The authors: {kind: "author", id, name, sortName ("Martin, George R.R."),
 // bookCount, photo (imageUrl, or ""), lastAddedAt, formats, seriesCount (-1 until their
 // books are looked up), bookSeries}. Formats, counts and series come from looking up an
 // author's books, a few authors to a request. With a filter set, counts and formats cover

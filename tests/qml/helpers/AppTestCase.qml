@@ -91,9 +91,10 @@ UiTestCase {
     }
 
     // The series or authors (field "series" or "author") whose books have been asked for,
-    // in the order asked
+    // in the order asked, in a library or in all of them
     function lookedUp(field) {
-        return fakeServer.requests.filter(r => r.path === "/api/v1/libraries/1/books" && r.body.filter
+        return fakeServer.requests.filter(r => (r.path === "/api/v1/libraries/1/books" || r.path === "/api/v1/books/query")
+                                               && r.body.filter
                                                && r.body.filter.rules[0].field === field)
                                   .reduce((names, r) => names.concat(Array.from(r.body.filter.rules[0].value)), [])
     }

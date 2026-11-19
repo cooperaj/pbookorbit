@@ -6,6 +6,7 @@
 #include <QNetworkAccessManager>
 #include <QObject>
 #include <QString>
+#include <QVariantList>
 #include <functional>
 #include <utility>
 
@@ -40,6 +41,11 @@ class Session : public QObject
     Q_PROPERTY(bool networkConnected READ networkConnected NOTIFY onlineChanged)
     // Signing in's error, shown on the sign-in page
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
+    // The user's libraries, [{id, name}] in their order. Empty until withLibrary() has
+    // fetched them.
+    Q_PROPERTY(QVariantList libraries READ libraries NOTIFY librariesChanged)
+    // The library the book list and search use (see withLibrary()), or -1 until known
+    Q_PROPERTY(int libraryId READ libraryId NOTIFY libraryIdChanged)
 
 public:
     using DataHandler = std::function<void(const QByteArray &)>;
@@ -61,10 +67,13 @@ public:
     bool online() const { return m_online; }
     bool networkConnected() const;
     QString error() const { return m_error; }
-    // The library's id, or -1 until withLibrary() has fetched it
+    QVariantList libraries() const { return m_libraries; }
     int libraryId() const { return m_libraryId; }
+    // Endpoint for book queries in a library, or in every library for -1. Only a library's
+    // has jump buckets, at the path plus "/jump-buckets".
+    static QString booksPath(int libraryId);
     // Endpoint for the library's book queries
-    QString libraryBooksPath() const { return QString("/libraries/%1/books").arg(m_libraryId); }
+    QString libraryBooksPath() const { return booksPath(m_libraryId); }
 
     // server is as typed, e.g. "books.example.com". Defaults to https.
     Q_INVOKABLE void signIn(const QString &server, const QString &username, const QString &password);
@@ -73,6 +82,8 @@ public:
     Q_INVOKABLE void signOut();
     // Asks the system to connect Wi-Fi (its own dialog), then checks the server is there
     Q_INVOKABLE void goOnline();
+    // Uses another of the libraries from now on, and remembers it until signing out
+    Q_INVOKABLE void chooseLibrary(int libraryId);
 
     // Authenticated GET for raw data such as thumbnails. Doesn't set busy.
     void download(const QString &path, DataHandler onSuccess, ErrorHandler onError);
@@ -86,7 +97,8 @@ public:
     // Authenticated request for a list, setting busy while it's in flight
     void callJson(const QByteArray &method, const QString &path, const QJsonDocument &body,
                   std::function<void(const QJsonDocument &)> onSuccess, FailedHandler onFailed);
-    // Calls then with the library id, fetching it first if needed. Calls made while it's
+    // Calls then with the library id, fetching the libraries first if needed: the one
+    // chosen before if the server still has it, else the first. Calls made while they're
     // fetched wait for the same request, which is quiet if the first call is.
     void withLibrary(std::function<void(int libraryId)> then, ErrorHandler onError, bool quiet = true);
     // withLibrary() for a list, setting busy, with onFailed called as callJson() does
@@ -102,6 +114,10 @@ signals:
     void busyChanged();
     void onlineChanged();
     void errorChanged();
+    void librariesChanged();
+    void libraryIdChanged();
+    // chooseLibrary() replaced the library in use
+    void libraryChanged();
     // A sign-in succeeded
     void started();
     // The session ended, signed out or expired. Sent before signedInChanged.
@@ -137,6 +153,8 @@ private:
     void clearSession();
     void setSignedIn(bool signedIn);
     void setError(const QString &error);
+    // Whether libraries has one with this id
+    bool hasLibrary(int libraryId) const;
 
     Database *m_database;
     QNetworkAccessManager m_nam;
@@ -153,6 +171,7 @@ private:
     QList<std::function<void(bool)>> m_afterConnect;
     int m_pending = 0;
     QString m_error;
+    QVariantList m_libraries;
     int m_libraryId = -1;
     // Waiting for withLibrary()'s request; not empty while it's in flight
     QList<std::pair<std::function<void(int)>, ErrorHandler>> m_afterLibrary;

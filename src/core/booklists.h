@@ -19,6 +19,10 @@ public:
                               bool localOnly = false);
     // Reloads it from page one
     void reload() { refresh(); }
+
+protected:
+    // Those in the session's library
+    QVariantList localBooks() const override;
 };
 
 // Books matching a search of titles, authors and series, by title. Offline, the local
@@ -56,12 +60,14 @@ public:
     using PagedBookList::PagedBookList;
 
     // Fills the list with the books of some authors (field "author", values are names), a
-    // series ("series", its name) or a collection ("collection", its id). Sorting and
-    // filtering work as in LibraryBooks::setQuery(), plus "seriesIndex" (series order, with
-    // a section per number) and, for collections, "collectionOrder" (order added). Existing
-    // rows stay until the new ones arrive.
+    // series ("series", its name) or a collection ("collection", its id). Authors' and
+    // series' books are those in libraryId, or in every library for -1; a collection's may
+    // be in any. Sorting and filtering work as in LibraryBooks::setQuery(), plus
+    // "seriesIndex" (series order, with a section per number) and, for collections,
+    // "collectionOrder" (order added). Existing rows stay until the new ones arrive.
     Q_INVOKABLE void show(const QString &field, const QStringList &values, const QString &sortField,
-                          bool descending, const QStringList &formats = {}, bool localOnly = false);
+                          bool descending, const QStringList &formats = {}, bool localOnly = false,
+                          int libraryId = -1);
 
 protected:
     void setPaths() override;
@@ -76,6 +82,7 @@ protected:
 private:
     QString m_field;
     QStringList m_values;
+    int m_libraryId = -1;
     // For a collection, its book ids as its lookup saved them, newest first
     QVariantList m_collectionIds;
 };

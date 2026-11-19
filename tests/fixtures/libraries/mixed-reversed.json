@@ -2,6 +2,7 @@
   "items": [
     {
       "id": 4,
+      "libraryId": 1,
       "title": "The Martian",
       "authors": [
         "Andy Weir"
@@ -23,6 +24,7 @@
     },
     {
       "id": 3,
+      "libraryId": 1,
       "title": "Neuromancer",
       "authors": [
         "William Gibson"
@@ -44,6 +46,7 @@
     },
     {
       "id": 1,
+      "libraryId": 1,
       "title": "Dune",
       "authors": [
         "Frank Herbert"

@@ -14,7 +14,8 @@ AppTestCase {
     name: "Series"
 
     readonly property string series: "/api/v1/series"
-    readonly property string books: "/api/v1/libraries/1/books"
+    // Every library's, as Series and Authors list them all to start with
+    readonly property string books: "/api/v1/books/query"
 
     function serveSeries() {
         fakeServer.respond("GET", series, 200, "series/list.json")

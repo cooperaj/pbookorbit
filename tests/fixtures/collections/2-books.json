@@ -2,6 +2,7 @@
   "items": [
     {
       "id": 1,
+      "libraryId": 1,
       "title": "Dune",
       "authors": [
         "Frank Herbert"
@@ -24,6 +25,7 @@
     },
     {
       "id": 5,
+      "libraryId": 1,
       "title": "Project Hail Mary",
       "authors": [
         "Andy Weir"
@@ -45,6 +47,7 @@
     },
     {
       "id": 7,
+      "libraryId": 1,
       "title": "Project Hail Mary",
       "authors": [
         "Andy Weir"

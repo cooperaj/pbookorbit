@@ -25,6 +25,11 @@ void LibraryBooks::setQuery(const QString &sortField, bool descending, const QSt
     refresh();
 }
 
+QVariantList LibraryBooks::localBooks() const
+{
+    return localBooksIn(m_session->libraryId());
+}
+
 void SearchResults::find(const QString &text)
 {
     restartPages();
@@ -48,7 +53,7 @@ void SearchResults::find(const QString &text)
         if (generation != m_queryGeneration)
             return;
         // Same as BookOrbit's web client: the text as q, sorted by title
-        m_path = m_session->libraryBooksPath();
+        setPaths();
         m_query = QJsonObject{
             {"q", q},
             {"sort", QJsonArray{QJsonObject{{"field", "title"}, {"dir", "asc"}}}},
@@ -119,15 +124,20 @@ void SearchResults::hideListedPairs(const QVariantList &merged, const QVariantLi
 }
 
 void BooksOf::show(const QString &field, const QStringList &values, const QString &sortField,
-                   bool descending, const QStringList &formats, bool localOnly)
+                   bool descending, const QStringList &formats, bool localOnly, int libraryId)
 {
+    if (field == "collection")
+        libraryId = -1;
     // Different books: clear the old rows. A new sort or filter of the same books keeps
     // them until the new rows arrive.
-    if (field != m_field || values != m_values)
+    if (field != m_field || values != m_values || libraryId != m_libraryId)
         clearRows();
     m_field = field;
     m_values = values;
+    m_libraryId = libraryId;
     m_cacheName = "booksOf:" + field + ":" + QJsonDocument(QJsonArray::fromStringList(values)).toJson(QJsonDocument::Compact);
+    if (libraryId >= 0)
+        m_cacheName += QString(":%1").arg(libraryId);
 
     m_collectionIds.clear();
     if (field == "collection") {
@@ -141,7 +151,7 @@ void BooksOf::show(const QString &field, const QStringList &values, const QStrin
         // An audiobook's ebook record may not be in the collection
         m_mergePairs = false;
     } else {
-        // The library's books, matching the names exactly. setPaths() sets the path.
+        // Books matching the names exactly. setPaths() sets the path.
         m_rules = QJsonArray{rule(field, "includesAny", QJsonArray::fromStringList(values))};
     }
 
@@ -151,15 +161,17 @@ void BooksOf::show(const QString &field, const QStringList &values, const QStrin
 
 void BooksOf::setPaths()
 {
-    // A collection's are set by show()
-    if (m_field != "collection")
-        PagedBookList::setPaths();
+    // A collection's own are set by show(). Its books' other records may be outside it.
+    if (m_field == "collection")
+        m_companionsPath = m_session->libraryBooksPath();
+    else
+        setLibraryPaths(m_libraryId);
 }
 
 QVariantList BooksOf::localBooks() const
 {
     QVariantList books;
-    for (const QVariant &value : m_localBooks) {
+    for (const QVariant &value : localBooksIn(m_libraryId)) {
         const QVariantMap book = value.toMap();
         bool wanted = false;
         if (m_field == "collection") {

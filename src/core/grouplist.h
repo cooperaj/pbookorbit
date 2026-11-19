@@ -49,6 +49,9 @@ public:
     // Sorts by "name", "bookCount", "lastAddedAt", "readProgress" or, for authors,
     // "sortName"
     Q_INVOKABLE void setSort(const QString &field, bool descending);
+    // Lists the groups with books in this library, or in any for -1 (the default). A change
+    // empties the list, and the next load() fetches it.
+    Q_INVOKABLE void setLibrary(int libraryId);
     // Looks up the books of rows first to last, once each per load. Called while scrolling
     // for the visible rows plus a screen either side. Until the list has loaded, it waits
     // for it. Rows asked for before and not yet looked up are dropped.
@@ -85,9 +88,8 @@ protected:
     // Books per request when looking up rows' books
     static constexpr int LOOKUP_PAGE_SIZE = 200;
 
-    // Loads page onwards from the server, once the library is known if needsLibrary()
+    // Loads page onwards from the server
     virtual void loadPage(int page, int generation) = 0;
-    virtual bool needsLibrary() const { return true; }
     // Rows for the local books, as though looked up
     virtual void showLocal() = 0;
     // Looks up the books of the rows with these ids, then calls lookUpNextRows()
@@ -131,6 +133,10 @@ protected:
     static QVariantList withCoverVersions(QVariantList covers, const QHash<int, QVariant> &versions);
     // How many series a row's books are in, books being key -> series names
     static int seriesCount(const QHash<QString, QStringList> &bookSeries);
+    // "&libraryId=<id>" for a group list's URL, or empty for every library
+    QString libraryParameter() const;
+    // The ids of the session's libraries with these names
+    QVariantList libraryIds(const QStringList &names) const;
     // A stable id for a row built offline, negative so it can't clash with the server's
     static int localId(const QString &name);
     // The rows on screen: the cached ones, until loaded
@@ -140,10 +146,13 @@ protected:
     Database *m_database;
     Details *m_details;
     GroupDetails *m_groupDetails;
-    // Its list cache name, or empty if it isn't cached
+    // Its list cache name, or empty if it isn't cached. With a library set, "<name>:<id>".
     QString m_cacheName;
-    // The kind its rows' looked up details are saved as, or empty if they aren't
+    // The kind its rows' looked up details are saved as, or empty if they aren't. With a
+    // library set, "<kind>:<id>", as a group's counts differ by library.
     QString m_detailsKind;
+    // The library its groups are in, or -1 for every library
+    int m_libraryId = -1;
     // Fields restored from the saved details besides bookCount and formats. Covers are
     // always saved, but only their versions restored unless listed here.
     QStringList m_detailFields;
@@ -166,8 +175,6 @@ protected:
     bool m_local = false;
 
 private:
-    // Calls load once the library id is known, unless the list has been loaded again since
-    void withLibrary(int generation, std::function<void()> load);
     // Shows the cached rows, if any, until a load finishes. Only the first time it's
     // called.
     void restoreCache();
