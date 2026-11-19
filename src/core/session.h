@@ -6,6 +6,7 @@
 #include <QNetworkAccessManager>
 #include <QObject>
 #include <QString>
+#include <QVariantList>
 #include <functional>
 #include <utility>
 
@@ -40,6 +41,9 @@ class Session : public QObject
     Q_PROPERTY(bool networkConnected READ networkConnected NOTIFY onlineChanged)
     // Signing in's error, shown on the sign-in page
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
+    // The libraries to choose from, [{id, name, bookCount}] in the user's order, while the
+    // server has several and none is chosen. Empty otherwise.
+    Q_PROPERTY(QVariantList libraryChoices READ libraryChoices NOTIFY libraryChoicesChanged)
 
 public:
     using DataHandler = std::function<void(const QByteArray &)>;
@@ -61,6 +65,7 @@ public:
     bool online() const { return m_online; }
     bool networkConnected() const;
     QString error() const { return m_error; }
+    QVariantList libraryChoices() const { return m_libraryChoices; }
     // The library's id, or -1 until withLibrary() has fetched it
     int libraryId() const { return m_libraryId; }
     // Endpoint for the library's book queries
@@ -73,6 +78,8 @@ public:
     Q_INVOKABLE void signOut();
     // Asks the system to connect Wi-Fi (its own dialog), then checks the server is there
     Q_INVOKABLE void goOnline();
+    // Uses one of libraryChoices from now on, and sends the requests waiting for it
+    Q_INVOKABLE void chooseLibrary(int libraryId);
 
     // Authenticated GET for raw data such as thumbnails. Doesn't set busy.
     void download(const QString &path, DataHandler onSuccess, ErrorHandler onError);
@@ -87,7 +94,9 @@ public:
     void callJson(const QByteArray &method, const QString &path, const QJsonDocument &body,
                   std::function<void(const QJsonDocument &)> onSuccess, FailedHandler onFailed);
     // Calls then with the library id, fetching it first if needed. Calls made while it's
-    // fetched wait for the same request, which is quiet if the first call is.
+    // fetched wait for the same request, which is quiet if the first call is. The library is
+    // the one chosen before if the server still has it, or its only one; with several, they
+    // wait until one is chosen (see libraryChoices).
     void withLibrary(std::function<void(int libraryId)> then, ErrorHandler onError, bool quiet = true);
     // withLibrary() for a list, setting busy, with onFailed called as callJson() does
     void loadLibrary(std::function<void()> then, FailedHandler onFailed);
@@ -102,6 +111,9 @@ signals:
     void busyChanged();
     void onlineChanged();
     void errorChanged();
+    void libraryChoicesChanged();
+    // The library id is known, so requests for its books can be sent
+    void libraryReady();
     // A sign-in succeeded
     void started();
     // The session ended, signed out or expired. Sent before signedInChanged.
@@ -137,6 +149,9 @@ private:
     void clearSession();
     void setSignedIn(bool signedIn);
     void setError(const QString &error);
+    // Uses and saves the library, and sends the requests waiting for it
+    void setLibrary(int libraryId);
+    void setLibraryChoices(const QVariantList &choices);
 
     Database *m_database;
     QNetworkAccessManager m_nam;
@@ -156,6 +171,7 @@ private:
     int m_libraryId = -1;
     // Waiting for withLibrary()'s request; not empty while it's in flight
     QList<std::pair<std::function<void(int)>, ErrorHandler>> m_afterLibrary;
+    QVariantList m_libraryChoices;
     bool m_refreshing = false;
     QList<std::function<void()>> m_afterRefresh;
     // Why the last refresh failed, if the server answered with an error, for the requests

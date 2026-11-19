@@ -29,6 +29,7 @@
         <file>qml/EmptyState.qml</file>
         <file>qml/SystemDialog.qml</file>
         <file>qml/FindBooksDialog.qml</file>
+        <file>qml/LibraryDialog.qml</file>
         <file>qml/UpdateDialog.qml</file>
         <file>qml/BookMenu.qml</file>
         <file>qml/PageHeader.qml</file>

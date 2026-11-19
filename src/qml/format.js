@@ -19,9 +19,9 @@ function duration(seconds) {
     return hours > 0 ? hours + " h " + (minutes % 60) + " min" : minutes + " min"
 }
 
-// "1 book", "3 books"
-function count(n, noun) {
-    return n + " " + noun + (n === 1 ? "" : "s")
+// "1 book", "3 books"; plural for nouns that don't just add an s
+function count(n, noun, plural) {
+    return n + " " + (n === 1 ? noun : plural || noun + "s")
 }
 
 // "EPUB, M4B" from ["epub", "m4b"]

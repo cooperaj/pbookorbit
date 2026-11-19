@@ -52,12 +52,14 @@ Item {
             x: panel.border.width
             y: panel.border.width
             width: panel.width - 2 * x
-            height: Math.max(Units.dp(175), messageArea.height + 2 * Units.dp(25))
+            readonly property int minHeight: Units.dp(175)
+            height: Math.max(minHeight, messageArea.height + 2 * Units.dp(25))
 
+            // Where it's centred in the shortest dialog, so a taller one keeps it at the top
             ThemeIcon {
                 id: icon
                 x: Units.dp(25)
-                anchors.verticalCenter: parent.verticalCenter
+                y: Math.round((body.minHeight - height) / 2)
                 name: dialog.icon
             }
 

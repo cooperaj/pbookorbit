@@ -3,9 +3,9 @@ import QtTest
 import "../helpers"
 import "../../../src/qml"
 
-// A row that inverts while pressed, shared by the menu rows and the recent searches: a
-// black fill and white foreground while pressed, a line below that hides meanwhile, and a
-// tap that says so.
+// A row that inverts while pressed or selected, shared by the menu rows, the recent searches
+// and the library choices: a black fill and white foreground while inverted, a line below
+// that hides meanwhile, and a tap that says so.
 UiTestCase {
     id: test
     name: "PressableRow"
@@ -65,6 +65,15 @@ UiTestCase {
         compare(find("label").color, Qt.color("white"))
         verify(!line(row).visible, "no line while pressed")
         mouseRelease(row)
+    }
+
+    function test_staysInvertedWhileSelected() {
+        const row = make()
+
+        row.selected = true
+
+        compare(find("label").color, Qt.color("white"))
+        verify(!line(row).visible, "no line while selected")
     }
 
     function test_lineIsInsetAtItsEnds() {

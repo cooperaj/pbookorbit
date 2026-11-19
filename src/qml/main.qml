@@ -301,7 +301,8 @@ Window {
     readonly property PageButtons frontPageButtons: frontPage?.pageButtons ?? null
     readonly property bool overlayOpen: dropdownOpen || menu.visible || bookMenu.visible
                                         || deleteDialog.visible || downloadDialog.visible
-                                        || findBooksDialog.visible || bookInfoPage.menuOpen
+                                        || findBooksDialog.visible || libraryDialog.visible
+                                        || bookInfoPage.menuOpen
 
     function pageFront(direction) {
         if (frontPageButtons && frontPageButtons.visible && !overlayOpen)
@@ -777,6 +778,11 @@ Window {
         anchors.fill: parent
         onOpened: (bookId, format, app) => app ? downloads.openWith(bookId, format, app.app) : downloads.open(bookId)
     }
+    LibraryDialog {
+        id: libraryDialog
+        objectName: "libraryDialog"
+        anchors.fill: parent
+    }
     FindBooksDialog {
         id: findBooksDialog
         objectName: "findBooksDialog"
@@ -833,14 +839,20 @@ Window {
                    + " Restart your device to see them."
     }
     // After the first sign-in, offer to find books already on the device, if there are any.
-    // Only once; after that it's in the menu.
+    // Only once; after that it's in the menu. Not before the library is chosen, since it
+    // looks through that library.
+    property bool offerFindBooks: false
     Connections {
         target: bookOrbit.session
         function onSignedInChanged() {
-            if (bookOrbit.session.signedIn && bookFinder.shouldOffer()) {
+            root.offerFindBooks = bookOrbit.session.signedIn
+        }
+        function onLibraryReady() {
+            if (root.offerFindBooks && bookFinder.shouldOffer()) {
                 bookFinder.markOffered()
                 findBooksDialog.offer()
             }
+            root.offerFindBooks = false
         }
     }
 }

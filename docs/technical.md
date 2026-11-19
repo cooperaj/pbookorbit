@@ -59,9 +59,9 @@ Data lives in an SQLite database, `pbookorbit.db`, in the system config folder
 the emulator). Set `PBOOKORBIT_DB` to use a different file, for example in tests. With
 the device plugged in, `sqlite3 <mount>/system/config/pbookorbit.db` opens it from a PC.
 
-- `settings` is key/value: `serverUrl`, `username`, `refreshToken`, `accent` (the
-  BookOrbit accent colour), `recentSearches` (JSON array), `findBooksOffered` (0/1) and
-  `diagnosticsLogging` (0/1).
+- `settings` is key/value: `serverUrl`, `username`, `refreshToken`, `libraryId` (the
+  library chosen, forgotten on signing out), `accent` (the BookOrbit accent colour),
+  `recentSearches` (JSON array), `findBooksOffered` (0/1) and `diagnosticsLogging` (0/1).
 - `books` caches BookOrbit books by id. `data` holds the book's list entry as JSON, so
   new fields don't need a schema change. `title` and `series` are generated columns for
   querying; more can be added with
@@ -239,7 +239,9 @@ builds its rows from the downloaded books.
 
 ![The book list and group list classes and what each subclass adds](images/cpp-lists.svg)
 
-`Session` holds the tokens, `online`, `busy` and the library id. A list request reconnects
+`Session` holds the tokens, `online`, `busy` and the library id. The library is the one
+saved in `libraryId` if the server still has it, or its only one; with several, requests
+for it wait while `LibraryDialog` asks which to use, and Find books is offered after that. A list request reconnects
 Wi-Fi if it has gone idle, refreshes the access token when needed and retries once on a
 401. `request()` and `download()` don't set `busy`, and `startStream()` refreshes the
 token first so it outlasts a large download.
@@ -252,6 +254,7 @@ These keep the parts in step:
 |---|---|---|
 | First frame drawn | `start()`: reload the library and theme, if a session was saved | `main.cpp` |
 | `Session::started` | `start()`, after signing in | `BookOrbitClient` |
+| `Session::libraryReady` | Find books is offered, after the first sign-in | QML |
 | `Session::ended` | `clearLists()`: database caches, `GroupDetails` and every list emptied, before QML's handlers run | `BookOrbitClient` |
 | Back online | Group lists forget the rows they built offline | `BookOrbitClient` |
 | `bookOrbit.setLocalBooks()` | Every list takes the downloaded books; local-only lists relist | QML |

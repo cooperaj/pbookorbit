@@ -30,7 +30,7 @@ PressableRow {
         x: Units.dp(26) - width / 2
         anchors.verticalCenter: parent.verticalCenter
         name: item.icon
-        inverted: item.pressed
+        inverted: item.inverted
     }
     Text {
         id: label
@@ -50,6 +50,6 @@ PressableRow {
         anchors.rightMargin: Units.dp(4)
         anchors.verticalCenter: parent.verticalCenter
         name: item.arrow === "" ? "" : "arrow_" + item.arrow
-        inverted: item.pressed
+        inverted: item.inverted
     }
 }

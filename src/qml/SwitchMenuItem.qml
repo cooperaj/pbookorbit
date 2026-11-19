@@ -48,7 +48,7 @@ Item {
             sourceSize.width: width
             sourceSize.height: height
             name: item.checked ? "switch_on" : "switch_off"
-            inverted: row.pressed
+            inverted: row.inverted
             opacity: item.enabled ? 1 : 0.5
         }
     }

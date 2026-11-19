@@ -28,6 +28,8 @@ TestCase {
         compare(Format.count(1, "book"), "1 book")
         compare(Format.count(0, "book"), "0 books")
         compare(Format.count(3, "other"), "3 others")
+        compare(Format.count(1, "library", "libraries"), "1 library")
+        compare(Format.count(2, "library", "libraries"), "2 libraries")
     }
 
     function test_formats() {

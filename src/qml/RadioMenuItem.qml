@@ -18,7 +18,7 @@ PressableRow {
         x: Units.dp(40) - width / 2
         anchors.verticalCenter: parent.verticalCenter
         name: item.checked ? "radiobtn_checked_s" : "radiobtn_s"
-        inverted: item.pressed
+        inverted: item.inverted
     }
     Text {
         id: label
