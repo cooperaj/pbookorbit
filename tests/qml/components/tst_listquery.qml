@@ -4,8 +4,8 @@ import "../helpers"
 import "../../../src/qml"
 
 // One view's sort, and the content type and Downloaded only every view shares
-// (bookOrbit.filter; libraries are tested with the app in tst_libraries.qml). Here with the library's sorts:
-// dates newest first, everything else A to Z.
+// (bookOrbit.filter). Libraries are tested with the app, in tst_libraries.qml. Here with
+// the library's sorts: dates newest first, everything else A to Z.
 UiTestCase {
     id: test
     name: "ListQuery"
@@ -66,6 +66,20 @@ UiTestCase {
         verify(!query.descending(), "A to Z by author")
     }
 
+    // Back to the sort it was made with, unreversed, left for the view to apply
+    function test_resetSort() {
+        make()
+        query.chooseSort(2)
+        query.reverseSort()
+        applied.clear()
+
+        query.resetSort()
+
+        compare(query.sortName, "Title")
+        verify(!query.sortReversed, "not reversed")
+        compare(applied.count, 0)
+    }
+
     function test_choosingWhatsChosenChangesNothing() {
         make()
 
@@ -95,6 +109,7 @@ UiTestCase {
         compare(query.filterName, "All titles")
         compare(query.formats, [])
         compare(query.contentNoun, "books")
+        compare(query.listedNoun, "books")
     }
 
     function test_justEbooks() {
@@ -167,6 +182,7 @@ UiTestCase {
         query.setDownloadedOnly(true)
 
         verify(query.downloadedOnly, "on as chosen")
+        compare(query.listedNoun, "downloaded books")
     }
 
     // Offline only downloads can show, whatever was chosen, and the choice is kept for

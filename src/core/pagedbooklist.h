@@ -50,8 +50,6 @@ public:
     virtual void setLocalBooks(const QVariantList &books);
     // Empties the list when the session ends
     void clear();
-    // Stops the list cache's rows being shown, as when they're from another library
-    void forgetCache();
 
 signals:
     void changed();

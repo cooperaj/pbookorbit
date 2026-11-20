@@ -15,9 +15,12 @@ ListPage {
     // The list shown: bookOrbit.collections, series, authors or authorSeries. None, for a
     // page whose rows are set some other way.
     property var groups: null
-    property bool loaded: groups ? groups.loaded && (groups.allLookedUp || !query || !query.hasContentType
-                                                     || query.allContent || query.downloadedOnly)
-                                 : false
+    property bool loaded: groups ? groups.loaded && (groups.allLookedUp || !filteredByFormat) : false
+    // Filtered to the downloaded books, or else to a content type, which needs every group's
+    // books looked up
+    readonly property bool filteredToDownloads: !!query && query.hasContentType && query.downloadedOnly
+    readonly property bool filteredByFormat: !!query && query.hasContentType && !query.allContent
+                                             && !filteredToDownloads
     // What a group is, "author" or "series", and its plural, for the empty state
     property string noun
     property string pluralNoun: noun
@@ -25,13 +28,10 @@ ListPage {
     property string unfilteredText
     property string offlineGroups
 
-    emptyTitle: !query || !query.hasContentType || query.downloadedOnly || query.allContent
-                ? "No " + pluralNoun : "No " + pluralNoun + " with " + query.contentNoun
+    emptyTitle: filteredByFormat ? "No " + pluralNoun + " with " + query.contentNoun : "No " + pluralNoun
     emptyText: !online ? offlineText(offlineGroups)
-               : query && query.hasContentType && query.downloadedOnly
-               ? "Turn off Downloaded only to see every " + noun + "."
-               : query && query.hasContentType && !query.allContent
-               ? "Tick Ebooks and Audiobooks to see every " + noun + "."
+               : filteredToDownloads ? "Turn off Downloaded only to see every " + noun + "."
+               : filteredByFormat ? "Tick Ebooks and Audiobooks to see every " + noun + "."
                : unfilteredText
     // The client's, unless set
     property bool online: bookOrbit.session.online

@@ -3,8 +3,8 @@ import "units.js" as Units
 
 // Option row in an options menu, modelled on Libby's filter menu on an Era Color: radio
 // button, label, and an inset grey line below. Inverted while pressed (see PressableRow).
-// With checkbox, one of several that can be ticked together, as a ticked box that can't be
-// unticked (locked) shows greyed.
+// With checkbox, a box that can be ticked alongside others instead. A locked box can't be
+// unticked and shows greyed.
 PressableRow {
     id: item
     property alias text: label.text
@@ -21,8 +21,8 @@ PressableRow {
     ThemeIcon {
         x: Units.dp(40) - width / 2
         anchors.verticalCenter: parent.verticalCenter
-        // The theme's radio buttons are 74px with 46px drawn, its boxes 110px with 60px:
-        // scaled to match
+        // The theme's boxes are drawn smaller within their bitmap than its radio buttons (60px
+        // of 110px, against 46px of 74px), so they're scaled to look the same size
         width: item.checkbox ? 84 : 74
         height: width
         sourceSize.width: width

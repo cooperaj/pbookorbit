@@ -15,6 +15,9 @@ UiTestCase {
     readonly property var savedSession: ({serverUrl: fakeServer.url, username: "reader",
                                           refreshToken: "saved-token"})
 
+    // Every library's books, which Series, Authors and books-of lists ask for to start with
+    readonly property string everyLibrary: "/api/v1/books/query"
+
     // The server's library: one page of books, and the A-Z sections for it
     function serveLibrary(books, jumpBuckets) {
         fakeServer.respond("GET", "/api/v1/libraries", 200, "libraries/list.json")
@@ -93,7 +96,7 @@ UiTestCase {
     // The series or authors (field "series" or "author") whose books have been asked for,
     // in the order asked, in a library or in all of them
     function lookedUp(field) {
-        return fakeServer.requests.filter(r => (r.path === "/api/v1/libraries/1/books" || r.path === "/api/v1/books/query")
+        return fakeServer.requests.filter(r => (r.path === "/api/v1/libraries/1/books" || r.path === everyLibrary)
                                                && r.body.filter
                                                && r.body.filter.rules[0].field === field)
                                   .reduce((names, r) => names.concat(Array.from(r.body.filter.rules[0].value)), [])

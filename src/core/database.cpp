@@ -59,7 +59,7 @@ static const char *SCHEMA = R"sql(
     ) WITHOUT ROWID;
 
     CREATE TABLE IF NOT EXISTS list_cache (
-        name TEXT PRIMARY KEY,                      -- "library", "collections", ...
+        name TEXT PRIMARY KEY,                      -- "library:1", "collections", ...
         data TEXT NOT NULL CHECK (json_valid(data))
     ) WITHOUT ROWID;
 

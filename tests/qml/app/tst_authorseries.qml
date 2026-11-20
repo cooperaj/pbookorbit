@@ -14,8 +14,6 @@ AppTestCase {
     name: "AuthorSeries"
 
     readonly property string series: "/api/v1/series"
-    // Every library's, as Series and Authors list them all to start with
-    readonly property string books: "/api/v1/books/query"
     readonly property string danSimmonsSeries: "Endymion (2), Hyperion Cantos (2), Ilium (1)"
 
     function openAuthors(options) {
@@ -25,8 +23,8 @@ AppTestCase {
         fakeServer.respond("GET", "/api/v1/authors/2", 200, "authorseries/dan-simmons.json")
         fakeServer.respond("GET", "/api/v1/authors/3", 200, "authorseries/ann-leckie.json")
         // Each author's or series' books
-        fakeServer.respond("POST", books, 200, "authorseries/books.json", {filter: {rules: [{field: "author"}]}})
-        fakeServer.respond("POST", books, 200, "authorseries/books.json", {filter: {rules: [{field: "series"}]}})
+        fakeServer.respond("POST", everyLibrary, 200, "authorseries/books.json", {filter: {rules: [{field: "author"}]}})
+        fakeServer.respond("POST", everyLibrary, 200, "authorseries/books.json", {filter: {rules: [{field: "series"}]}})
         bookRow("Dune")
         tap("AuthorsTab")
     }

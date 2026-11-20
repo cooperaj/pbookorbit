@@ -19,7 +19,7 @@ one of the device's built-in apps rather than a port of something else.
   shows. The library shows one at a time; the other views can show every library too.
   The library, Series and Authors keep their choice for next time.
 - Ebooks, audiobooks and downloaded only are the same in every view, and kept for next
-  time.
+  time. A search starts with them, and changing them there changes only that search.
 - Pages for each book and author, with links through to everything else by that author
   or in that series.
 - Search that updates as you type, and remembers recent searches. Results can be narrowed

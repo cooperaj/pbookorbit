@@ -36,10 +36,10 @@ void GroupList::load()
         return;
     }
 
-    // Once the libraries are known, for whether the one chosen is still there. A later
-    // load() replaces this one.
+    // Several load()s while the libraries are fetched load once: the first to start makes
+    // the others stale
     const int generation = m_generation;
-    m_session->loadLibrary([this, generation]() {
+    const auto start = [this, generation]() {
         if (generation != m_generation)
             return;
         if (m_libraryId >= 0 && !m_session->hasLibrary(m_libraryId))
@@ -47,7 +47,14 @@ void GroupList::load()
         const int loading = startLoad();
         restoreCache();
         loadPage(0, loading);
-    }, [this, generation](const QString &error) {
+    };
+    if (!inLibraries()) {
+        start();
+        return;
+    }
+
+    // Once the libraries are known, for whether the one chosen is still there
+    m_session->loadLibrary(start, [this, generation](const QString &error) {
         if (generation == m_generation)
             setError(error);
     });

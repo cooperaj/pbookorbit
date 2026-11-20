@@ -44,7 +44,7 @@ class Session : public QObject
     // The user's libraries, [{id, name}] in their order. Empty until withLibrary() has
     // fetched them.
     Q_PROPERTY(QVariantList libraries READ libraries NOTIFY librariesChanged)
-    // The library the book list and search use (see withLibrary()), or -1 until known
+    // The book list's library (see withLibrary()), or -1 until known
     Q_PROPERTY(int libraryId READ libraryId NOTIFY libraryIdChanged)
 
 public:
@@ -72,13 +72,14 @@ public:
     // Endpoint for book queries in a library, or in every library for -1. Only a library's
     // has jump buckets, at the path plus "/jump-buckets".
     static QString booksPath(int libraryId);
-    // Endpoint for the library's book queries
-    QString libraryBooksPath() const { return booksPath(m_libraryId); }
     // The library to ask for a list's books or groups: libraryId, or for every library (-1)
     // a server's only one, which has A-Z sections unlike every library's books
     int libraryToQuery(int libraryId) const;
     // Whether libraries has one with this id
     bool hasLibrary(int libraryId) const;
+    // The library the book list showed last, as saved, or -1. Known before the libraries
+    // are fetched, so it may have gone since.
+    int savedLibraryId() const;
 
     // server is as typed, e.g. "books.example.com". Defaults to https.
     Q_INVOKABLE void signIn(const QString &server, const QString &username, const QString &password);
@@ -103,7 +104,7 @@ public:
     void callJson(const QByteArray &method, const QString &path, const QJsonDocument &body,
                   std::function<void(const QJsonDocument &)> onSuccess, FailedHandler onFailed);
     // Calls then with the library id, fetching the libraries first if needed: the one
-    // chosen before if the server still has it, else the first. Calls made while they're
+    // used last time if the server still has it, else the first. Calls made while they're
     // fetched wait for the same request, which is quiet if the first call is.
     void withLibrary(std::function<void(int libraryId)> then, ErrorHandler onError, bool quiet = true);
     // withLibrary() for a list, setting busy, with onFailed called as callJson() does
@@ -131,6 +132,8 @@ signals:
     void signedOut();
 
 private:
+    // Sets the library in use, saved for next time
+    void useLibrary(int libraryId);
     // On the device, connects Wi-Fi silently if needed, then calls then(connected). That takes
     // seconds, so it's done on another thread and the app carries on drawing. Calls made
     // meanwhile wait for the same connection.

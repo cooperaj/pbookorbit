@@ -211,10 +211,8 @@ void Session::withLibrary(std::function<void(int libraryId)> then, ErrorHandler 
             m_libraries = libraries;
             emit librariesChanged();
 
-            bool saved = false;
-            const int chosen = m_database->text("libraryId").toInt(&saved);
-            m_libraryId = saved && hasLibrary(chosen) ? chosen : libraries.first().toMap().value("id").toInt();
-            emit libraryIdChanged();
+            const int saved = savedLibraryId();
+            useLibrary(hasLibrary(saved) ? saved : libraries.first().toMap().value("id").toInt());
             for (const auto &queued : std::exchange(m_afterLibrary, {}))
                 queued.first(m_libraryId);
         },
@@ -238,10 +236,22 @@ void Session::chooseLibrary(int libraryId)
     if (libraryId == m_libraryId || !hasLibrary(libraryId))
         return;
 
+    useLibrary(libraryId);
+    emit libraryChanged();
+}
+
+int Session::savedLibraryId() const
+{
+    bool saved = false;
+    const int libraryId = m_database->text("libraryId").toInt(&saved);
+    return saved ? libraryId : -1;
+}
+
+void Session::useLibrary(int libraryId)
+{
     m_libraryId = libraryId;
     m_database->setText("libraryId", QString::number(libraryId));
     emit libraryIdChanged();
-    emit libraryChanged();
 }
 
 bool Session::hasLibrary(int libraryId) const

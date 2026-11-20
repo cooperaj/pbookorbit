@@ -260,7 +260,7 @@ Rectangle {
         menus: page.menus
         // The spinner is in the search box
         empty: true
-        emptyTitle: page.query ? (page.query.downloadedOnly ? "No downloaded " : "No ") + page.query.contentNoun + " found"
+        emptyTitle: page.query ? "No " + page.query.listedNoun + " found"
                                : "No books found"
         emptyText: bookOrbit.session.online ? "Try a different title, author or series."
                                     : offlineText("downloaded books", "searched")

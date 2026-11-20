@@ -24,9 +24,8 @@ BookOrbitClient::BookOrbitClient(Database *database, QObject *parent)
     // Connected before QML's handlers, so the lists are ready for them
     connect(&m_session, &Session::started, this, &BookOrbitClient::start);
     connect(&m_session, &Session::ended, this, &BookOrbitClient::clearLists);
-    // The other library's books, without the old one's cached rows meanwhile
+    // The other library's books, with its cached rows meanwhile
     connect(&m_session, &Session::libraryChanged, this, [this]() {
-        m_library.forgetCache();
         m_library.clear();
         m_library.reload();
     });

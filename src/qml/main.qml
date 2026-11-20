@@ -26,8 +26,7 @@ Window {
             bookOrbit.searchFilter.copy(bookOrbit.filter)
         } else {
             searchPage.reset()
-            searchQuery.sortIndex = 1
-            searchQuery.sortReversed = false
+            searchQuery.resetSort()
             searchQuery.libraryId = -1
             // With the text gone, nothing is searched
             searchQuery.applied()
@@ -217,8 +216,8 @@ Window {
     Connections {
         target: bookOrbit.searchFilter
         function onChanged() {
-            if (root.searching)
-                searchQuery.applied()
+            root.searchRevision++
+            root.applyChangedFilter()
         }
     }
     // Shows the groups of one library, or all for -1, in Series or Authors, kept for next
@@ -282,7 +281,7 @@ Window {
     function openBooksOfFromInfo(field, values) {
         const info = { book: bookInfoPage.book, kind: bookInfoPage.kind }
         showingInfo = false
-        openBooksOf(field, values, "")
+        openBooksOf(field, values)
         booksOfBack[booksOfBack.length - 1].info = info
     }
     // What each books-of list replaced, for Back: the list before it, if any, and the info
@@ -346,23 +345,41 @@ Window {
     readonly property int downloadsRevision: downloads.revision
     onDownloadsRevisionChanged: bookOrbit.setLocalBooks(downloads.downloadedBooks())
 
-    // The content type and Downloaded only, shared by every list (bookOrbit.filter). A
-    // change applies to the list in front at once, and to each of the others when it's
-    // next shown. Counted by filterRevision, which each query records when applied.
+    // The content type and Downloaded only: every list's (bookOrbit.filter), and search's
+    // own (bookOrbit.searchFilter). A change applies to the list in front at once, and to
+    // each of the others with that filter when it's next shown. Counted by filterRevision
+    // and searchRevision; each query records its filter's when applied.
     property int filterRevision: 0
+    property int searchRevision: 0
+    function revisionOf(query) {
+        return query.filter === bookOrbit.searchFilter ? searchRevision : filterRevision
+    }
     readonly property ListQuery shownQuery: frontPage?.query ?? null
-    onShownQueryChanged: if (shownQuery && shownQuery.filterRevision !== filterRevision) applyFilter(shownQuery)
+    onShownQueryChanged: applyChangedFilter()
     function applyFilter(query) {
-        query.filterRevision = filterRevision
+        query.filterRevision = revisionOf(query)
         query.applied()
+    }
+    // Applies the front list's filter if it has changed since it was last applied
+    function applyChangedFilter() {
+        if (shownQuery && shownQuery.filterRevision !== revisionOf(shownQuery))
+            applyFilter(shownQuery)
     }
     function filterChanged() {
         filterRevision++
-        if (shownQuery)
-            applyFilter(shownQuery)
+        applyChangedFilter()
         // Signed out: ready for the book list's first load once signed in
-        else if (!bookOrbit.session.signedIn)
+        if (!shownQuery && !bookOrbit.session.signedIn)
             prepareLibrary()
+    }
+    // Lists that aren't downloaded only show other books online than offline
+    function connectionChanged() {
+        if (!bookOrbit.searchFilter.downloadedOnly)
+            searchRevision++
+        if (!bookOrbit.filter.downloadedOnly)
+            filterChanged()
+        else
+            applyChangedFilter()
     }
     // Sets the book list's query without loading it, for bookOrbit.start()
     function prepareLibrary() {
@@ -378,11 +395,8 @@ Window {
     Connections {
         target: bookOrbit.session
         function onOnlineChanged() {
-            // Once the queries' downloadedOnly bindings have caught up. Search has its own.
-            if (!bookOrbit.filter.downloadedOnly)
-                Qt.callLater(root.filterChanged)
-            else if (shownQuery === searchQuery && !bookOrbit.searchFilter.downloadedOnly)
-                Qt.callLater(searchQuery.applied)
+            // Once the queries' downloadedOnly bindings have caught up
+            Qt.callLater(root.connectionChanged)
             // Offline, series are the downloaded books'
             if (showingSeries)
                 bookOrbit.series.load()
@@ -491,7 +505,7 @@ Window {
         // books says so.
         loading: bookOrbit.session.busy
         empty: bookOrbit.library.total === 0
-        emptyTitle: (libraryQuery.downloadedOnly ? "No downloaded " : "No ") + libraryQuery.contentNoun
+        emptyTitle: "No " + libraryQuery.listedNoun
         emptyText: !bookOrbit.session.online ? offlineText()
                    : libraryQuery.downloadedOnly ? "Books you download show here, and can be read offline."
                    : "Books in your BookOrbit library show here."
@@ -540,7 +554,7 @@ Window {
         // Reloaded every time the view opens, showing the last rows until then, and the books
         // of the series in view looked up. Offline, the downloaded books'.
         onVisibleChanged: if (visible) bookOrbit.series.load()
-        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "")
+        onGroupClicked: (series) => root.openBooksOf("series", [series.name])
     }
 
     GroupListPage {
@@ -783,12 +797,12 @@ Window {
         anchors.fill: parent
         visible: root.showingAuthor
         onBack: root.showingAuthor = false
-        onBooksClicked: root.openBooksOf("author", [authorInfoPage.author.name], "")
+        onBooksClicked: root.openBooksOf("author", [authorInfoPage.author.name])
         // Go straight to the series if there's only one
         onSeriesClicked: {
             const names = authorInfoPage.seriesNames
             if (authorInfoPage.seriesCount === 1 && names.length === 1)
-                root.openBooksOf("series", [names[0]], "")
+                root.openBooksOf("series", [names[0]])
             else
                 root.openAuthorSeries(authorInfoPage.author.name)
         }
@@ -807,7 +821,7 @@ Window {
             root.closeDropdowns()
             root.showingAuthorSeries = false
         }
-        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "")
+        onGroupClicked: (series) => root.openBooksOf("series", [series.name])
     }
 
     BooksOfPage {
@@ -849,7 +863,7 @@ Window {
             bookInfoPage.show(book)
             root.showingInfo = true
         }
-        onBooksOfChosen: (field, values) => root.openBooksOf(field, values, "")
+        onBooksOfChosen: (field, values) => root.openBooksOf(field, values)
         onDeleteChosen: (book) => deleteDialog.ask(book)
         onOpenWithChosen: (target, app) => root.openWith(target, app)
     }

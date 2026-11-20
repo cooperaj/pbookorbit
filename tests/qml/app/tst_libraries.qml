@@ -11,7 +11,6 @@ AppTestCase {
     name: "Libraries"
 
     readonly property string audiobooks: "/api/v1/libraries/2/books"
-    readonly property string everyLibrary: "/api/v1/books/query"
 
     function init() {
         fakeServer.reset()
@@ -64,22 +63,37 @@ AppTestCase {
         verify(asked(audiobooks).length > 0, "its books are asked for")
     }
 
-    // Next time, its books, and not the other library's saved rows meanwhile
+    // Next time, its books, with its saved rows while the libraries are fetched
     function test_choiceIsKeptForNextTime() {
         open(savedSession)
         bookRow("Hyperion")
         wait(2500)   // the first library's rows saved once loading settles
         bookOrbit.session.chooseLibrary(2)
         bookRow("Dune Messiah")
+        wait(2500)
         fakeServer.hold("GET", "/api/v1/libraries")
 
         reopen()
 
-        wait(500)
-        compare(titlesIn(find("bookList")), "", "no rows from the first library")
-        fakeServer.release("GET", "/api/v1/libraries")
         bookRow("Dune Messiah")
-        compare(bookOrbit.session.libraryId, 2)
+        compare(bookOrbit.session.libraryId, -1, "before the libraries are in")
+        fakeServer.release("GET", "/api/v1/libraries")
+        tryCompare(bookOrbit.session, "libraryId", 2)
+    }
+
+    // Back to a library shown before, its saved rows show until the server's arrive
+    function test_switchingBackShowsItsSavedRows() {
+        open(savedSession)
+        bookRow("Hyperion")
+        wait(2500)   // the first library's rows saved once loading settles
+        bookOrbit.session.chooseLibrary(2)
+        bookRow("Dune Messiah")
+        fakeServer.hold("POST", "/api/v1/libraries/1/books")
+
+        bookOrbit.session.chooseLibrary(1)
+
+        bookRow("Hyperion")
+        fakeServer.release("POST", "/api/v1/libraries/1/books")
     }
 
     function test_signingOutForgetsTheChoice() {
@@ -332,7 +346,7 @@ AppTestCase {
         open(savedSession)
         bookRow("Hyperion")
         fakeServer.respond("POST", everyLibrary, 200, "libraries/menu-dune-books.json")
-        root.openBooksOf("author", ["Frank Herbert"], "")
+        root.openBooksOf("author", ["Frank Herbert"])
         tryVerify(() => asked(everyLibrary).some(r => r.body.filter.rules[0].field === "author"), 5000,
                   "every library's")
         openFilterMenu("booksOfPage")
@@ -340,7 +354,7 @@ AppTestCase {
         tryVerify(() => asked(audiobooks).some(r => r.body.filter && r.body.filter.rules[0].field === "author"),
                   5000, "Audiobooks' after choosing it")
 
-        root.openBooksOf("series", ["Dune"], "")
+        root.openBooksOf("series", ["Dune"])
 
         compare(find("filterButton", find("booksOfPage")).text, "All libraries")
         tryVerify(() => asked(everyLibrary).some(r => r.body.filter.rules[0].field === "series"), 5000,
@@ -355,7 +369,7 @@ AppTestCase {
         bookRow("Hyperion")
         fakeServer.respond("POST", everyLibrary, 200, "libraries/menu-dune-books.json")
 
-        root.openBooksOf("author", ["Frank Herbert"], "")
+        root.openBooksOf("author", ["Frank Herbert"])
 
         const page = find("booksOfPage")
         tryVerify(() => titlesIn(page.list) === "Dune, Dune Messiah", 5000)
@@ -440,5 +454,24 @@ AppTestCase {
         tap("CollectionsTab")
 
         verify(!find("filterButton", find("collectionsPage")).visible)
+    }
+
+    // A collection's books may be in any library, so their other versions are looked for in
+    // every one, whichever the book list shows
+    function test_collectionBooksOtherVersionsFromEveryLibrary() {
+        openOn(2)
+        bookRow("Dune Messiah")
+        fakeServer.respond("GET", "/api/v1/collections", 200, "collections/list.json")
+        fakeServer.respond("POST", "/api/v1/collections/2/books/query", 200, "collections/2-books.json")
+        fakeServer.respond("POST", "/api/v1/collections/2/books/jump-buckets", 200,
+                           "collections/2-jump-buckets.json")
+        tap("CollectionsTab")
+        const before = asked(audiobooks).length
+
+        mouseClick(groupRow("collectionsPage", "Classics"))
+
+        tryVerify(() => asked(everyLibrary).some(r => r.body.filter && !r.body.q), 5000,
+                  "every library asked for their other versions")
+        compare(asked(audiobooks).length, before, "not the book list's library")
     }
 }

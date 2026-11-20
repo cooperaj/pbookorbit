@@ -116,6 +116,8 @@ protected:
     virtual bool lookUpAlone() const { return false; }
     // The names of the groups a local book is in, for rows built from local books
     virtual QStringList groupsOf(const QVariantMap &) const { return {}; }
+    // Whether its groups are a library's, so loading waits for the libraries
+    virtual bool inLibraries() const { return true; }
 
     // Whether every row needs looking up, those in view first, not just those in view:
     // filtering by format, not just to the local books

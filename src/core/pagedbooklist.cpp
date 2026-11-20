@@ -64,12 +64,6 @@ void PagedBookList::clear()
     emit changed();
 }
 
-void PagedBookList::forgetCache()
-{
-    if (!m_cacheName.isEmpty())
-        m_database->saveListCache(m_cacheName, QVariantMap());
-}
-
 void PagedBookList::setSortAndFilter(const QString &sortField, bool descending, const QStringList &formats,
                                      bool localOnly)
 {
@@ -111,8 +105,8 @@ void PagedBookList::refresh()
             loadSeriesSections();
         } else {
             // No sections for collection order: the server doesn't say when each book was
-            // added. None for A-Z across libraries either, as only a library has jump
-            // buckets, and its title order can't be matched locally.
+            // added. None for A-Z or last read across libraries either, as only a library
+            // has jump buckets, and its title order can't be matched locally.
             m_sections = isDateSort(m_sortField) ? Sections::Days : Sections::None;
             clearJumpSections();
             loadPage(0);
@@ -201,8 +195,6 @@ QString PagedBookList::sortKey(const QVariantMap &book, const QString &field) co
 
 void PagedBookList::showListedBooks()
 {
-    const bool letters = isLetterSort(m_sortField) && sectioned();
-    const bool seriesNumbers = m_sortField == "seriesIndex";
     // BookOrbit gives no last read date per book, so last read is when the system's reader
     // last opened the book's files, where its library can be read, newest first, then the
     // books never opened by title. Elsewhere it's by title, unsectioned.
@@ -217,8 +209,8 @@ void PagedBookList::showListedBooks()
     const bool openTimes = openedOrNone.has_value();
     const QHash<QString, qint64> opened = openedOrNone.value_or(QHash<QString, qint64>());
     m_sections = !sectioned() ? Sections::None
-               : letters ? Sections::Starts
-               : seriesNumbers ? Sections::SeriesNumbers
+               : isLetterSort(m_sortField) ? Sections::Starts
+               : m_sortField == "seriesIndex" ? Sections::SeriesNumbers
                : isDateSort(m_sortField) || openTimes ? Sections::Days : Sections::None;
     const bool byTitle = lastRead;
     const QString field = byTitle ? QString("title") : m_sortField;
@@ -284,13 +276,13 @@ void PagedBookList::showListedBooks()
     m_sectionStarts.clear();
     m_jumpSections.clear();
     for (const auto &[key, row] : std::as_const(books)) {
-        if (letters) {
+        if (m_sections == Sections::Starts) {
             const QString letter = letterSection(key);
             if (m_jumpSections.isEmpty() || m_jumpSections.last().toMap().value("label") != letter) {
                 m_sectionStarts.insert(rows.size(), letter);
                 m_jumpSections.append(QVariantMap{{"label", letter}, {"index", rows.size()}});
             }
-        } else if (seriesNumbers && !row.value("seriesIndex").isNull()) {
+        } else if (m_sections == Sections::SeriesNumbers && !row.value("seriesIndex").isNull()) {
             // Same as loadSeriesSections() does for server lists
             const QString label = row.value("seriesIndex").toString();
             if (m_jumpSections.isEmpty() || m_jumpSections.last().toMap().value("label") != label)

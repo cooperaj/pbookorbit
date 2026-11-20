@@ -26,6 +26,8 @@ QtObject {
     readonly property var formats: allContent ? [] : downloads.formatsOf(ebooks ? "ebook" : "audiobook")
     // "books", "ebooks" or "audiobooks", for empty lists
     readonly property string contentNoun: allContent ? "books" : ebooks ? "ebooks" : "audiobooks"
+    // The same, after "downloaded" when downloaded only
+    readonly property string listedNoun: (downloadedOnly ? "downloaded " : "") + contentNoun
 
     // Whether the view can be set to a library, and to all of them. libraryChosen() says
     // when one is chosen; the view sets libraryId.
@@ -55,6 +57,9 @@ QtObject {
 
     property int sortIndex: 0
     property bool sortReversed: false
+    // The sort it started with, for reset()
+    property int firstSortIndex: 0
+    Component.onCompleted: firstSortIndex = sortIndex
     // Only books on the device, combined with the content type: as chosen, and always
     // while offline. Back online, the lists return to the choice.
     readonly property bool downloadedChosen: filter.downloadedOnly
@@ -62,7 +67,7 @@ QtObject {
 
     readonly property bool sortDescending: descending()
 
-    // The filter's revision (see main.qml) when last applied, so a view applies a change
+    // Its filter's revision (see main.qml) when last applied, so a view applies a change
     // made elsewhere once it's shown
     property int filterRevision: -1
 
@@ -85,6 +90,11 @@ QtObject {
     function reverseSort() {
         sortReversed = !sortReversed
         applied()
+    }
+    // Back to the sort it started with, in its default direction, without applying it
+    function resetSort() {
+        sortIndex = firstSortIndex
+        sortReversed = false
     }
     // A library, or all of them for -1
     function chooseLibrary(id) {

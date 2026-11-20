@@ -5,8 +5,8 @@ import "../../../src/qml"
 
 // What GroupListPage adds to the ListPage frame: a GroupRow per group, saying which was
 // tapped, a spinner until the groups are loaded (not offline, where they come from the
-// downloads), and the empty state once loaded with none. Which groups a tab lists is tested
-// with the tab.
+// downloads), and the empty state once loaded with none, saying what a filter hides. Which
+// groups a tab lists is tested with the tab.
 UiTestCase {
     id: test
     name: "GroupListPage"
@@ -23,11 +23,27 @@ UiTestCase {
         }
     }
 
+    // A series page with the shared filter (bookOrbit.filter), with its own empty state
+    Component {
+        id: filteredPage
+        GroupListPage {
+            width: 600
+            height: 800
+            model: ListModel { dynamicRoles: true }
+            query: ListQuery {}
+            noun: "series"
+            unfilteredText: "Series show here."
+            offlineGroups: "series with downloaded books"
+            online: true
+            loaded: true
+        }
+    }
+
     SignalSpy { id: groupTaps; signalName: "groupClicked" }
 
     // A page with groups named after the strings, e.g. ["Classics", "Space Opera"]
-    function make(names, properties) {
-        root = createTemporaryObject(groupListPage, test, properties || {})
+    function make(names, properties, component) {
+        root = createTemporaryObject(component || groupListPage, test, properties || {})
         verify(root)
         for (const name of names || [])
             root.model.append({book: {name: name, bookCount: 1, covers: [], authors: [], formats: []}})
@@ -81,5 +97,24 @@ UiTestCase {
         compare(empty.title, "No groups")
         compare(empty.text, "Groups show here.")
         verify(!find("spinner").visible)
+    }
+
+    // Filtered, the empty state says what's hidden and how to see every group
+    function test_emptyFilteredSaysHowToSeeEveryGroup() {
+        testApp.reset({}, {})
+        make([], {}, filteredPage)
+        const empty = find("emptyState")
+        compare(empty.title, "No series")
+        compare(empty.text, "Series show here.")
+
+        root.query.showContent("ebook", false)
+
+        compare(empty.title, "No series with audiobooks")
+        compare(empty.text, "Tick Ebooks and Audiobooks to see every series.")
+
+        root.query.setDownloadedOnly(true)
+
+        compare(empty.title, "No series")
+        compare(empty.text, "Turn off Downloaded only to see every series.")
     }
 }

@@ -6,23 +6,23 @@ import "../helpers"
 // comes first, each time the tab opens, then the books of the series in view, which set
 // their formats, count (a book with an ebook and audiobook counting once) and cover
 // versions. What the books showed is saved, and shown until they're looked up again.
-// Offline, the series are the downloaded books'.
+// Like the library, series are filtered by content type and Downloaded only. Offline, the
+// series are the downloaded books'.
 //
 // The page itself (spinner, errors, rail) is tested in components/tst_grouplistpage.qml. The
-// sorting, sections and errors the client gives every group list are tested here, once.
+// sorting, sections, filtering and errors the client gives every group list are tested
+// here, once.
 AppTestCase {
     name: "Series"
 
     readonly property string series: "/api/v1/series"
-    // Every library's, as Series and Authors list them all to start with
-    readonly property string books: "/api/v1/books/query"
 
     function serveSeries() {
         fakeServer.respond("GET", series, 200, "series/list.json")
         // Each series' books, found by series name
-        fakeServer.respond("POST", books, 200, "series/books.json", {filter: {rules: [{field: "series"}]}})
+        fakeServer.respond("POST", everyLibrary, 200, "series/books.json", {filter: {rules: [{field: "series"}]}})
         // A series' books in series order, for its books-of page
-        fakeServer.respond("POST", books, 200, "series/dune-books.json", {sort: [{field: "seriesIndex"}]})
+        fakeServer.respond("POST", everyLibrary, 200, "series/dune-books.json", {sort: [{field: "seriesIndex"}]})
     }
 
     function openSeries(options) {
@@ -33,6 +33,21 @@ AppTestCase {
         const page = find("seriesPage")
         verify(page.visible, "the Series view shows")
         return page
+    }
+
+    // Sixty series, listed on the Series tab. Returns the list.
+    function openManySeries() {
+        openLibrary()
+        fakeServer.respondJson("GET", series, 200, {total: 60, items: Array.from({length: 60}, (_, i) => ({
+            id: 101 + i, name: "Series " + String(i + 1).padStart(2, "0"), bookCount: 2, readCount: 0,
+            authors: [], coverBookIds: [], lastAddedAt: "2026-01-01 10:00:00+00"
+        }))})
+        fakeServer.respond("POST", everyLibrary, 200, "series/books.json", {filter: {rules: [{field: "series"}]}})
+        bookRow("Dune")
+        tap("SeriesTab")
+        const list = find("seriesPage").list
+        tryVerify(() => list.count === 60, 5000, "every series is listed")
+        return list
     }
 
     function rows() {
@@ -153,18 +168,7 @@ AppTestCase {
     // group list shares this, so it's tested here; collections, looked up their own way,
     // have a test of their own.
     function test_onlySeriesInViewAreLookedUp() {
-        openLibrary()
-        fakeServer.respondJson("GET", series, 200, {total: 60, items: Array.from({length: 60}, (_, i) => ({
-            id: 101 + i, name: "Series " + String(i + 1).padStart(2, "0"), bookCount: 2, readCount: 0,
-            authors: [], coverBookIds: [], lastAddedAt: "2026-01-01 10:00:00+00"
-        }))})
-        fakeServer.respond("POST", books, 200, "series/books.json", {filter: {rules: [{field: "series"}]}})
-        bookRow("Dune")
-
-        tap("SeriesTab")
-
-        const list = find("seriesPage").list
-        tryVerify(() => list.count === 60, 5000, "every series is listed")
+        const list = openManySeries()
         tryVerify(() => lookedUp("series").includes("Series 01"), 5000, "the first are looked up")
         wait(300)
         verify(!lookedUp("series").includes("Series 60"), "not the last: " + lookedUp("series"))
@@ -174,11 +178,35 @@ AppTestCase {
         tryVerify(() => lookedUp("series").includes("Series 60"), 5000, "the last once scrolled to")
     }
 
+    // Filtering by format needs every series' books, so it looks them all up
+    function test_formatFilterLooksUpEverySeries() {
+        openManySeries()
+        tryVerify(() => lookedUp("series").includes("Series 01"), 5000, "the first are looked up")
+        wait(300)
+        verify(!lookedUp("series").includes("Series 60"), "not the last")
+
+        showOnly("seriesPage", "Audiobooks")
+
+        tryVerify(() => lookedUp("series").includes("Series 60"), 5000, "every series, without scrolling")
+    }
+
+    // Downloaded only uses the downloaded books, so it needn't look every series up
+    function test_downloadedOnlyDoesntLookUpEverySeries() {
+        openManySeries()
+        tryVerify(() => lookedUp("series").includes("Series 01"), 5000, "the first are looked up")
+
+        setDownloadedOnly("seriesPage")
+        wait(500)
+
+        verify(!lookedUp("series").includes("Series 60"), "not the last")
+        verify(find("emptyState", find("seriesPage")).visible, "no downloaded books, so no series")
+    }
+
     // At the next start, what the series' books showed is there before they're looked up,
     // and stays if they can't be
     function test_startShowsTheSavedDetails() {
         openLoadedSeries()
-        fakeServer.respond("POST", books, 500, "server-error.json", {filter: {rules: [{field: "series"}]}})
+        fakeServer.respond("POST", everyLibrary, 500, "server-error.json", {filter: {rules: [{field: "series"}]}})
         const lookups = lookedUp("series").length
 
         reopen()
@@ -201,7 +229,7 @@ AppTestCase {
         tap("SeriesTab")
         tryVerify(() => find("emptyState", find("seriesPage")).visible, 5000, "the series have gone")
         fakeServer.respond("GET", series, 200, "series/list.json")
-        fakeServer.respond("POST", books, 500, "server-error.json", {filter: {rules: [{field: "series"}]}})
+        fakeServer.respond("POST", everyLibrary, 500, "server-error.json", {filter: {rules: [{field: "series"}]}})
 
         tap("LibraryTab")
         tap("SeriesTab")
@@ -210,14 +238,15 @@ AppTestCase {
                   "the list's counts, not the saved ones: " + rows())
     }
 
-    // Filtered like the authors (see tst_authors.qml): only series with audiobooks,
-    // counting just those
+    // Only series with books in the format, counting just those. A counted book shows all
+    // its formats: Children of Dune is an audiobook and an ebook.
     function test_audiobooksFilter() {
         openLoadedSeries()
 
         showOnly("seriesPage", "Audiobooks")
 
         tryVerify(() => rows() === "Dune (1), The Expanse (1)", 5000, rows())
+        compare(row("Dune").group.formats, ["epub", "m4b"])
         compare(row("The Expanse").group.formats, ["m4b"])
     }
 
@@ -229,17 +258,6 @@ AppTestCase {
         setDownloadedOnly("seriesPage")
 
         tryVerify(() => rows() === "Dune (1)", 5000, "only the downloaded book's: " + rows())
-    }
-
-    function test_downloadedOnlyWithoutDownloadsSaysSo() {
-        openLoadedSeries()
-
-        setDownloadedOnly("seriesPage")
-
-        const empty = find("emptyState", find("seriesPage"))
-        tryVerify(() => empty.visible, 5000, "No series")
-        compare(empty.title, "No series")
-        compare(empty.text, "Turn off Downloaded only to see every series.")
     }
 
     function test_noSeriesSaysSo() {

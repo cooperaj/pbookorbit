@@ -367,7 +367,8 @@ AppTestCase {
         compare(find("sortButton", page).text, "By Title")
     }
 
-    // A books-of page opened over the results goes back to them as they were
+    // A books-of page opened over the results goes back to them as they were, even after
+    // the lists' content type changed there
     function test_pagesOpenedFromResultsKeepTheSearch() {
         openSearchLibrary()
         const page = openSearch()
@@ -375,15 +376,42 @@ AppTestCase {
         sortBy("searchPage", "Date added")
         tryVerify(() => searchBodies().length === 2, 5000)
 
-        root.openBooksOf("author", ["Frank Herbert"], "")
+        root.openBooksOf("author", ["Frank Herbert"])
         verify(find("booksOfPage").visible)
+        showOnly("booksOfPage", "Audiobooks")
+        tap("filterButton", find("booksOfPage"))   // closes the menu
         tap("backButton", find("booksOfPage"))
 
         verify(page.visible, "back to the search")
         compare(find("searchField").text, "dune")
         compare(find("sortButton", page).text, "By Date added")
+        compare(find("filterButton", page).text, "All titles")
         wait(500)
         compare(searchBodies().length, 2, "not searched again")
+    }
+
+    // Reconnecting while a page is over the results searches the server again once they're
+    // back in front, though the lists are downloaded only
+    function test_reconnectingUnderAPageSearchesAgain() {
+        openSearchLibrary()
+        bookOrbit.filter.setDownloadedOnly(true)
+        const page = openSearch()
+        setDownloadedOnly("searchPage")
+        verify(!bookOrbit.searchFilter.downloadedOnly, "the search isn't downloaded only")
+        searchDune()
+        fakeServer.reachable = false
+        sortBy("searchPage", "Date added")
+        tryVerify(() => !bookOrbit.session.online, 5000, "the server is gone")
+        root.openBooksOf("author", ["Frank Herbert"])
+        fakeServer.reachable = true
+        bookOrbit.session.goOnline()
+        tryVerify(() => bookOrbit.session.online, 5000, "back online")
+        const before = searchBodies().length
+
+        tap("backButton", find("booksOfPage"))
+
+        verify(page.visible, "back to the search")
+        tryVerify(() => searchBodies().length > before, 5000, "the server searched again")
     }
 
     function test_tappingAResultNotOnTheDeviceOffersToDownloadIt() {

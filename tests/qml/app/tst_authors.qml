@@ -7,8 +7,8 @@ import "../helpers"
 // in no series). The list comes first, each time the tab opens, then the books of the
 // authors in view, which set their formats, book and series counts, a book with an ebook
 // and audiobook counting once, saved until looked up again. Like series, authors have the
-// library's filter, which by format needs every author looked up, and tapping one opens
-// their info page. Offline, the authors are the downloaded books'.
+// library's filter, and tapping one opens their info page. Offline, the authors are the
+// downloaded books'.
 //
 // The page itself is tested in components/tst_grouplistpage.qml, and what every group list
 // shares in tst_series.qml.
@@ -16,8 +16,6 @@ AppTestCase {
     name: "Authors"
 
     readonly property string authors: "/api/v1/authors"
-    // Every library's, as Series and Authors list them all to start with
-    readonly property string books: "/api/v1/books/query"
     readonly property string allByName: "Ann Leckie (1), Dan Simmons (2), Frank Herbert (3), James S. A. Corey (4)"
     readonly property var dune: ({id: 1, title: "Dune", authors: ["Frank Herbert"], seriesName: "Dune",
                                   seriesIndex: 1, formats: ["epub"], file: "Dune.epub"})
@@ -29,7 +27,7 @@ AppTestCase {
         fakeServer.respond("GET", authors, 200, "authors/list.json")
         fakeServer.respond("GET", authors + "/1", 200, "authors/frank-herbert.json")
         // Each author's books, found by author name
-        fakeServer.respond("POST", books, 200, "authors/books.json", {filter: {rules: [{field: "author"}]}})
+        fakeServer.respond("POST", everyLibrary, 200, "authors/books.json", {filter: {rules: [{field: "author"}]}})
     }
 
     function openAuthors(options) {
@@ -52,22 +50,6 @@ AppTestCase {
 
     function authorRequests() {
         return fakeServer.requests.filter(r => r.method === "GET" && r.path === authors).length
-    }
-
-
-    // Sixty authors, more than a screen
-    function openManyAuthors() {
-        openLibrary()
-        fakeServer.respondJson("GET", authors, 200, {total: 60, items: Array.from({length: 60}, (_, i) => ({
-            id: 201 + i, name: "Author " + String(i + 1).padStart(2, "0"), bookCount: 2,
-            lastAddedAt: "2026-01-01 10:00:00+00", imageUrl: null
-        }))})
-        fakeServer.respond("POST", books, 200, "authors/books.json", {filter: {rules: [{field: "author"}]}})
-        bookRow("Dune")
-        tap("AuthorsTab")
-        const list = find("authorsPage").list
-        tryVerify(() => list.count === 60, 5000, "every author is listed")
-        return list
     }
 
     // Counts settle once each author's books are in
@@ -142,37 +124,11 @@ AppTestCase {
         compare(rows(), allByName)
     }
 
-    // Only the authors on screen, and a screen either side, have their books looked up
-    // Only the authors in view are looked up (as tst_series tests for every list), until
-    // filtering by format, which needs every author's books, looks them all up
-    function test_formatFilterLooksUpEveryAuthor() {
-        openManyAuthors()
-        tryVerify(() => lookedUp("author").includes("Author 01"), 5000, "the first are looked up")
-        wait(300)
-        verify(!lookedUp("author").includes("Author 60"), "not the last")
-
-        showOnly("authorsPage", "Audiobooks")
-
-        tryVerify(() => lookedUp("author").includes("Author 60"), 5000, "every author, without scrolling")
-    }
-
-    // Downloaded only uses the downloaded books, so it needn't look every author up
-    function test_downloadedOnlyDoesntLookUpEveryAuthor() {
-        openManyAuthors()
-        tryVerify(() => lookedUp("author").includes("Author 01"), 5000, "the first are looked up")
-
-        setDownloadedOnly("authorsPage")
-        wait(500)
-
-        verify(!lookedUp("author").includes("Author 60"), "not the last")
-        verify(find("emptyState", find("authorsPage")).visible, "no downloaded books, so no authors")
-    }
-
     // At the next start, what the authors' books showed is there before they're looked up,
     // and stays if they can't be
     function test_startShowsTheSavedDetails() {
         openLoadedAuthors()
-        fakeServer.respond("POST", books, 500, "server-error.json", {filter: {rules: [{field: "author"}]}})
+        fakeServer.respond("POST", everyLibrary, 500, "server-error.json", {filter: {rules: [{field: "author"}]}})
         const lookups = lookedUp("author").length
 
         reopen()
@@ -186,44 +142,15 @@ AppTestCase {
         compare(row("Frank Herbert").group.seriesCount, 1)
     }
 
-    // Only authors with books in the format, counting just those. A counted book shows all
-    // its formats: Children of Dune is an audiobook and an ebook.
+    // The tab's filter, as the series' (see tst_series.qml), counting the matching books'
+    // series too
     function test_audiobooksFilter() {
         openLoadedAuthors()
 
         showOnly("authorsPage", "Audiobooks")
 
         compare(rows(), "Frank Herbert (1), James S. A. Corey (1)")
-        compare(row("Frank Herbert").group.formats, ["epub", "m4b"])
-        compare(row("James S. A. Corey").group.formats, ["m4b"])
-    }
-
-    function test_ebooksFilter() {
-        openLoadedAuthors()
-
-        showOnly("authorsPage", "Ebooks")
-
-        compare(rows(), "Ann Leckie (1), Dan Simmons (2), Frank Herbert (3), James S. A. Corey (3)",
-                "all but the audiobook-only Leviathan Wakes")
-    }
-
-    function test_downloadedOnly() {
-        openLoadedAuthors({books: [dune]})
-
-        setDownloadedOnly("authorsPage")
-
-        tryVerify(() => rows() === "Frank Herbert (1)", 5000, "only their downloaded book: " + rows())
-    }
-
-    function test_downloadedOnlyWithoutDownloadsSaysSo() {
-        openLoadedAuthors()
-
-        setDownloadedOnly("authorsPage")
-
-        const empty = find("emptyState", find("authorsPage"))
-        tryVerify(() => empty.visible, 5000, "No authors")
-        compare(empty.title, "No authors")
-        compare(empty.text, "Turn off Downloaded only to see every author.")
+        compare(row("James S. A. Corey").group.seriesCount, 1)
     }
 
     function test_noAuthorsSaysSo() {

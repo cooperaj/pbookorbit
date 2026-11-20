@@ -60,7 +60,7 @@ the emulator). Set `PBOOKORBIT_DB` to use a different file, for example in tests
 the device plugged in, `sqlite3 <mount>/system/config/pbookorbit.db` opens it from a PC.
 
 - `settings` is key/value: `serverUrl`, `username`, `refreshToken`, `libraryId` (the
-  library chosen for the book list), `seriesLibraryId` and `authorsLibraryId` (the
+  library the book list showed last), `seriesLibraryId` and `authorsLibraryId` (the
   libraries chosen for Series and Authors, absent for all of them), `hideEbooks`,
   `hideAudiobooks` and `downloadedOnly` (0/1, the filter every list shares), all
   forgotten on signing out, `accent` (the BookOrbit accent colour), `recentSearches`
@@ -78,14 +78,13 @@ the device plugged in, `sqlite3 <mount>/system/config/pbookorbit.db` opens it fr
   details (`GET /authors/:id`) as JSON, each saved when fetched.
 - `collections` and `collection_books` keep the user's collections in order, and each
   one's book ids, newest first.
-- `list_cache` keeps what each list last showed, by name (`library`, `collections`,
-  `series`, `authors`, and `booksOf:<field>:<values>` for an author's, series' or
-  collection's books, with `:<libraryId>` after the series, authors and books-of names
-  when they show one library), as JSON. Choosing another library for the book list
-  empties `library`. A list shows these rows when first opened, until the
-  server's arrive. A book list keeps its first two screens of rows, with its sort and
-  filter, and shows them only for the same ones. The 20 books-of pages loaded most
-  recently are kept.
+- `list_cache` keeps what each list last showed, by name (`library:<libraryId>`,
+  `collections`, `series`, `authors`, and `booksOf:<field>:<values>` for an author's,
+  series' or collection's books, with `:<libraryId>` after the series, authors and
+  books-of names when they show one library), as JSON. A list shows these rows when first
+  opened, until the server's arrive. A book list keeps its first two screens of rows, with
+  its sort and filter, and shows them only for the same ones. The 20 books-of pages loaded
+  most recently are kept.
 - `group_details` keeps what looking up a series', collection's or author's books found,
   by kind (`series`, `collections`, `authors`, with `:<libraryId>` for one library's, as
   counts differ by library) and id: the count with an ebook and
@@ -246,21 +245,23 @@ builds its rows from the downloaded books.
 ![The book list and group list classes and what each subclass adds](images/cpp-lists.svg)
 
 `Session` holds the tokens, `online`, `busy`, the user's libraries and the book list's
-library: the one saved in `libraryId` if the server still has it, otherwise the first.
-Find books uses it too. Each other list has its own library, or -1 for every library: a
-group list's `setLibrary()`, which Series and Authors save (`keepLibrary()`), and the
-books-of list's `show()` argument or the search's `setQuery()`. An author's series,
-books-of lists and search start with every library each time. `Session::booksPath()` gives one library's endpoint or
-every library's (`/books/query`); the series and authors endpoints take one `libraryId`
-or none, so those are the only choices. A server with one library always uses its own
-endpoint (`libraryToQuery()`), for the A-Z sections. Group lists wait for the libraries
-before loading, and forget a saved library the server no longer has. `ListFilter`
-(`bookOrbit.filter`) holds the content type and Downloaded only, shared by every list
-and saved. Search has its own (`bookOrbit.searchFilter`), unsaved, which copies the
-shared one as each search starts. A list request reconnects
-Wi-Fi if it has gone idle, refreshes the access token when needed and retries once on a
-401. `request()` and `download()` don't set `busy`, and `startStream()` refreshes the
-token first so it outlasts a large download.
+library: the one it used last (`libraryId`) if the server still has it, otherwise the
+first. Saving it each time lets the book list show that library's cached rows at startup,
+before the libraries are fetched. Find books uses it too. Each other list has its own
+library, or -1 for every library: a group list's `setLibrary()`, which Series and Authors
+save (`keepLibrary()`), and the books-of list's `show()` argument or the search's
+`setQuery()`. An author's series, books-of lists and search start with every library each
+time. A collection's books may be in any library. `Session::booksPath()` gives one
+library's endpoint or every library's (`/books/query`); the series and authors endpoints
+take one `libraryId` or none, so those are the only choices. A server with one library
+always uses its own endpoint (`libraryToQuery()`), for the A-Z sections. Series and
+authors wait for the libraries before loading, and forget a saved library the server no
+longer has; collections don't wait. `ListFilter` (`bookOrbit.filter`) holds the content
+type and Downloaded only, shared by every list and saved. Search has its own
+(`bookOrbit.searchFilter`), unsaved, which copies the shared one as each search starts. A
+list request reconnects Wi-Fi if it has gone idle, refreshes the access token when needed
+and retries once on a 401. `request()` and `download()` don't set `busy`, and
+`startStream()` refreshes the token first so it outlasts a large download.
 
 ![A list request's path through Session, and where it fails, waits or retries](images/cpp-requests.svg)
 
@@ -270,8 +271,8 @@ These keep the parts in step:
 |---|---|---|
 | First frame drawn | `start()`: reload the library, with the query QML set, and theme, if a session was saved | `main.cpp` |
 | `Session::started` | `start()`, after signing in | `BookOrbitClient` |
-| `Session::libraryChanged` | The book list reloads without its cached rows | `BookOrbitClient` |
-| `ListFilter::changed`, back online | The filter applies to the list in front, and to the others when next shown | QML |
+| `Session::libraryChanged` | The book list reloads, showing that library's cached rows meanwhile | `BookOrbitClient` |
+| `ListFilter::changed`, online or offline | The filter applies to the list in front, and to the others using it when next shown | QML |
 | `Session::ended` | `clearLists()`: database caches, `GroupDetails` and every list emptied, before QML's handlers run | `BookOrbitClient` |
 | Back online | Group lists forget the rows they built offline | `BookOrbitClient` |
 | `bookOrbit.setLocalBooks()` | Every list takes the downloaded books; local-only lists relist | QML |
@@ -292,11 +293,12 @@ they come into view with `rowsWanted(first, last)`, and takes its sort and filte
 and the rail's direction, from its query, going back to the top whenever the query
 changes. A query's `sorts` are `{name, field, descending}`, and it gives the chosen
 `sortField` and content type `formats` for the request. The content type and Downloaded
-only are every query's `filter`: `bookOrbit.filter`, or search's own. Ebooks and Audiobooks are checkboxes, and the last one ticked can't be unticked. A query with `hasLibraries` puts a
-Libraries section (radio buttons, plus All libraries with `allLibraries`) above them
-when the server has several and can be reached, and its filter button then names the
-library; it says `libraryChosen(id)` and leaves the view to act on it. Two components extend it with
-their row:
+only are every query's `filter`: `bookOrbit.filter`, or search's own. Ebooks and
+Audiobooks are checkboxes, and the last one ticked can't be unticked. A query with
+`hasLibraries` puts a Libraries section (radio buttons, plus All libraries with
+`allLibraries`) above them when the server has several and can be reached, and its filter
+button then names the library; it says `libraryChosen(id)` and leaves the view to act on
+it. Two components extend it with their row:
 
 - `BookListPage` has a `BookRow` per book and reports taps and holds. The library, a
   books-of page (an author's, series' or collection's books) and the search results use
@@ -327,8 +329,10 @@ In `main.qml`, each list page has a `ListQuery` of its own, and `frontPage` is t
 visible page, checking the pages opened over the views before the footer views. The
 page-turn keys page its `pageButtons`, the sort and filter menus are positioned by its
 `list`, and they show its `query`, or the library's for a page without one. A filter
-change bumps `filterRevision` and applies to the front page's query; any other query
-applies it when its page is next in front, so hidden lists don't reload. One set of
+change bumps its revision (`filterRevision` for the lists', `searchRevision` for
+search's, as does going online or offline for a filter that isn't downloaded only) and
+applies to the front page's query if it uses that filter; any other query applies it when
+its page is next in front, so hidden lists don't reload. One set of
 menus (each page's `menus`, a `ListMenus`), the faded overlay and the book menu serve every
 list page, and one `RailLayout` (`railLayout`) puts every rail's letters at the same
 height.

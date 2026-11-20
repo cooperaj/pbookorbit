@@ -50,6 +50,21 @@ AppTestCase {
         return fakeServer.requests.filter(r => r.path === collections + "/" + id + "/books/query").length
     }
 
+    // Collections are in no library, so they don't wait for the server's libraries
+    function test_listedWithoutWaitingForTheLibraries() {
+        serveCollections()
+        fakeServer.respond("POST", "/api/v1/auth/refresh", 200, "auth/refresh-success.json")
+        serveLibrary()
+        fakeServer.hold("GET", "/api/v1/libraries")
+        open(savedSession)
+
+        tap("CollectionsTab")
+
+        tryVerify(() => rows() === "Classics (2), Empty Shelf (0), Space Opera (1)", 5000,
+                  "listed meanwhile: " + rows())
+        fakeServer.release("GET", "/api/v1/libraries")
+    }
+
     function test_listsTheCollectionsByName() {
         openCollections()
 

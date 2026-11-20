@@ -20,6 +20,8 @@ protected:
     void showLocal() override;
     void lookUp(const QList<int> &ids, int generation) override;
     bool lookUpAlone() const override { return true; }
+    // A collection's books may be in any library
+    bool inLibraries() const override { return false; }
 
 private:
     // Looks up a collection's books from page onwards, for its covers, authors, formats,

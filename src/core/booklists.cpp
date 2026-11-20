@@ -15,7 +15,14 @@ static const int CACHED_BOOKS_OF = 20;
 LibraryBooks::LibraryBooks(Session *session, Database *database, Details *details, QObject *parent)
     : PagedBookList(session, database, details, parent)
 {
-    m_cacheName = "library";
+    // Each library's books are cached apart, under the one last used until the libraries
+    // are fetched
+    const auto nameCache = [this]() {
+        const int libraryId = m_session->libraryId() >= 0 ? m_session->libraryId() : m_session->savedLibraryId();
+        m_cacheName = libraryId >= 0 ? QString("library:%1").arg(libraryId) : QString();
+    };
+    nameCache();
+    connect(session, &Session::libraryIdChanged, this, nameCache);
 }
 
 void LibraryBooks::setQuery(const QString &sortField, bool descending, const QStringList &formats,
@@ -176,9 +183,10 @@ void BooksOf::show(const QString &field, const QStringList &values, const QStrin
 
 void BooksOf::setPaths()
 {
-    // A collection's own are set by show(). Its books' other records may be outside it.
+    // A collection's own are set by show(). Its books' other records may be outside it, in
+    // any library.
     if (m_field == "collection")
-        m_companionsPath = m_session->libraryBooksPath();
+        m_companionsPath = Session::booksPath(m_session->libraryToQuery(-1));
     else
         setLibraryPaths(m_session->libraryToQuery(m_libraryId));
 }
