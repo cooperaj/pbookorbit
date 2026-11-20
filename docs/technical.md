@@ -249,14 +249,15 @@ builds its rows from the downloaded books.
 library: the one saved in `libraryId` if the server still has it, otherwise the first.
 Find books uses it too. Each other list has its own library, or -1 for every library: a
 group list's `setLibrary()`, which Series and Authors save (`keepLibrary()`), and the
-books-of list's `show()` argument. An author's series, books-of lists and search start
-with every library each time. `Session::booksPath()` gives one library's endpoint or
+books-of list's `show()` argument or the search's `setQuery()`. An author's series,
+books-of lists and search start with every library each time. `Session::booksPath()` gives one library's endpoint or
 every library's (`/books/query`); the series and authors endpoints take one `libraryId`
 or none, so those are the only choices. A server with one library always uses its own
 endpoint (`libraryToQuery()`), for the A-Z sections. Group lists wait for the libraries
 before loading, and forget a saved library the server no longer has. `ListFilter`
 (`bookOrbit.filter`) holds the content type and Downloaded only, shared by every list
-and saved. A list request reconnects
+and saved. Search has its own (`bookOrbit.searchFilter`), unsaved, which copies the
+shared one as each search starts. A list request reconnects
 Wi-Fi if it has gone idle, refreshes the access token when needed and retries once on a
 401. `request()` and `download()` don't set `busy`, and `startStream()` refreshes the
 token first so it outlasts a large download.
@@ -291,7 +292,7 @@ they come into view with `rowsWanted(first, last)`, and takes its sort and filte
 and the rail's direction, from its query, going back to the top whenever the query
 changes. A query's `sorts` are `{name, field, descending}`, and it gives the chosen
 `sortField` and content type `formats` for the request. The content type and Downloaded
-only are every query's (`bookOrbit.filter`). Ebooks and Audiobooks are checkboxes, and the last one ticked can't be unticked. A query with `hasLibraries` puts a
+only are every query's `filter`: `bookOrbit.filter`, or search's own. Ebooks and Audiobooks are checkboxes, and the last one ticked can't be unticked. A query with `hasLibraries` puts a
 Libraries section (radio buttons, plus All libraries with `allLibraries`) above them
 when the server has several and can be reached, and its filter button then names the
 library; it says `libraryChosen(id)` and leaves the view to act on it. Two components extend it with
@@ -317,8 +318,10 @@ empty state says (`loading`, `empty`, `emptyTitle`, `emptyText`, with `offlineTe
 the offline sentence); `GroupListPage` decides when for every group list from `loaded`.
 An error with no rows always shows as "Something went wrong". `BooksOfPage`
 extends `BookListPage`, and `AuthorSeriesPage` extends `GroupListPage`, each adding a title
-and model. `SearchPage` contains a `BookListPage` for its results, with no query and so no
-sub-toolbar or rail.
+and model. `SearchPage` contains a `BookListPage` for its results, unsectioned and so with
+no rail. Its sub-toolbar shows with the results, not over the recent searches. A search
+ends on going back, opening a book or signing out, which resets its query; pages opened
+from the results keep it.
 
 In `main.qml`, each list page has a `ListQuery` of its own, and `frontPage` is the first
 visible page, checking the pages opened over the views before the footer views. The

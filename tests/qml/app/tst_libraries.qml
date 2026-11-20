@@ -363,14 +363,54 @@ AppTestCase {
         compare(bookOrbit.booksOf.jumpSections.length, 0)
     }
 
+    function searches(path) {
+        return asked(path).filter(r => r.body.q === "dune").length
+    }
+
+    // Searches for Dune, which every library is asked for
+    function searchDune() {
+        fakeServer.respond("POST", everyLibrary, 200, "libraries/search-dune.json")
+        const before = searches(everyLibrary)
+        tap("searchButton")
+        type("searchField", "dune")
+        tryVerify(() => searches(everyLibrary) === before + 1, 5000, "every library searched")
+        tryVerify(() => titlesIn(find("searchResults")) !== "", 5000)
+    }
+
     function test_searchSpansEveryLibrary() {
         open(savedSession)
         bookRow("Hyperion")
-        fakeServer.respond("POST", everyLibrary, 200, "libraries/search-dune.json")
 
-        bookOrbit.search.find("dune")
+        searchDune()
 
-        tryVerify(() => asked(everyLibrary).some(r => r.body.q === "dune"), 5000, "every library searched")
+        compare(find("filterButton", find("searchPage")).text, "All libraries")
+    }
+
+    function test_searchCanBeSetToOneLibrary() {
+        open(savedSession)
+        bookRow("Hyperion")
+        searchDune()
+
+        tap("filterButton", find("searchPage"))
+        tap("library Audiobooks", find("filterMenu"))
+
+        tryVerify(() => searches(audiobooks) === 1, 5000, "that library searched")
+        compare(find("filterButton", find("searchPage")).text, "Audiobooks")
+    }
+
+    function test_searchStartsWithEveryLibraryEachTime() {
+        open(savedSession)
+        bookRow("Hyperion")
+        searchDune()
+        tap("filterButton", find("searchPage"))
+        tap("library Audiobooks", find("filterMenu"))
+        tryVerify(() => searches(audiobooks) === 1, 5000)
+        tap("backButton", find("searchPage"))
+
+        searchDune()
+
+        compare(searches(audiobooks), 1, "not the last one's library")
+        compare(find("filterButton", find("searchPage")).text, "All libraries")
     }
 
     // A content type chosen in one view shows in the others, applied to each when it's next

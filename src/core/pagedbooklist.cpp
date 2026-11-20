@@ -201,7 +201,7 @@ QString PagedBookList::sortKey(const QVariantMap &book, const QString &field) co
 
 void PagedBookList::showListedBooks()
 {
-    const bool letters = isLetterSort(m_sortField) && letterSections();
+    const bool letters = isLetterSort(m_sortField) && sectioned();
     const bool seriesNumbers = m_sortField == "seriesIndex";
     // BookOrbit gives no last read date per book, so last read is when the system's reader
     // last opened the book's files, where its library can be read, newest first, then the
@@ -216,7 +216,8 @@ void PagedBookList::showListedBooks()
     }
     const bool openTimes = openedOrNone.has_value();
     const QHash<QString, qint64> opened = openedOrNone.value_or(QHash<QString, qint64>());
-    m_sections = letters ? Sections::Starts
+    m_sections = !sectioned() ? Sections::None
+               : letters ? Sections::Starts
                : seriesNumbers ? Sections::SeriesNumbers
                : isDateSort(m_sortField) || openTimes ? Sections::Days : Sections::None;
     const bool byTitle = lastRead;

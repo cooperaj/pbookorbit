@@ -17,8 +17,22 @@ Window {
                                    || (searchPage.visible && searchPage.typing)
     onTypingChanged: Qt.callLater(() => eink.setDynamicUpdates(root.typing))
 
-    // Search page, over everything else
+    // Search page, over everything else. Each search starts with the lists' content type
+    // and Downloaded only, every library and Title A-Z, and ends on going back, opening a
+    // book or signing out. Pages opened from it keep it as it was.
     property bool searching: false
+    onSearchingChanged: {
+        if (searching) {
+            bookOrbit.searchFilter.copy(bookOrbit.filter)
+        } else {
+            searchPage.reset()
+            searchQuery.sortIndex = 1
+            searchQuery.sortReversed = false
+            searchQuery.libraryId = -1
+            // With the text gone, nothing is searched
+            searchQuery.applied()
+        }
+    }
     // Pages opened from the book menu, a collection or an author, stacked over the search
     // page: author info, then their series, then a books-of list, then book info
     property bool showingAuthor: false
@@ -48,7 +62,7 @@ Window {
     function openBook(book) {
         const onDevice = Books.recordOnDevice(book, downloads)
         if (onDevice !== undefined)
-            downloads.open(onDevice)
+            bookOpened(downloads.open(onDevice))
         else
             downloadDialog.show(book, book.variants || [])
     }
@@ -56,9 +70,15 @@ Window {
     // Opens target (see Books.openWithTarget) in app, downloading it first if needed
     function openWith(target, app) {
         if (target.option === undefined)
-            downloads.openWith(target.bookId, target.format, app.app)
+            bookOpened(downloads.openWith(target.bookId, target.format, app.app))
         else
             downloadDialog.show(target.option.book, [target.option], app)
+    }
+
+    // Opening a book ends a search, closing the pages opened from it
+    function bookOpened(opened) {
+        if (opened && searching)
+            closePages()
     }
 
     // Tapping the title scrolls the current list back to the top
@@ -178,6 +198,28 @@ Window {
         libraryId: bookOrbit.authors.libraryId
         onLibraryChosen: (id) => root.chooseGroupLibrary(bookOrbit.authors, id)
         onApplied: bookOrbit.authors.setQuery(sortField, descending(), formats, downloadedOnly)
+    }
+    // Search results: the library's sorts, and every library's books or one library's. Its
+    // content type and Downloaded only are its own (see searching).
+    ListQuery {
+        id: searchQuery
+        filter: bookOrbit.searchFilter
+        sorts: libraryQuery.sorts
+        sortIndex: 1
+        hasLibraries: true
+        allLibraries: true
+        onLibraryChosen: (id) => {
+            libraryId = id
+            applied()
+        }
+        onApplied: bookOrbit.search.setQuery(sortField, descending(), formats, downloadedOnly, libraryId)
+    }
+    Connections {
+        target: bookOrbit.searchFilter
+        function onChanged() {
+            if (root.searching)
+                searchQuery.applied()
+        }
     }
     // Shows the groups of one library, or all for -1, in Series or Authors, kept for next
     // time
@@ -336,9 +378,11 @@ Window {
     Connections {
         target: bookOrbit.session
         function onOnlineChanged() {
-            // Once the queries' downloadedOnly bindings have caught up
+            // Once the queries' downloadedOnly bindings have caught up. Search has its own.
             if (!bookOrbit.filter.downloadedOnly)
                 Qt.callLater(root.filterChanged)
+            else if (shownQuery === searchQuery && !bookOrbit.searchFilter.downloadedOnly)
+                Qt.callLater(searchQuery.applied)
             // Offline, series are the downloaded books'
             if (showingSeries)
                 bookOrbit.series.load()
@@ -726,6 +770,8 @@ Window {
         anchors.fill: parent
         visible: root.searching
         headerHeight: header.height
+        query: searchQuery
+        menus: listMenus
         onBack: root.searching = false
         onBookClicked: (book) => root.openBook(book)
         onBookHeld: (row) => bookMenu.open(row)
@@ -788,7 +834,7 @@ Window {
         visible: root.showingInfo
         onBack: root.showingInfo = false
         onBooksOfChosen: (field, values) => root.openBooksOfFromInfo(field, values)
-        onOpenChosen: (bookId, kind) => downloads.open(bookId, kind)
+        onOpenChosen: (bookId, kind) => root.bookOpened(downloads.open(bookId, kind))
         onDownloadChosen: (book, versions) => downloadDialog.show(book, versions)
         onDeleteChosen: (book, kind) => deleteDialog.ask(book, kind)
         onOpenWithChosen: (target, app) => root.openWith(target, app)
@@ -862,7 +908,8 @@ Window {
         id: downloadDialog
         objectName: "downloadDialog"
         anchors.fill: parent
-        onOpened: (bookId, format, app) => app ? downloads.openWith(bookId, format, app.app) : downloads.open(bookId)
+        onOpened: (bookId, format, app) => root.bookOpened(app ? downloads.openWith(bookId, format, app.app)
+                                                               : downloads.open(bookId))
     }
     FindBooksDialog {
         id: findBooksDialog

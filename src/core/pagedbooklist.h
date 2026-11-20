@@ -96,8 +96,8 @@ protected:
     QVariantList localBooksIn(int libraryId) const;
     // The local books this list shows when set to local books only
     virtual QVariantList localBooks() const { return m_localBooks; }
-    // Whether A-Z sorts get letter sections. Search results have none, as from the server.
-    virtual bool letterSections() const { return true; }
+    // Whether the list has sections. Search results have none, as from the server.
+    virtual bool sectioned() const { return true; }
     // A book's sort key for listing local books, matching the server's
     virtual QString sortKey(const QVariantMap &book, const QString &field) const;
     // Whether an audiobook row may be hidden for an ebook record that is maybe in the list
@@ -110,6 +110,8 @@ protected:
                                  const QVariantList &books, std::function<void(const QVariantList &)> then);
     // Called while saving the cache, in its transaction
     virtual void cacheSaved() {}
+    // Builds the BookOrbit query for the sort and filter
+    QJsonObject bookQuery() const;
 
     Session *m_session;
     Database *m_database;
@@ -147,8 +149,6 @@ protected:
     bool m_cacheDirty = false;
 
 private:
-    // Builds the BookOrbit query for the sort and filter
-    QJsonObject bookQuery() const;
     // Loads the A-Z jump buckets for the query, then calls then
     void loadJumpSections(std::function<void()> then);
     // Loads series numbers for a list sorted by them, as its jumpSections, from page onwards

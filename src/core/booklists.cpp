@@ -33,37 +33,47 @@ QVariantList LibraryBooks::localBooks() const
 
 void SearchResults::setPaths()
 {
-    setLibraryPaths(m_session->libraryToQuery(-1));
+    setLibraryPaths(m_session->libraryToQuery(m_libraryId));
+}
+
+QVariantList SearchResults::localBooks() const
+{
+    return localBooksIn(m_libraryId);
+}
+
+void SearchResults::setQuery(const QString &sortField, bool descending, const QStringList &formats,
+                             bool localOnly, int libraryId)
+{
+    setSortAndFilter(sortField, descending, formats, localOnly);
+    m_libraryId = libraryId;
+    find(m_text);
 }
 
 void SearchResults::find(const QString &text)
 {
     restartPages();
-    const QString q = text.trimmed();
-    if (q.length() < RecentSearches::MIN_LENGTH) {
+    m_text = text.trimmed();
+    if (m_text.length() < RecentSearches::MIN_LENGTH) {
         m_listGeneration = m_queryGeneration;
         m_total = 0;
         m_model.reset(0);
         emit changed();
         return;
     }
-    if (!m_session->online()) {
-        findLocalBooks(q);
+    if (m_onlyListed || !m_session->online()) {
+        findLocalBooks(m_text);
         return;
     }
 
-    m_onlyListed = false;
     emit changed();   // total is -1 until the results arrive
     const int generation = m_queryGeneration;
-    withLibrary([this, generation, q]() {
+    withLibrary([this, generation]() {
         if (generation != m_queryGeneration)
             return;
-        // Same as BookOrbit's web client: the text as q, sorted by title
+        // Same as BookOrbit's web client: the text as q, with the list's sort and filter
         setPaths();
-        m_query = QJsonObject{
-            {"q", q},
-            {"sort", QJsonArray{QJsonObject{{"field", "title"}, {"dir", "asc"}}}},
-        };
+        m_query = bookQuery();
+        m_query.insert("q", m_text);
         loadPage(0);
     });
 }
@@ -76,7 +86,7 @@ void SearchResults::findLocalBooks(const QString &text)
     for (const QString &word : words(text))
         wanted.append(looseText(word));
     m_onlyBooks.clear();
-    for (const QVariant &value : std::as_const(m_localBooks)) {
+    for (const QVariant &value : localBooks()) {
         const QVariantMap book = value.toMap();
         QStringList fields{looseText(book.value("title").toString())};
         for (const QString &author : book.value("authors").toStringList())
@@ -92,7 +102,6 @@ void SearchResults::findLocalBooks(const QString &text)
             m_onlyBooks.append(book);
     }
 
-    setSortAndFilter("title", false, {}, true);
     showListedBooks();
 }
 

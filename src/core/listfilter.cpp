@@ -22,6 +22,11 @@ ListFilter::ListFilter(Session *session, Database *database, QObject *parent)
     });
 }
 
+ListFilter::ListFilter(QObject *parent)
+    : QObject(parent)
+{
+}
+
 void ListFilter::showContent(const QString &kind, bool on)
 {
     bool &shown = kind == "ebook" ? m_ebooks : m_audiobooks;
@@ -40,8 +45,23 @@ void ListFilter::setDownloadedOnly(bool on)
     save();
 }
 
+void ListFilter::copy(ListFilter *other)
+{
+    if (!other || (m_ebooks == other->m_ebooks && m_audiobooks == other->m_audiobooks
+                   && m_downloadedOnly == other->m_downloadedOnly))
+        return;
+    m_ebooks = other->m_ebooks;
+    m_audiobooks = other->m_audiobooks;
+    m_downloadedOnly = other->m_downloadedOnly;
+    save();
+}
+
 void ListFilter::save()
 {
+    if (!m_database) {
+        emit changed();
+        return;
+    }
     m_database->setFlag("hideEbooks", !m_ebooks);
     m_database->setFlag("hideAudiobooks", !m_audiobooks);
     m_database->setFlag("downloadedOnly", m_downloadedOnly);

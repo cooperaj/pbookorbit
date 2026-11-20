@@ -5,7 +5,7 @@ import "units.js" as Units
 // Full-window search page, modelled on the Era Color library's search: the toolbar turns
 // into a back button and search box, with recent searches below. From three characters,
 // matching books replace the recent searches once they arrive, with a spinner in the search
-// box meanwhile.
+// box meanwhile. The results have a sub-toolbar for their library, filter and sort.
 //
 // A search is saved to recent searches when the keyboard closes for it (Enter, scrolling
 // the results, tapping a book, or the keyboard's close key). Going back doesn't save it.
@@ -15,6 +15,10 @@ Rectangle {
     readonly property alias pageButtons: results.pageButtons
     readonly property alias list: results.list
     color: "white"
+
+    // The results' sort and filter, and the menus their sub-toolbar opens
+    property ListQuery query: null
+    property ListMenus menus: null
 
     // Same height as the main toolbar, so the page below doesn't jump
     property int headerHeight: Units.dp(56)
@@ -44,9 +48,15 @@ Rectangle {
     function close() {
         closing = true
         hideKeyboard()
-        searchField.text = ""
         closing = false
         page.back()
+    }
+
+    // Empties the search box once the search has ended, without saving it
+    function reset() {
+        closing = true
+        searchField.text = ""
+        closing = false
     }
 
     // Finishes typing: the box loses focus, which saves the search
@@ -104,7 +114,7 @@ Rectangle {
                 onStatusChanged: if (status === Image.Error) name = "search"
             }
             // Clears the box once it has text. Under three characters the recent searches
-            // come back, so clearing returns to them.
+            // come back, so clearing returns to them. Natural size, as in the system library.
             IconButton {
                 id: clearButton
                 objectName: "clearButton"
@@ -112,10 +122,6 @@ Rectangle {
                 anchors.right: parent.right
                 anchors.rightMargin: searchBox.thickBorder
                 anchors.verticalCenter: parent.verticalCenter
-                // Icon at 2/3 of its natural size, tap target full size
-                width: Units.dp(51)
-                height: Units.dp(51)
-                iconSize: Units.dp(34)
                 icon: "remove"
                 pressedIcon: "remove_inv"
                 fallbackText: "×"
@@ -250,9 +256,12 @@ Rectangle {
         listName: "searchResults"
         emptyName: "noBooksFound"
         model: bookOrbit.search.model
+        query: page.query
+        menus: page.menus
         // The spinner is in the search box
         empty: true
-        emptyTitle: "No books found"
+        emptyTitle: page.query ? (page.query.downloadedOnly ? "No downloaded " : "No ") + page.query.contentNoun + " found"
+                               : "No books found"
         emptyText: bookOrbit.session.online ? "Try a different title, author or series."
                                     : offlineText("downloaded books", "searched")
         onRowsWanted: (first, last) => bookOrbit.search.load(first, last)

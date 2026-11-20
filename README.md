@@ -22,7 +22,8 @@ one of the device's built-in apps rather than a port of something else.
   time.
 - Pages for each book and author, with links through to everything else by that author
   or in that series.
-- Search that updates as you type, and remembers recent searches.
+- Search that updates as you type, and remembers recent searches. Results can be narrowed
+  to one library, ebooks, audiobooks or downloaded books, and sorted like the library.
 - Ebooks download to `Books` and open in the reader. Audiobooks go to `Audio Books` and
   play in the Audiobooks app. If a book has both, it's shown once.
 - It can find books you already had on the device (from KOReader's BookOrbit plugin, for

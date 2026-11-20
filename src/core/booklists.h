@@ -26,8 +26,9 @@ protected:
     QVariantList localBooks() const override;
 };
 
-// Books matching a search of titles, authors and series, by title, in every library.
-// Offline, the local books matching it.
+// Books matching a search of titles, authors and series, in a library or every library,
+// sorted and filtered like the library (see LibraryBooks::setQuery). Local books only
+// searches the downloaded books, as does offline.
 class SearchResults : public PagedBookList
 {
     Q_OBJECT
@@ -37,12 +38,16 @@ public:
 
     // Searches for text. Text shorter than RecentSearches::MIN_LENGTH clears the results.
     Q_INVOKABLE void find(const QString &text);
+    // Sets the sort, filter and library (-1 for every library), and searches again
+    Q_INVOKABLE void setQuery(const QString &sortField, bool descending, const QStringList &formats,
+                              bool localOnly, int libraryId);
     // Kept for the next search offline, leaving the results as they are
     void setLocalBooks(const QVariantList &books) override { m_localBooks = books; }
 
 protected:
     void setPaths() override;
-    bool letterSections() const override { return false; }
+    QVariantList localBooks() const override;
+    bool sectioned() const override { return false; }
     bool checksPairs() const override { return true; }
     void hideListedPairs(const QVariantList &merged, const QVariantList &rows,
                          const QList<std::pair<int, QList<QVariantMap>>> &maybeHidden,
@@ -51,6 +56,9 @@ protected:
 private:
     // The local books matching the text
     void findLocalBooks(const QString &text);
+
+    QString m_text;
+    int m_libraryId = -1;
 };
 
 // The books of some authors, a series or a collection

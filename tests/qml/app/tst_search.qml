@@ -6,6 +6,10 @@ import "../helpers"
 // searches, from three characters; offline the downloaded books are searched. A book whose
 // ebook and audiobook are separate records shows once, as the ebook's row, when both match.
 // Searches are saved as recent searches when typing ends, but not when going back.
+//
+// The results have a sub-toolbar. Each search starts with the lists' content type and
+// Downloaded only, every library and Title A-Z; changes there are the search's alone, kept
+// on pages opened from it and dropped when it ends (going back or opening a book).
 AppTestCase {
     name: "Search"
 
@@ -47,6 +51,28 @@ AppTestCase {
     // The results' titles, top to bottom
     function results() {
         return titlesIn(find("searchResults"))
+    }
+
+    // The search requests' bodies, oldest first
+    function searchBodies() {
+        return fakeServer.requests.filter(r => r.body && r.body.q !== undefined).map(r => r.body)
+    }
+
+    function lastSearch() {
+        const bodies = searchBodies()
+        return bodies[bodies.length - 1]
+    }
+
+    // Whether a search asked only for audiobook formats
+    function audiobooksOnly(body) {
+        return body.filter !== undefined && JSON.stringify(body.filter).indexOf("m4b") >= 0
+               && JSON.stringify(body.filter).indexOf("epub") < 0
+    }
+
+    // Searches for Dune and waits for its results
+    function searchDune() {
+        searchFor("dune")
+        tryVerify(() => results() === "Dune, Dune Messiah", 5000, "the server's matches")
     }
 
     // A recent search's row, once the list has made it
@@ -239,16 +265,125 @@ AppTestCase {
         verify(recent("dune").visible)
     }
 
-    // A downloaded book opens; tapping it also saves the search
+    // A downloaded book opens; tapping it also saves the search, which ends
     function test_tappingADownloadedResultOpensIt() {
         openSearchLibrary({}, {books: [onDevice(duneMessiah, "Dune Messiah.epub")]})
-        openSearch()
+        const page = openSearch()
         searchFor("dune")
 
         mouseClick(bookRow("Dune Messiah", "searchResults"))
 
         expectOpenedInReader("/Books/Dune Messiah.epub")
         compare(bookOrbit.recentSearches.items, ["dune"])
+        verify(!page.visible, "back to the library")
+        compare(find("searchField").text, "", "an empty search next time")
+    }
+
+    function test_subToolbarOnlyWithResults() {
+        openSearchLibrary()
+        const page = openSearch()
+        verify(!find("filterButton", page).visible, "not over the recent searches")
+
+        searchDune()
+
+        verify(find("filterButton", page).visible, "over the results")
+        compare(find("filterButton", page).text, "All titles")
+        compare(find("sortButton", page).text, "By Title")
+        compare(lastSearch().sort, [{field: "title", dir: "asc"}])
+    }
+
+    function test_noResultsKeepTheSubToolbar() {
+        openSearchLibrary()
+        const page = openSearch()
+
+        searchFor("zzz")
+
+        tryVerify(() => find("noBooksFound").visible, 5000)
+        verify(find("filterButton", page).visible, "to widen the search")
+    }
+
+    function test_sortingSearchesAgain() {
+        openSearchLibrary()
+        openSearch()
+        searchDune()
+
+        sortBy("searchPage", "Date added")
+
+        tryVerify(() => searchBodies().length === 2, 5000, "searched again")
+        compare(lastSearch().q, "dune")
+        compare(lastSearch().sort, [{field: "addedAt", dir: "desc"}])
+    }
+
+    function test_startsWithTheListsContentType() {
+        openSearchLibrary()
+        bookOrbit.filter.showContent("ebook", false)
+        openSearch()
+
+        searchFor("dune")
+
+        tryVerify(() => searchBodies().length === 1, 5000)
+        verify(audiobooksOnly(lastSearch()), JSON.stringify(lastSearch()))
+    }
+
+    // Changed in search, the lists keep theirs
+    function test_contentTypeChosenInSearchIsTheSearchs() {
+        openSearchLibrary()
+        openSearch()
+        searchDune()
+
+        showOnly("searchPage", "Audiobooks")
+
+        tryVerify(() => searchBodies().length === 2, 5000, "searched again")
+        verify(audiobooksOnly(lastSearch()), JSON.stringify(lastSearch()))
+        verify(bookOrbit.filter.ebooks, "the lists still show ebooks")
+    }
+
+    // Online, Downloaded only searches the books on the device instead
+    function test_downloadedOnlySearchesTheDevice() {
+        openSearchLibrary({}, {books: [onDevice(duneMessiah, "Dune Messiah.epub")]})
+        openSearch()
+        searchDune()
+
+        setDownloadedOnly("searchPage")
+
+        tryVerify(() => results() === "Dune Messiah", 5000, "the downloaded match")
+        compare(searchBodies().length, 1, "the server isn't asked again")
+    }
+
+    function test_goingBackResetsTheSortAndFilter() {
+        openSearchLibrary()
+        const page = openSearch()
+        searchDune()
+        sortBy("searchPage", "Date added")
+        showOnly("searchPage", "Audiobooks")
+        tap("filterButton", page)   // closes the menu
+        tap("backButton", page)
+
+        openSearch()
+        searchDune()
+
+        compare(lastSearch().sort, [{field: "title", dir: "asc"}])
+        verify(!audiobooksOnly(lastSearch()), "every content type again")
+        compare(find("sortButton", page).text, "By Title")
+    }
+
+    // A books-of page opened over the results goes back to them as they were
+    function test_pagesOpenedFromResultsKeepTheSearch() {
+        openSearchLibrary()
+        const page = openSearch()
+        searchDune()
+        sortBy("searchPage", "Date added")
+        tryVerify(() => searchBodies().length === 2, 5000)
+
+        root.openBooksOf("author", ["Frank Herbert"], "")
+        verify(find("booksOfPage").visible)
+        tap("backButton", find("booksOfPage"))
+
+        verify(page.visible, "back to the search")
+        compare(find("searchField").text, "dune")
+        compare(find("sortButton", page).text, "By Date added")
+        wait(500)
+        compare(searchBodies().length, 2, "not searched again")
     }
 
     function test_tappingAResultNotOnTheDeviceOffersToDownloadIt() {
