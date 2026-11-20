@@ -159,7 +159,8 @@ Window {
         ]
         hasLibraries: true
         allLibraries: true
-        onLibraryChosen: (id) => root.chooseGroupLibrary(seriesQuery, bookOrbit.series, id)
+        libraryId: bookOrbit.series.libraryId
+        onLibraryChosen: (id) => root.chooseGroupLibrary(bookOrbit.series, id)
         onApplied: bookOrbit.series.setQuery(sortField, descending(), formats, downloadedOnly)
     }
     // Author sorts from BookOrbit's authors page: A-Z by name or surname, most books and
@@ -174,39 +175,40 @@ Window {
         ]
         hasLibraries: true
         allLibraries: true
-        onLibraryChosen: (id) => root.chooseGroupLibrary(authorsQuery, bookOrbit.authors, id)
+        libraryId: bookOrbit.authors.libraryId
+        onLibraryChosen: (id) => root.chooseGroupLibrary(bookOrbit.authors, id)
         onApplied: bookOrbit.authors.setQuery(sortField, descending(), formats, downloadedOnly)
     }
-    // Shows the groups of one library, or all for -1, in Series or Authors
-    function chooseGroupLibrary(query, groups, id) {
-        query.libraryId = id
+    // Shows the groups of one library, or all for -1, in Series or Authors, kept for next
+    // time
+    function chooseGroupLibrary(groups, id) {
         groups.setLibrary(id)
         groups.load()
     }
-    // Leaving Series or Authors, they go back to every library's groups, loaded when next
-    // shown
-    onShowingSeriesChanged: if (!showingSeries) resetGroupLibrary(seriesQuery, bookOrbit.series)
-    onShowingAuthorsChanged: if (!showingAuthors) resetGroupLibrary(authorsQuery, bookOrbit.authors)
-    function resetGroupLibrary(query, groups) {
-        query.libraryId = -1
-        groups.setLibrary(-1)
-    }
-    // An author's series: the Series view's sorts, kept between authors
+    // An author's series: the Series view's sorts, kept between authors, and every library's
+    // each time
     ListQuery {
         id: authorSeriesQuery
         sorts: seriesQuery.sorts
+        hasLibraries: true
+        allLibraries: true
+        libraryId: bookOrbit.authorSeries.libraryId
+        onLibraryChosen: (id) => {
+            bookOrbit.authorSeries.setLibrary(id)
+            bookOrbit.authorSeries.show(authorSeriesPage.name)
+        }
         onApplied: bookOrbit.authorSeries.setQuery(sortField, descending(), formats, downloadedOnly)
     }
-    // In the library Authors shows
     function openAuthorSeries(name) {
         authorSeriesPage.name = name
-        bookOrbit.authorSeries.setLibrary(authorsQuery.libraryId)
+        bookOrbit.authorSeries.setLibrary(-1)
         bookOrbit.authorSeries.show(name)
         authorSeriesPage.list.positionViewAtBeginning()
         showingAuthorSeries = true
     }
     // Books of an author, series or collection (see bookOrbit.booksOf.show()). Each field
-    // keeps its own sort and filter between uses, like the library.
+    // keeps its own sort between uses, like the library. Each list starts with every
+    // library's books.
     property string booksOfField
     property var booksOfValues: []
     property int booksOfLibraryId: -1
@@ -214,23 +216,23 @@ Window {
                                               : booksOfField === "collection" ? collectionBooksQuery
                                               : authorBooksQuery
     // field is "author", "series" or "collection", values the names (or collection id) to
-    // match, title the name shown, if not the values, and libraryId the library whose books
-    // to show, or -1 for every library's
-    function openBooksOf(field, values, title, libraryId) {
+    // match, and title the name shown, if not the values
+    function openBooksOf(field, values, title) {
         booksOfBack.push({ booksOf: showingBooksOf ? { field: booksOfField, values: booksOfValues, title: booksOfPage.name,
                                                        libraryId: booksOfLibraryId }
                                                    : null,
                            info: null })
-        showBooksOf(field, values, title, libraryId)
+        showBooksOf(field, values, title, -1)
     }
+    // libraryId is the library whose books to show, or -1 for every library's
     function showBooksOf(field, values, title, libraryId) {
         booksOfPage.kind = field === "series" ? "Series" : field === "collection" ? "Collection"
                            : values.length > 1 ? "Authors" : "Author"
         booksOfPage.name = title || values.join(", ")
         booksOfField = field
         booksOfValues = values
-        booksOfLibraryId = libraryId ?? -1
-        booksOfQuery.applied()
+        booksOfLibraryId = libraryId
+        applyFilter(booksOfQuery)
         showingBooksOf = true
     }
     // Opened from a book's info page, which is above the books-of page, so closes it. Back
@@ -238,7 +240,7 @@ Window {
     function openBooksOfFromInfo(field, values) {
         const info = { book: bookInfoPage.book, kind: bookInfoPage.kind }
         showingInfo = false
-        openBooksOf(field, values, "", libraryOf(bookInfoPage.book))
+        openBooksOf(field, values, "")
         booksOfBack[booksOfBack.length - 1].info = info
     }
     // What each books-of list replaced, for Back: the list before it, if any, and the info
@@ -263,30 +265,29 @@ Window {
         bookOrbit.booksOf.show(booksOfField, booksOfValues, query.sortField, query.descending(), query.formats,
                                query.downloadedOnly, booksOfLibraryId)
     }
-    // A book's library, as its other books are looked for there: the one in its record, or
-    // the book list's
-    function libraryOf(book) {
-        return book.libraryId ?? bookOrbit.session.libraryId
-    }
-    // A series' library, for its books: the one its list shows, or failing that the only
-    // one it's in, or else -1 for all of them
-    function seriesLibrary(series, listLibraryId) {
-        if (listLibraryId >= 0)
-            return listLibraryId
-        const ids = series.libraryIds || []
-        return ids.length === 1 ? ids[0] : -1
+    function chooseBooksOfLibrary(query, id) {
+        booksOfLibraryId = id
+        query.applied()
     }
     // An author's books use the library's sorts
     ListQuery {
         id: authorBooksQuery
         sorts: libraryQuery.sorts
         sortIndex: 1
+        hasLibraries: true
+        allLibraries: true
+        libraryId: root.booksOfLibraryId
+        onLibraryChosen: (id) => root.chooseBooksOfLibrary(authorBooksQuery, id)
         onApplied: root.applyBooksOf(authorBooksQuery)
     }
     // A series' books: series order first, then the library's sorts
     ListQuery {
         id: seriesBooksQuery
         sorts: [{ name: "Series order", field: "seriesIndex", descending: false }].concat(libraryQuery.sorts)
+        hasLibraries: true
+        allLibraries: true
+        libraryId: root.booksOfLibraryId
+        onLibraryChosen: (id) => root.chooseBooksOfLibrary(seriesBooksQuery, id)
         onApplied: root.applyBooksOf(seriesBooksQuery)
     }
     // A collection's books: the library's sorts, with Date added meaning when it was added
@@ -303,18 +304,41 @@ Window {
     readonly property int downloadsRevision: downloads.revision
     onDownloadsRevisionChanged: bookOrbit.setLocalBooks(downloads.downloadedBooks())
 
+    // The content type and Downloaded only, shared by every list (bookOrbit.filter). A
+    // change applies to the list in front at once, and to each of the others when it's
+    // next shown. Counted by filterRevision, which each query records when applied.
+    property int filterRevision: 0
+    readonly property ListQuery shownQuery: frontPage?.query ?? null
+    onShownQueryChanged: if (shownQuery && shownQuery.filterRevision !== filterRevision) applyFilter(shownQuery)
+    function applyFilter(query) {
+        query.filterRevision = filterRevision
+        query.applied()
+    }
+    function filterChanged() {
+        filterRevision++
+        if (shownQuery)
+            applyFilter(shownQuery)
+        // Signed out: ready for the book list's first load once signed in
+        else if (!bookOrbit.session.signedIn)
+            prepareLibrary()
+    }
+    // Sets the book list's query without loading it, for bookOrbit.start()
+    function prepareLibrary() {
+        libraryQuery.filterRevision = filterRevision
+        bookOrbit.library.setQuery(libraryQuery.sortField, libraryQuery.descending(), libraryQuery.formats,
+                                   libraryQuery.downloadedOnly, false)
+    }
+    Connections {
+        target: bookOrbit.filter
+        function onChanged() { root.filterChanged() }
+    }
     // Going offline or back online changes what lists that aren't downloaded only show
     Connections {
         target: bookOrbit.session
         function onOnlineChanged() {
-            if (!libraryQuery.downloadedChosen)
-                libraryQuery.applied()
-            if (showingBooksOf && !booksOfQuery.downloadedChosen)
-                booksOfQuery.applied()
-            for (const query of [authorsQuery, seriesQuery, authorSeriesQuery]) {
-                if (!query.downloadedChosen)
-                    query.applied()
-            }
+            // Once the queries' downloadedOnly bindings have caught up
+            if (!bookOrbit.filter.downloadedOnly)
+                Qt.callLater(root.filterChanged)
             // Offline, series are the downloaded books'
             if (showingSeries)
                 bookOrbit.series.load()
@@ -329,9 +353,11 @@ Window {
     Component.onCompleted: {
         bookOrbit.setLocalBooks(downloads.downloadedBooks())
         // Starting offline: list the downloaded books before bookOrbit.start() loads the
-        // list
-        if (!bookOrbit.session.online)
-            libraryQuery.applied()
+        // list. Online, it loads with the saved filter.
+        if (bookOrbit.session.online)
+            prepareLibrary()
+        else
+            applyFilter(libraryQuery)
     }
 
     // The sort and filter shown by the menus, for whichever page is in front
@@ -470,8 +496,7 @@ Window {
         // Reloaded every time the view opens, showing the last rows until then, and the books
         // of the series in view looked up. Offline, the downloaded books'.
         onVisibleChanged: if (visible) bookOrbit.series.load()
-        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "",
-                                                     root.seriesLibrary(series, seriesQuery.libraryId))
+        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "")
     }
 
     GroupListPage {
@@ -712,15 +737,12 @@ Window {
         anchors.fill: parent
         visible: root.showingAuthor
         onBack: root.showingAuthor = false
-        // In the library Authors shows
-        onBooksClicked: {
-            root.openBooksOf("author", [authorInfoPage.author.name], "", authorsQuery.libraryId)
-        }
+        onBooksClicked: root.openBooksOf("author", [authorInfoPage.author.name], "")
         // Go straight to the series if there's only one
         onSeriesClicked: {
             const names = authorInfoPage.seriesNames
             if (authorInfoPage.seriesCount === 1 && names.length === 1)
-                root.openBooksOf("series", [names[0]], "", authorsQuery.libraryId)
+                root.openBooksOf("series", [names[0]], "")
             else
                 root.openAuthorSeries(authorInfoPage.author.name)
         }
@@ -739,8 +761,7 @@ Window {
             root.closeDropdowns()
             root.showingAuthorSeries = false
         }
-        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "",
-                                                     root.seriesLibrary(series, authorsQuery.libraryId))
+        onGroupClicked: (series) => root.openBooksOf("series", [series.name], "")
     }
 
     BooksOfPage {
@@ -782,7 +803,7 @@ Window {
             bookInfoPage.show(book)
             root.showingInfo = true
         }
-        onBooksOfChosen: (field, values) => root.openBooksOf(field, values, "", root.libraryOf(bookMenu.book))
+        onBooksOfChosen: (field, values) => root.openBooksOf(field, values, "")
         onDeleteChosen: (book) => deleteDialog.ask(book)
         onOpenWithChosen: (target, app) => root.openWith(target, app)
     }

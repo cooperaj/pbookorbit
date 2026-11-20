@@ -3,8 +3,9 @@ import QtTest
 import "../helpers"
 import "../../../src/qml"
 
-// One view's sort and filter choices, shared by every view with a sub-toolbar. Here with
-// the library's sorts: dates newest first, everything else A to Z.
+// One view's sort, and the content type and Downloaded only every view shares
+// (bookOrbit.filter; libraries are tested with the app in tst_libraries.qml). Here with the library's sorts:
+// dates newest first, everything else A to Z.
 UiTestCase {
     id: test
     name: "ListQuery"
@@ -22,18 +23,15 @@ UiTestCase {
     }
 
     SignalSpy { id: applied; signalName: "applied" }
-    SignalSpy { id: libraryChosen; signalName: "libraryChosen" }
 
     property var query
 
-    function make(options) {
-        testApp.reset({}, options || {})
+    function make(options, settings) {
+        testApp.reset(settings || {}, options || {})
         query = createTemporaryObject(listQuery, test)
         verify(query)
         applied.target = query
         applied.clear()
-        libraryChosen.target = query
-        libraryChosen.clear()
     }
 
     function test_eachSortStartsInItsOwnDirection() {
@@ -72,11 +70,8 @@ UiTestCase {
         make()
 
         query.chooseSort(1)
-        query.showContent("ebook", true)
-        query.chooseLibrary(-1)
 
         compare(applied.count, 0)
-        compare(libraryChosen.count, 0)
     }
 
     // The chosen sort's name and field, for the sub-toolbar and the request
@@ -112,7 +107,6 @@ UiTestCase {
         verify(query.formats.indexOf("epub") >= 0, "ebook formats")
         verify(query.formats.indexOf("cbz") >= 0, "comics too")
         verify(query.formats.indexOf("m4b") < 0, "not audiobook ones")
-        compare(applied.count, 1)
     }
 
     function test_justAudiobooks() {
@@ -134,7 +128,6 @@ UiTestCase {
         query.showContent("audiobook", false)
 
         verify(query.audiobooks, "audiobooks stay")
-        compare(applied.count, 1, "only the first changed anything")
     }
 
     function test_bothAgain() {
@@ -147,15 +140,24 @@ UiTestCase {
         compare(query.formats, [])
     }
 
-    // Choosing a library is the view's to act on
-    function test_choosingALibrary() {
+    // The filter is every view's
+    function test_sharedWithOtherViews() {
         make()
+        const other = createTemporaryObject(listQuery, test)
 
-        query.chooseLibrary(2)
+        query.showContent("ebook", false)
+        query.setDownloadedOnly(true)
 
-        compare(libraryChosen.count, 1)
-        compare(libraryChosen.signalArguments[0][0], 2)
-        compare(applied.count, 0)
+        verify(!other.ebooks, "hidden there too")
+        verify(other.downloadedOnly, "and downloaded only")
+    }
+
+    // Kept for the next start, until signing out
+    function test_savedFilterToStartWith() {
+        make({}, {hideAudiobooks: "1", downloadedOnly: "1"})
+
+        compare(query.filterName, "Ebooks")
+        verify(query.downloadedOnly, "downloaded only")
     }
 
     function test_downloadedOnlyAsChosen() {
@@ -165,7 +167,6 @@ UiTestCase {
         query.setDownloadedOnly(true)
 
         verify(query.downloadedOnly, "on as chosen")
-        compare(applied.count, 1)
     }
 
     // Offline only downloads can show, whatever was chosen, and the choice is kept for

@@ -216,7 +216,6 @@ void SeriesList::loadPage(int page, int generation)
                 {"books", QVariantMap()},
                 {"lastAddedAt", series.value("lastAddedAt").toString()},
                 {"readProgress", bookCount > 0 ? series.value("readCount").toDouble() / bookCount : 0.0},
-                {"libraryIds", libraryIds(series.value("libraryNames").toVariant().toStringList())},
             }));
         }
         m_loaded = true;

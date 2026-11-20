@@ -37,6 +37,8 @@ class GroupList : public QObject
     // Whether every row's books have been looked up this time. Filtering by format needs
     // this.
     Q_PROPERTY(bool allLookedUp READ allLookedUp NOTIFY changed)
+    // The library its groups are in, or -1 for every library
+    Q_PROPERTY(int libraryId READ libraryId NOTIFY libraryIdChanged)
 
 public:
     GroupList(Session *session, Database *database, Details *details, GroupDetails *groupDetails,
@@ -47,6 +49,7 @@ public:
     QVariantList jumpSections() const { return m_jumpSections; }
     bool loaded() const { return m_loaded; }
     bool allLookedUp() const { return m_allLookedUp; }
+    int libraryId() const { return m_libraryId; }
 
     // Fetches the list. Existing rows, or the saved ones, stay until the new ones arrive.
     // Offline, builds them from the local books.
@@ -60,8 +63,11 @@ public:
     Q_INVOKABLE void setQuery(const QString &sortField, bool descending, const QStringList &formats,
                               bool localOnly = false);
     // Lists the groups with books in this library, or in any for -1 (the default). A change
-    // empties the list, and the next load() fetches it.
+    // empties the list, and the next load() fetches it. Saved, if keepLibrary() was called.
     Q_INVOKABLE void setLibrary(int libraryId);
+    // Keeps the library chosen in this setting, until signing out, and starts with the one
+    // saved there
+    void keepLibrary(const QString &setting);
     // Looks up the books of rows first to last, once each per load. Called while scrolling
     // for the visible rows plus a screen either side. Until the list has loaded, it waits
     // for it. Rows asked for before and not yet looked up are dropped.
@@ -77,6 +83,7 @@ public:
 
 signals:
     void changed();
+    void libraryIdChanged();
 
 protected:
     // The books a lookup has found for a row so far: each book's formats by its companion
@@ -149,8 +156,6 @@ protected:
     static int seriesCount(const QHash<QString, QStringList> &bookSeries);
     // "&libraryId=<id>" for a group list's URL, or empty for every library
     QString libraryParameter() const;
-    // The ids of the session's libraries with these names
-    QVariantList libraryIds(const QStringList &names) const;
     // A stable id for a row built offline, negative so it can't clash with the server's
     static int localId(const QString &name);
     // The rows on screen: the cached ones, until loaded
@@ -167,6 +172,8 @@ protected:
     QString m_detailsKind;
     // The library its groups are in, or -1 for every library
     int m_libraryId = -1;
+    // The setting the library is saved in, if it's kept
+    QString m_librarySetting;
     // Fields restored from the saved details besides bookCount and formats. Covers are
     // always saved, but only their versions restored unless listed here.
     QStringList m_detailFields;

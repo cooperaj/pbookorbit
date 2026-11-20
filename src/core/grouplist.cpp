@@ -24,18 +24,33 @@ GroupList::GroupList(Session *session, Database *database, Details *details, Gro
     , m_details(details)
     , m_groupDetails(groupDetails)
 {
+    // Signing in again, perhaps as someone else, starts with every library
+    connect(session, &Session::signedOut, this, [this]() { setLibrary(-1); });
 }
 
 void GroupList::load()
 {
-    const int generation = startLoad();
     if (!m_session->online()) {
+        startLoad();
         showLocal();
         return;
     }
 
-    restoreCache();
-    loadPage(0, generation);
+    // Once the libraries are known, for whether the one chosen is still there. A later
+    // load() replaces this one.
+    const int generation = m_generation;
+    m_session->loadLibrary([this, generation]() {
+        if (generation != m_generation)
+            return;
+        if (m_libraryId >= 0 && !m_session->hasLibrary(m_libraryId))
+            setLibrary(-1);
+        const int loading = startLoad();
+        restoreCache();
+        loadPage(0, loading);
+    }, [this, generation](const QString &error) {
+        if (generation == m_generation)
+            setError(error);
+    });
 }
 
 void GroupList::setSort(const QString &field, bool descending)
@@ -58,7 +73,23 @@ void GroupList::setLibrary(int libraryId)
     m_libraryId = libraryId;
     m_cacheName = scoped(m_cacheName);
     m_detailsKind = scoped(m_detailsKind);
+    if (!m_librarySetting.isEmpty()) {
+        if (libraryId < 0)
+            m_database->remove(m_librarySetting);
+        else
+            m_database->setText(m_librarySetting, QString::number(libraryId));
+    }
     clear();
+    emit libraryIdChanged();
+}
+
+void GroupList::keepLibrary(const QString &setting)
+{
+    m_librarySetting = setting;
+    bool saved = false;
+    const int libraryId = m_database->text(setting).toInt(&saved);
+    if (saved)
+        setLibrary(libraryId);
 }
 
 void GroupList::lookUpRows(int first, int last)
@@ -230,7 +261,9 @@ QList<QVariantMap> GroupList::filtered(const QList<QVariantMap> &rows) const
                 continue;
             const QString key = companionKey(book);
             for (const QString &group : groupsOf(book)) {
-                addNew(downloaded[group][key], ownFormats(book));
+                // Rows built offline show what's downloaded, as showLocal() does
+                addNew(downloaded[group][key], m_local ? book.value("downloadedFormats").toStringList()
+                                                       : ownFormats(book));
                 addNew(downloadedSeries[group][key], seriesNames(book));
             }
         }
@@ -503,17 +536,6 @@ int GroupList::seriesCount(const QHash<QString, QStringList> &bookSeries)
 QString GroupList::libraryParameter() const
 {
     return m_libraryId < 0 ? QString() : QString("&libraryId=%1").arg(m_libraryId);
-}
-
-QVariantList GroupList::libraryIds(const QStringList &names) const
-{
-    QVariantList ids;
-    for (const QVariant &value : m_session->libraries()) {
-        const QVariantMap library = value.toMap();
-        if (names.contains(library.value("name").toString()))
-            ids.append(library.value("id"));
-    }
-    return ids;
 }
 
 int GroupList::localId(const QString &name)

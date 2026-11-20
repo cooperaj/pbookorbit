@@ -15,9 +15,11 @@ one of the device's built-in apps rather than a port of something else.
   with the A-Z rail and page through with the page keys.
 - Tabs for collections, series and authors, with series and authors filtered to ebooks,
   audiobooks or downloaded books like the library.
-- If your server has several libraries, the filter menu chooses which one the library,
-  series and authors show. The library keeps its choice; series and authors show every
-  library's until you pick one.
+- If your server has several libraries, each view's filter menu chooses which one it
+  shows. The library shows one at a time; the other views can show every library too.
+  The library, Series and Authors keep their choice for next time.
+- Ebooks, audiobooks and downloaded only are the same in every view, and kept for next
+  time.
 - Pages for each book and author, with links through to everything else by that author
   or in that series.
 - Search that updates as you type, and remembers recent searches.

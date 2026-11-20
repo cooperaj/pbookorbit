@@ -1,8 +1,9 @@
 import QtQuick
 
-// One view's sort and filter, as chosen in its sub-toolbar menus (library, collections, a
-// collection's books). Emits applied() after each change, once the sort and its direction
-// have both settled. Its list page goes back to the top then.
+// One view's sort and library, as chosen in its sub-toolbar menus, and the content type and
+// Downloaded only, which are every view's (bookOrbit.filter). Emits applied() after a
+// change of sort, once the sort and its direction have both settled; main.qml emits it for
+// filter changes. Its list page goes back to the top then.
 QtObject {
     // The sorts, as [{name, field, descending}]: the menu's name, the BookOrbit sort field,
     // and the default direction
@@ -15,8 +16,8 @@ QtObject {
     // Whether the view filters by content type and downloaded only
     property bool hasContentType: true
     // Ebooks and audiobooks shown: one or both, never neither
-    property bool ebooks: true
-    property bool audiobooks: true
+    readonly property bool ebooks: bookOrbit.filter.ebooks
+    readonly property bool audiobooks: bookOrbit.filter.audiobooks
     readonly property bool allContent: ebooks && audiobooks
     // The formats shown, none for all
     readonly property var formats: allContent ? [] : downloads.formatsOf(ebooks ? "ebook" : "audiobook")
@@ -52,11 +53,15 @@ QtObject {
     property int sortIndex: 0
     property bool sortReversed: false
     // Only books on the device, combined with the content type: as chosen, and always
-    // while offline. Back online, the list returns to the choice.
-    property bool downloadedChosen: false
+    // while offline. Back online, the lists return to the choice.
+    readonly property bool downloadedChosen: bookOrbit.filter.downloadedOnly
     readonly property bool downloadedOnly: downloadedChosen || !bookOrbit.session.online
 
     readonly property bool sortDescending: descending()
+
+    // The filter's revision (see main.qml) when last applied, so a view applies a change
+    // made elsewhere once it's shown
+    property int filterRevision: -1
 
     signal applied()
     signal libraryChosen(int libraryId)
@@ -78,25 +83,16 @@ QtObject {
         sortReversed = !sortReversed
         applied()
     }
-    // Shows or hides "ebook" or "audiobook" content, unless that would hide both
-    function showContent(kind, on) {
-        const otherOn = kind === "ebook" ? audiobooks : ebooks
-        if (!on && !otherOn)
-            return
-        if (kind === "ebook" && ebooks !== on)
-            ebooks = on
-        else if (kind === "audiobook" && audiobooks !== on)
-            audiobooks = on
-        else
-            return
-        applied()
-    }
+    // A library, or all of them for -1
     function chooseLibrary(id) {
         if (id !== libraryId)
             libraryChosen(id)
     }
+    // Shows or hides "ebook" or "audiobook" content, unless that would hide both
+    function showContent(kind, on) {
+        bookOrbit.filter.showContent(kind, on)
+    }
     function setDownloadedOnly(on) {
-        downloadedChosen = on
-        applied()
+        bookOrbit.filter.setDownloadedOnly(on)
     }
 }

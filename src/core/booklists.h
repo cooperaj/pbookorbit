@@ -15,8 +15,9 @@ public:
     //   descending  Z to A, or newest first
     //   formats     only books in these formats; empty for all
     //   localOnly   list the local books instead of asking the server, so it works offline
+    //   reload      reload it now; otherwise the next reload() uses them
     Q_INVOKABLE void setQuery(const QString &sortField, bool descending, const QStringList &formats,
-                              bool localOnly = false);
+                              bool localOnly = false, bool reload = true);
     // Reloads it from page one
     void reload() { refresh(); }
 
@@ -25,8 +26,8 @@ protected:
     QVariantList localBooks() const override;
 };
 
-// Books matching a search of titles, authors and series, by title. Offline, the local
-// books matching it.
+// Books matching a search of titles, authors and series, by title, in every library.
+// Offline, the local books matching it.
 class SearchResults : public PagedBookList
 {
     Q_OBJECT
@@ -40,6 +41,7 @@ public:
     void setLocalBooks(const QVariantList &books) override { m_localBooks = books; }
 
 protected:
+    void setPaths() override;
     bool letterSections() const override { return false; }
     bool checksPairs() const override { return true; }
     void hideListedPairs(const QVariantList &merged, const QVariantList &rows,

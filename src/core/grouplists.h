@@ -28,9 +28,9 @@ private:
 };
 
 // The series: {id, name, bookCount, covers (first two books), authors, formats,
-// lastAddedAt, readProgress (0 to 1), libraryIds (the libraries its books are in; empty
-// offline)}. Formats, cover versions and a bookCount that counts an ebook/audiobook pair
-// once come from looking up a series' books, a few series to a request.
+// lastAddedAt, readProgress (0 to 1)}. Formats, cover versions and a bookCount that
+// counts an ebook/audiobook pair once come from looking up a series' books, a few series to
+// a request.
 class SeriesList : public GroupList
 {
     Q_OBJECT

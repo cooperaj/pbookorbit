@@ -5,6 +5,7 @@ BookOrbitClient::BookOrbitClient(Database *database, QObject *parent)
     : QObject(parent)
     , m_database(database)
     , m_session(database)
+    , m_filter(&m_session, database)
     , m_theme(&m_session, database)
     , m_recentSearches(&m_session, database)
     , m_details(&m_session, database)
@@ -17,6 +18,9 @@ BookOrbitClient::BookOrbitClient(Database *database, QObject *parent)
     , m_authors(&m_session, database, &m_details, &m_groupDetails)
     , m_authorSeries(&m_session, database, &m_details, &m_groupDetails)
 {
+    // Series and Authors keep their library; an author's series start with every library
+    m_series.keepLibrary("seriesLibraryId");
+    m_authors.keepLibrary("authorsLibraryId");
     // Connected before QML's handlers, so the lists are ready for them
     connect(&m_session, &Session::started, this, &BookOrbitClient::start);
     connect(&m_session, &Session::ended, this, &BookOrbitClient::clearLists);
@@ -25,7 +29,6 @@ BookOrbitClient::BookOrbitClient(Database *database, QObject *parent)
         m_library.forgetCache();
         m_library.clear();
         m_library.reload();
-        m_search.clear();
     });
     connect(&m_session, &Session::onlineChanged, this, [this]() {
         if (!m_session.online())

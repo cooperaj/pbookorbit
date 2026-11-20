@@ -15,6 +15,7 @@ SOURCES += \
     $$PWD/core/grouplist.cpp \
     $$PWD/core/grouplists.cpp \
     $$PWD/core/launcherfiles.cpp \
+    $$PWD/core/listfilter.cpp \
     $$PWD/core/network.cpp \
     $$PWD/core/pagedbooklist.cpp \
     $$PWD/core/recentsearches.cpp \
@@ -46,6 +47,7 @@ HEADERS += \
     $$PWD/core/grouplist.h \
     $$PWD/core/grouplists.h \
     $$PWD/core/launcherfiles.h \
+    $$PWD/core/listfilter.h \
     $$PWD/core/network.h \
     $$PWD/core/pagedbooklist.h \
     $$PWD/core/recentsearches.h \

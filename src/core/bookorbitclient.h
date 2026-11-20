@@ -5,6 +5,7 @@
 #include "core/details.h"
 #include "core/groupdetails.h"
 #include "core/grouplists.h"
+#include "core/listfilter.h"
 #include "core/recentsearches.h"
 #include "core/session.h"
 #include "ui/theme.h"
@@ -21,6 +22,7 @@ class BookOrbitClient : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(Session *session READ session CONSTANT)
+    Q_PROPERTY(ListFilter *filter READ filter CONSTANT)
     Q_PROPERTY(Theme *theme READ theme CONSTANT)
     Q_PROPERTY(RecentSearches *recentSearches READ recentSearches CONSTANT)
     Q_PROPERTY(Details *details READ details CONSTANT)
@@ -36,6 +38,7 @@ public:
     explicit BookOrbitClient(Database *database, QObject *parent = nullptr);
 
     Session *session() { return &m_session; }
+    ListFilter *filter() { return &m_filter; }
     Theme *theme() { return &m_theme; }
     RecentSearches *recentSearches() { return &m_recentSearches; }
     Details *details() { return &m_details; }
@@ -68,6 +71,7 @@ private:
 
     Database *m_database;
     Session m_session;
+    ListFilter m_filter;
     Theme m_theme;
     RecentSearches m_recentSearches;
     Details m_details;

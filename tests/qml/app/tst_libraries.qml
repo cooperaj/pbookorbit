@@ -2,11 +2,11 @@ import QtQuick
 import "../helpers"
 
 // A server with several libraries: Books, Audiobooks and Comics (libraries/several.json).
-// The book list and search use one of them, the first until another is chosen in the
-// filter menu, and the choice is kept until signing out. Series and Authors list every
-// library's groups unless set to one there, and go back to all of them once left. A series
-// or author's books come from the library its list shows, or from the only library a
-// series is in, or else from every library, which has no A-Z sections.
+// Each view has its own library. The book list shows one, the first until another is
+// chosen. Series and Authors show every library's groups unless set to one, and keep it.
+// Those choices are kept until signing out. An author's series, books-of lists and search
+// start with every library each time. The content type and Downloaded only are every
+// view's.
 AppTestCase {
     name: "Libraries"
 
@@ -87,6 +87,10 @@ AppTestCase {
         bookRow("Hyperion")
         bookOrbit.session.chooseLibrary(2)
         bookRow("Dune Messiah")
+        bookOrbit.series.setLibrary(2)
+        bookOrbit.authors.setLibrary(3)
+        bookOrbit.filter.showContent("ebook", false)
+        bookOrbit.filter.setDownloadedOnly(true)
 
         bookOrbit.session.signOut()
         fakeServer.respond("POST", "/api/v1/auth/login", 200, "auth/login-success.json")
@@ -94,91 +98,22 @@ AppTestCase {
 
         bookRow("Hyperion")
         compare(bookOrbit.session.libraryId, 1)
+        compare(bookOrbit.series.libraryId, -1, "series of every library")
+        compare(bookOrbit.authors.libraryId, -1, "authors too")
+        verify(bookOrbit.filter.ebooks && !bookOrbit.filter.downloadedOnly, "the content type too")
+        compare(fakeServer.requests.filter(r => r.path === "/api/v1/libraries/1/books" && !r.body.filter
+                                               && !r.path.endsWith("jump-buckets")).length > 0, true,
+                "asked for unfiltered")
     }
 
-    function test_seriesOfEveryLibraryToStartWith() {
-        open(savedSession)
-        bookRow("Hyperion")
-        fakeServer.respond("GET", "/api/v1/series", 200, "series/list.json")
-
-        tap("SeriesTab")
-
-        tryVerify(() => asked("/api/v1/series").length > 0, 5000, "the series are asked for")
-        verify(!("libraryId" in asked("/api/v1/series")[0].query), "for no library in particular")
-    }
-
-    function test_seriesOfOneLibrary() {
-        open(savedSession)
-        bookRow("Hyperion")
-        fakeServer.respond("GET", "/api/v1/series", 200, "series/list.json")
-        fakeServer.respond("POST", audiobooks, 200, "series/books.json", {filter: {rules: [{field: "series"}]}})
-
-        bookOrbit.series.setLibrary(2)
-        tap("SeriesTab")
-
-        tryVerify(() => asked("/api/v1/series").length > 0, 5000, "the series are asked for")
-        compare(asked("/api/v1/series")[0].query.libraryId, "2")
-        tryVerify(() => asked(audiobooks).some(r => r.body.filter && r.body.filter.rules[0].field === "series"),
-                  5000, "their books are looked up there")
-    }
-
-    function openSeriesInLibraries() {
-        open(savedSession)
-        bookRow("Hyperion")
-        fakeServer.respond("GET", "/api/v1/series", 200, "series/in-libraries.json")
-        fakeServer.respond("POST", everyLibrary, 200, "series/books.json", {filter: {rules: [{field: "series"}]}})
-        fakeServer.respond("POST", everyLibrary, 200, "series/dune-books.json", {sort: [{field: "seriesIndex"}]})
-        fakeServer.respond("POST", audiobooks, 200, "series/dune-books.json", {sort: [{field: "seriesIndex"}]})
-        tap("SeriesTab")
-    }
-
-    function seriesBooksAskedAt(path) {
-        return asked(path).filter(r => r.body.sort && r.body.sort[0].field === "seriesIndex").length
-    }
-
-    function test_seriesInOneLibraryListsItsBooksThere() {
-        openSeriesInLibraries()
-
-        mouseClick(groupRow("seriesPage", "Dune"))
-
-        tryVerify(() => seriesBooksAskedAt(audiobooks) > 0, 5000, "asked of Audiobooks")
-        compare(seriesBooksAskedAt(everyLibrary), 0)
-    }
-
-    function test_seriesInSeveralLibrariesListsTheBooksOfAll() {
-        openSeriesInLibraries()
-
-        mouseClick(groupRow("seriesPage", "Hyperion Cantos"))
-
-        tryVerify(() => seriesBooksAskedAt(everyLibrary) > 0, 5000, "asked of every library")
-        compare(seriesBooksAskedAt(audiobooks), 0)
-    }
-
-    // The server has A-Z sections only for a library's books
-    function test_everyLibrarysBooksHaveNoLetterSections() {
-        open(savedSession)
-        bookRow("Hyperion")
-        fakeServer.respond("POST", everyLibrary, 200, "libraries/menu-dune-books.json")
-
-        root.openBooksOf("author", ["Frank Herbert"], "", -1)
-
-        const page = find("booksOfPage")
-        tryVerify(() => titlesIn(page.list) === "Dune, Dune Messiah", 5000)
-        compare(asked(everyLibrary + "/jump-buckets").length, 0)
-        compare(bookOrbit.booksOf.jumpSections.length, 0)
-    }
-
-    // A book's other books are those in its library, even from a list of several libraries'
-    function test_aBooksAuthorIsLookedForInItsLibrary() {
-        open(savedSession)
-        bookRow("Hyperion")
-        fakeServer.respond("POST", audiobooks, 200, "libraries/menu-dune-books.json",
-                           {filter: {rules: [{field: "author"}]}})
-
-        root.openBooksOf("author", ["Frank Herbert"], "", root.libraryOf({libraryId: 2}))
-
-        tryVerify(() => asked(audiobooks).some(r => r.body.filter && r.body.filter.rules[0].field === "author"),
-                  5000, "asked of Audiobooks")
+    // The menu's libraries, top to bottom, the chosen one in brackets: "[Books], Audiobooks"
+    function libraryOptions() {
+        const menu = find("filterMenu")
+        return ["All libraries", "Books", "Audiobooks", "Comics"]
+            .map(name => present("library " + name, menu))
+            .filter(row => row && row.visible)
+            .map(row => row.checked ? "[" + row.text + "]" : row.text)
+            .join(", ")
     }
 
     // Downloaded only lists the library's downloaded books, and any whose library isn't known
@@ -197,17 +132,6 @@ AppTestCase {
 
         tryVerify(() => titlesIn(find("bookList")) === "Children of Dune, Leviathan Wakes", 5000,
                   "only Audiobooks' and the unknown: " + titlesIn(find("bookList")))
-    }
-
-    // The filter menu's libraries, top to bottom, the chosen one in brackets:
-    // "[Books], Audiobooks, Comics"
-    function libraryOptions() {
-        const menu = find("filterMenu")
-        return ["All libraries", "Books", "Audiobooks", "Comics"]
-            .map(name => present("library " + name, menu))
-            .filter(row => row && row.visible)
-            .map(row => row.checked ? "[" + row.text + "]" : row.text)
-            .join(", ")
     }
 
     // The item with this name, if there is one
@@ -254,8 +178,8 @@ AppTestCase {
         verify(!find("libraries heading", find("filterMenu")).visible, "no heading")
     }
 
-    function openSeriesTab() {
-        open(savedSession)
+    function openSeriesTab(settings) {
+        open(Object.assign(settings || {}, savedSession))
         bookRow("Hyperion")
         fakeServer.respond("GET", "/api/v1/series", 200, "series/list.json")
         tap("SeriesTab")
@@ -266,21 +190,95 @@ AppTestCase {
         return asked("/api/v1/series").filter(r => r.query.libraryId === libraryId).length
     }
 
-    function test_seriesOffersAllLibrariesOrOne() {
+    function test_seriesOfEveryLibraryToStartWith() {
+        openSeriesTab()
+
+        verify(!("libraryId" in asked("/api/v1/series")[0].query), "for no library in particular")
+    }
+
+    function test_seriesOffersEveryLibraryOrOne() {
         openSeriesTab()
 
         compare(find("filterButton", find("seriesPage")).text, "All libraries")
         openFilterMenu("seriesPage")
-
         compare(libraryOptions(), "[All libraries], Books, Audiobooks, Comics")
         verify(find("Ebooks", find("filterMenu")).visible, "with content types")
         verify(find("downloadedOnly", find("filterMenu")).visible, "and Downloaded only")
     }
 
+    // One library's series come from the server; the book list keeps its own
+    function test_seriesOfOneLibrary() {
+        openSeriesTab()
+        openFilterMenu("seriesPage")
+
+        tap("library Audiobooks", find("filterMenu"))
+
+        verify(!find("filterMenu").visible, "the menu closes")
+        tryVerify(() => seriesAskedFor("2") === 1, 5000, "Audiobooks' series asked for")
+        compare(find("filterButton", find("seriesPage")).text, "Audiobooks")
+        compare(bookOrbit.session.libraryId, 1, "the book list keeps Books")
+    }
+
+    function test_everyLibraryAgain() {
+        openSeriesTab()
+        openFilterMenu("seriesPage")
+        tap("library Audiobooks", find("filterMenu"))
+        tryVerify(() => seriesAskedFor("2") === 1, 5000, "Audiobooks' series asked for")
+        const before = asked("/api/v1/series").length
+        openFilterMenu("seriesPage")
+
+        tap("library All libraries", find("filterMenu"))
+
+        tryVerify(() => asked("/api/v1/series").length > before, 5000, "asked for again")
+        verify(!("libraryId" in asked("/api/v1/series")[before].query), "for no library in particular")
+        compare(find("filterButton", find("seriesPage")).text, "All libraries")
+    }
+
+    // Choosing the book list's library leaves the other views as they were
+    function test_theBookListsLibraryIsItsOwn() {
+        open(savedSession)
+        bookRow("Hyperion")
+        openFilterMenu("bookList")
+
+        tap("library Audiobooks", find("filterMenu"))
+
+        fakeServer.respond("GET", "/api/v1/series", 200, "series/list.json")
+        tap("SeriesTab")
+        tryVerify(() => asked("/api/v1/series").length > 0, 5000, "the series are asked for")
+        verify(!("libraryId" in asked("/api/v1/series")[0].query), "for no library in particular")
+        compare(find("filterButton", find("seriesPage")).text, "All libraries")
+    }
+
+    // Leaving Series and coming back, or starting again, it keeps its library
+    function test_seriesLibraryIsKept() {
+        openSeriesTab()
+        openFilterMenu("seriesPage")
+        tap("library Audiobooks", find("filterMenu"))
+        tryVerify(() => seriesAskedFor("2") === 1, 5000, "Audiobooks' series asked for")
+        tap("LibraryTab")
+        tap("SeriesTab")
+        tryVerify(() => seriesAskedFor("2") === 2, 5000, "Audiobooks' again")
+
+        reopen()
+        bookRow("Hyperion")
+        tap("SeriesTab")
+
+        tryVerify(() => seriesAskedFor("2") === 3, 5000, "Audiobooks' after starting again")
+        compare(find("filterButton", find("seriesPage")).text, "Audiobooks")
+    }
+
+    // A library the server no longer has: every library's
+    function test_seriesLibraryThatHasGone() {
+        openSeriesTab({seriesLibraryId: "9"})
+
+        verify(!("libraryId" in asked("/api/v1/series")[0].query), "for no library in particular")
+        compare(bookOrbit.series.libraryId, -1)
+    }
+
     // Downloaded only counts the library's downloaded books, and any whose library isn't
     // known, as the book list does
     function test_downloadedSeriesOfALibrary() {
-        open(savedSession, {books: [
+        open(Object.assign({seriesLibraryId: "2"}, savedSession), {books: [
             {id: 21, libraryId: 1, title: "Hyperion", authors: ["Dan Simmons"], seriesName: "Hyperion Cantos",
              formats: ["epub"], file: "hyperion.epub"},
             {id: 22, libraryId: 2, title: "Leviathan Wakes", authors: ["James S. A. Corey"],
@@ -291,8 +289,6 @@ AppTestCase {
         bookRow("Hyperion")
         fakeServer.respond("GET", "/api/v1/series", 200, "series/list.json")
         tap("SeriesTab")
-        openFilterMenu("seriesPage")
-        tap("library Audiobooks", find("filterMenu"))
         tryVerify(() => seriesAskedFor("2") === 1, 5000)
 
         setDownloadedOnly("seriesPage")
@@ -301,56 +297,99 @@ AppTestCase {
                   "only Audiobooks' and the unknown: " + groupRows("seriesPage"))
     }
 
-    function test_choosingASeriesLibrary() {
-        openSeriesTab()
-        openFilterMenu("seriesPage")
-
-        tap("library Audiobooks", find("filterMenu"))
-
-        tryVerify(() => seriesAskedFor("2") === 1, 5000, "Audiobooks' series asked for")
-        compare(find("filterButton", find("seriesPage")).text, "Audiobooks")
-        compare(bookOrbit.session.libraryId, 1, "the book list's is unchanged")
-    }
-
-    // Back to every library's, without asking for them until shown
-    function test_leavingSeriesForgetsItsLibrary() {
-        openSeriesTab()
-        openFilterMenu("seriesPage")
-        tap("library Audiobooks", find("filterMenu"))
-        tryVerify(() => seriesAskedFor("2") === 1, 5000)
-        const before = asked("/api/v1/series").length
-
-        tap("LibraryTab")
-        wait(300)
-        compare(asked("/api/v1/series").length, before, "nothing asked while away")
-        tap("SeriesTab")
-
-        tryVerify(() => asked("/api/v1/series").length === before + 1, 5000, "asked for again")
-        compare(seriesAskedFor(undefined), 2, "for every library")
-        compare(find("filterButton", find("seriesPage")).text, "All libraries")
-    }
-
-    // An author's books are those in the library Authors shows
+    // Authors have a library of their own
     function test_authorsInALibrary() {
+        openSeriesTab()
+        fakeServer.respond("GET", "/api/v1/authors", 200, "authors/list.json")
+        tap("AuthorsTab")
+        tryVerify(() => asked("/api/v1/authors").length > 0, 5000, "the authors are asked for")
+        openFilterMenu("authorsPage")
+
+        tap("library Comics", find("filterMenu"))
+
+        tryVerify(() => asked("/api/v1/authors").some(r => r.query.libraryId === "3"), 5000,
+                  "Comics' authors asked for")
+        tap("SeriesTab")
+        compare(find("filterButton", find("seriesPage")).text, "All libraries", "Series keeps its own")
+    }
+
+    // An author's series start with every library's, whatever they showed last time
+    function test_anAuthorsSeriesStartWithEveryLibrary() {
         open(savedSession)
         bookRow("Hyperion")
-        fakeServer.respond("GET", "/api/v1/authors", 200, "authors/list.json")
-        fakeServer.respond("GET", "/api/v1/authors/1", 200, "authors/frank-herbert.json")
-        tap("AuthorsTab")
-        openFilterMenu("authorsPage")
-        compare(libraryOptions(), "[All libraries], Books, Audiobooks, Comics")
-        verify(find("Ebooks", find("filterMenu")).visible, "with content types")
+        fakeServer.respond("GET", "/api/v1/series", 200, "series/list.json")
+        bookOrbit.authorSeries.setLibrary(2)
 
+        root.openAuthorSeries("Frank Herbert")
+
+        compare(bookOrbit.authorSeries.libraryId, -1)
+        compare(find("filterButton", find("authorSeriesPage")).text, "All libraries")
+    }
+
+    // A books-of list starts with every library's books. Back, the one before shows the
+    // library it had.
+    function test_booksOfStartWithEveryLibrary() {
+        open(savedSession)
+        bookRow("Hyperion")
+        fakeServer.respond("POST", everyLibrary, 200, "libraries/menu-dune-books.json")
+        root.openBooksOf("author", ["Frank Herbert"], "")
+        tryVerify(() => asked(everyLibrary).some(r => r.body.filter.rules[0].field === "author"), 5000,
+                  "every library's")
+        openFilterMenu("booksOfPage")
         tap("library Audiobooks", find("filterMenu"))
-        tryVerify(() => asked("/api/v1/authors").some(r => r.query.libraryId === "2"), 5000,
-                  "Audiobooks' authors asked for")
-        mouseClick(groupRow("authorsPage", "Frank Herbert"))
-        tap("BooksCell", find("authorInfoPage"))
+        tryVerify(() => asked(audiobooks).some(r => r.body.filter && r.body.filter.rules[0].field === "author"),
+                  5000, "Audiobooks' after choosing it")
 
-        // Sorted, unlike the lookups for the list's counts
-        tryVerify(() => asked(audiobooks).some(r => r.body.filter && r.body.filter.rules[0].field === "author"
-                                                     && r.body.sort),
-                  5000, "their books asked of Audiobooks")
+        root.openBooksOf("series", ["Dune"], "")
+
+        compare(find("filterButton", find("booksOfPage")).text, "All libraries")
+        tryVerify(() => asked(everyLibrary).some(r => r.body.filter.rules[0].field === "series"), 5000,
+                  "the series' in every library")
+        root.closeBooksOf()
+        compare(find("filterButton", find("booksOfPage")).text, "Audiobooks", "back to the author's")
+    }
+
+    // The server has A-Z sections only for a library's books
+    function test_everyLibrarysBooksHaveNoLetterSections() {
+        open(savedSession)
+        bookRow("Hyperion")
+        fakeServer.respond("POST", everyLibrary, 200, "libraries/menu-dune-books.json")
+
+        root.openBooksOf("author", ["Frank Herbert"], "")
+
+        const page = find("booksOfPage")
+        tryVerify(() => titlesIn(page.list) === "Dune, Dune Messiah", 5000)
+        compare(asked(everyLibrary + "/jump-buckets").length, 0)
+        compare(bookOrbit.booksOf.jumpSections.length, 0)
+    }
+
+    function test_searchSpansEveryLibrary() {
+        open(savedSession)
+        bookRow("Hyperion")
+        fakeServer.respond("POST", everyLibrary, 200, "libraries/search-dune.json")
+
+        bookOrbit.search.find("dune")
+
+        tryVerify(() => asked(everyLibrary).some(r => r.body.q === "dune"), 5000, "every library searched")
+    }
+
+    // A content type chosen in one view shows in the others, applied to each when it's next
+    // shown
+    function test_contentTypeIsEveryViews() {
+        openSeriesTab()
+        const before = asked("/api/v1/libraries/1/books").length
+
+        showOnly("seriesPage", "Audiobooks")
+        tap("filterButton", find("seriesPage"))   // closes the menu
+        wait(300)
+        compare(asked("/api/v1/libraries/1/books").length, before, "the hidden book list waits")
+        tap("LibraryTab")
+
+        compare(find("filterButton", find("bookList")).text, "Books")
+        tryVerify(() => asked("/api/v1/libraries/1/books").some(r => r.body.filter
+                      && JSON.stringify(r.body.filter).indexOf("m4b") >= 0), 5000, "audiobooks asked for")
+        openFilterMenu("bookList")
+        verify(!find("Ebooks", find("filterMenu")).checked, "Ebooks unticked here too")
     }
 
     function test_collectionsHaveNoFilter() {

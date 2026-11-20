@@ -19,15 +19,21 @@ LibraryBooks::LibraryBooks(Session *session, Database *database, Details *detail
 }
 
 void LibraryBooks::setQuery(const QString &sortField, bool descending, const QStringList &formats,
-                            bool localOnly)
+                            bool localOnly, bool reload)
 {
     setSortAndFilter(sortField, descending, formats, localOnly);
-    refresh();
+    if (reload)
+        refresh();
 }
 
 QVariantList LibraryBooks::localBooks() const
 {
     return localBooksIn(m_session->libraryId());
+}
+
+void SearchResults::setPaths()
+{
+    setLibraryPaths(m_session->libraryToQuery(-1));
 }
 
 void SearchResults::find(const QString &text)
@@ -105,7 +111,7 @@ void SearchResults::hideListedPairs(const QVariantList &merged, const QVariantLi
         {"pagination", QJsonObject{{"page", 0}, {"size", COMPANIONS_PAGE_SIZE}}},
     };
     const int generation = m_queryGeneration;
-    m_session->callJson("POST", m_session->libraryBooksPath(), QJsonDocument(query),
+    m_session->callJson("POST", m_path, QJsonDocument(query),
         [this, rows, merged, maybeHidden, generation, then](const QJsonDocument &doc) {
             if (generation != m_queryGeneration)
                 return;
@@ -165,7 +171,7 @@ void BooksOf::setPaths()
     if (m_field == "collection")
         m_companionsPath = m_session->libraryBooksPath();
     else
-        setLibraryPaths(m_libraryId);
+        setLibraryPaths(m_session->libraryToQuery(m_libraryId));
 }
 
 QVariantList BooksOf::localBooks() const

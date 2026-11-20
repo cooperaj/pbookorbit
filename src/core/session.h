@@ -74,6 +74,11 @@ public:
     static QString booksPath(int libraryId);
     // Endpoint for the library's book queries
     QString libraryBooksPath() const { return booksPath(m_libraryId); }
+    // The library to ask for a list's books or groups: libraryId, or for every library (-1)
+    // a server's only one, which has A-Z sections unlike every library's books
+    int libraryToQuery(int libraryId) const;
+    // Whether libraries has one with this id
+    bool hasLibrary(int libraryId) const;
 
     // server is as typed, e.g. "books.example.com". Defaults to https.
     Q_INVOKABLE void signIn(const QString &server, const QString &username, const QString &password);
@@ -153,8 +158,6 @@ private:
     void clearSession();
     void setSignedIn(bool signedIn);
     void setError(const QString &error);
-    // Whether libraries has one with this id
-    bool hasLibrary(int libraryId) const;
 
     Database *m_database;
     QNetworkAccessManager m_nam;

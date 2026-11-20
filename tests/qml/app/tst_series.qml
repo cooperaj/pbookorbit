@@ -119,7 +119,9 @@ AppTestCase {
         compare(page.name, "Dune")
         tryVerify(() => page.list.count > 0 && page.list.itemAtIndex(0)
                         && page.list.itemAtIndex(0).book.title === "Dune", 5000, "Dune first")
-        verify(fakeServer.requests.some(r => r.path === books && r.body.sort && r.body.sort[0].field === "seriesIndex"
+        // From the server's only library, which has A-Z sections
+        verify(fakeServer.requests.some(r => r.path === "/api/v1/libraries/1/books" && r.body.sort
+                                             && r.body.sort[0].field === "seriesIndex"
                                              && JSON.stringify(r.body.filter).indexOf("\"Dune\"") >= 0),
                "asked for in series order")
     }

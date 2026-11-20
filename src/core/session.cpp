@@ -226,6 +226,13 @@ QString Session::booksPath(int libraryId)
     return libraryId < 0 ? QStringLiteral("/books/query") : QString("/libraries/%1/books").arg(libraryId);
 }
 
+int Session::libraryToQuery(int libraryId) const
+{
+    if (libraryId < 0 && m_libraries.size() == 1)
+        return m_libraries.first().toMap().value("id").toInt();
+    return libraryId;
+}
+
 void Session::chooseLibrary(int libraryId)
 {
     if (libraryId == m_libraryId || !hasLibrary(libraryId))
