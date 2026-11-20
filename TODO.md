@@ -27,7 +27,10 @@
   lines). Seen a few times on 28 October 2026, at least once offline. Headless runs that
   quit with the home button or close the window exit cleanly, so it hasn't been
   reproduced. Next time, get a backtrace (run under gdb in `kit/pb.sh shell .`, or enable
-  core dumps in the container).
+  core dumps in the container). Seen again on 20 November 2026 going back from an author's
+  books (`hw_close`, then the emulator closed). Home on the main header is where the back
+  button is on the pages over it, so a quick extra back tap can quit the app without
+  meaning to: consider ignoring Home for a second after a page closes.
 - Check on the device that downloaded books show in the system library without a reboot
   (the app asks the scanner to scan; see NOTES.md for what else could be done).
 - Books with an ebook and an audiobook: once one version is downloaded, a tap opens it;
