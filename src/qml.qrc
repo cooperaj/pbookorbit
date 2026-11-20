@@ -62,5 +62,6 @@
         <file>icons/pbookorbit.bmp</file>
         <file>icons/pbookorbit_f.bmp</file>
         <file>icons/offline.bmp</file>
+        <file>icons/library.bmp</file>
     </qresource>
 </RCC>

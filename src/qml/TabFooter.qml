@@ -1,12 +1,14 @@
 import QtQuick
+import "night.js" as Night
 import "units.js" as Units
 
 // Footer for switching views, modelled on Libby on an Era Color: a full-width line, then
-// equal tabs (inset from the sides), each a theme icon over a label. The current tab's
+// equal tabs (inset from the sides), each an icon over a label. The current tab's
 // label sits in a black pill.
 Rectangle {
     id: footer
-    // [{ label: "Library", icon: "overdrive_library" }, ...]
+    // [{ label: "Collections", icon: "e3_filter_bookshelf" }, ...]: a theme icon by name,
+    // or the app's own as image, e.g. "qrc:/icons/library.bmp"
     property var tabs: []
     property int currentIndex: 0
     signal tabClicked(int index)
@@ -41,7 +43,12 @@ Rectangle {
 
                     ThemeIcon {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        name: tab.modelData.icon
+                        name: tab.modelData.icon ?? ""
+                    }
+                    Image {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        visible: source != ""
+                        source: Night.image(tab.modelData.image ?? "")
                     }
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="110" height="110" viewBox="0 0 110 110"
+     fill="none" stroke="black" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <!-- The Library tab: the firmware's library icon (three book spines) redrawn, with the
+       right spine shorter and leaning 20 degrees back on the middle one, so it isn't the
+       system library's own. make icons renders the .bmp beside it. -->
+  <g transform="translate(-5 0)">
+    <rect x="19.5" y="26.5" width="17" height="63" rx="1.5"/>
+    <line x1="23.5" y1="36.5" x2="32.5" y2="36.5"/>
+    <line x1="23.5" y1="78.5" x2="32.5" y2="78.5"/>
+
+    <rect x="46.5" y="19.5" width="17" height="70" rx="1.5"/>
+    <line x1="50.5" y1="29.5" x2="59.5" y2="29.5"/>
+    <line x1="50.5" y1="78.5" x2="59.5" y2="78.5"/>
+
+    <g transform="rotate(-20 82.94 91)">
+      <rect x="84.44" y="41.5" width="17" height="48" rx="1.5"/>
+      <line x1="88.44" y1="51.5" x2="97.44" y2="51.5"/>
+      <line x1="88.44" y1="78.5" x2="97.44" y2="78.5"/>
+    </g>
+  </g>
+</svg>

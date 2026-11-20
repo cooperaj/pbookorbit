@@ -589,7 +589,7 @@ Window {
         anchors.right: parent.right
         // BookOrbit's views
         tabs: [
-            { label: "Library", icon: "overdrive_library" },
+            { label: "Library", image: "qrc:/icons/library.bmp" },
             { label: "Collections", icon: "e3_filter_bookshelf" },
             { label: "Series", icon: "e3_filter_seria_bold" },
             { label: "Authors", icon: "e3_filter_author" }

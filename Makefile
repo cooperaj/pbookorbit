@@ -44,14 +44,13 @@ test:
 test-map:
 	@python3 tests/map.py
 
-# Render the icons built into the app (src/icons/*.bmp) from their SVG sources: the
-# launcher tiles as 110x110 8-bit grey BMPs, the Era Color's theme icon size, and the
-# header's offline badge in colour at dp(17) on the Era Color. Needs rsvg-convert and
-# ImageMagick.
+# Render the icons built into the app (src/icons/*.bmp) from their SVG sources
+# Needs rsvg-convert and ImageMagick.
 icons:
 	for svg in src/icons/pbookorbit*.svg; do \
 		rsvg-convert "$$svg" | magick - -colorspace Gray -type Palette -depth 8 -compress None "BMP3:$${svg%.svg}.bmp" || exit 1; \
 	done
+	rsvg-convert src/icons/library.svg | magick - -background white -flatten -colorspace Gray -type Palette -depth 8 -compress None "BMP3:src/icons/library.bmp"
 	rsvg-convert -w 37 -h 37 src/icons/offline.svg | magick - -background white -flatten -type TrueColor "BMP3:src/icons/offline.bmp"
 
 # Shell in the build container
