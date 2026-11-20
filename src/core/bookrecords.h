@@ -64,6 +64,9 @@ QVariantMap row(const QVariantMap &book, const QString &dayField = {});
 bool isFinished(const QVariantMap &book);
 // Every series a book is in
 QStringList seriesNames(const QVariantMap &book);
+// The books in a library, or all of them for -1. Books saved without a libraryId are in
+// every library.
+QVariantList booksIn(const QVariantList &books, int libraryId);
 
 // "George R.R. Martin" -> "Martin, George R.R.". Close enough to BookOrbit's author sort
 // names, which list entries don't include.

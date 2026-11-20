@@ -19,7 +19,8 @@ class Session;
 // Collections, series or authors: one row each, loaded whole and sorted locally. Each row's
 // books are looked up as it comes into view, for its formats, counts, cover versions and the
 // like, and what's found is saved for next time (see GroupDetails). Offline, the rows are
-// built from the local books.
+// built from the local books. Series and authors can be filtered by their books (see
+// setQuery()); counts and formats then cover only matching books.
 class GroupList : public QObject
 {
     Q_OBJECT
@@ -33,6 +34,9 @@ class GroupList : public QObject
     Q_PROPERTY(QVariantList jumpSections READ jumpSections NOTIFY changed)
     // Whether the list has loaded since sign-in
     Q_PROPERTY(bool loaded READ loaded NOTIFY changed)
+    // Whether every row's books have been looked up this time. Filtering by format needs
+    // this.
+    Q_PROPERTY(bool allLookedUp READ allLookedUp NOTIFY changed)
 
 public:
     GroupList(Session *session, Database *database, Details *details, GroupDetails *groupDetails,
@@ -42,6 +46,7 @@ public:
     QString error() const { return m_error; }
     QVariantList jumpSections() const { return m_jumpSections; }
     bool loaded() const { return m_loaded; }
+    bool allLookedUp() const { return m_allLookedUp; }
 
     // Fetches the list. Existing rows, or the saved ones, stay until the new ones arrive.
     // Offline, builds them from the local books.
@@ -49,6 +54,11 @@ public:
     // Sorts by "name", "bookCount", "lastAddedAt", "readProgress" or, for authors,
     // "sortName"
     Q_INVOKABLE void setSort(const QString &field, bool descending);
+    // setSort(), keeping only groups with books in formats (and, with localOnly, among the
+    // local books in its library). Choosing formats, without localOnly, looks up every
+    // row's books.
+    Q_INVOKABLE void setQuery(const QString &sortField, bool descending, const QStringList &formats,
+                              bool localOnly = false);
     // Lists the groups with books in this library, or in any for -1 (the default). A change
     // empties the list, and the next load() fetches it.
     Q_INVOKABLE void setLibrary(int libraryId);
@@ -97,10 +107,14 @@ protected:
     // Whether each row is looked up on its own, and an empty one not at all (collections).
     // Otherwise rows go a few to a request.
     virtual bool lookUpAlone() const { return false; }
-    // Whether every row needs looking up, those in view first, not just those in view
-    virtual bool lookUpAll() const { return false; }
+    // The names of the groups a local book is in, for rows built from local books
+    virtual QStringList groupsOf(const QVariantMap &) const { return {}; }
+
+    // Whether every row needs looking up, those in view first, not just those in view:
+    // filtering by format, not just to the local books
+    bool lookUpAll() const { return !m_formats.isEmpty() && !m_localOnly; }
     // The rows to show, of those loaded (or cached)
-    virtual QList<QVariantMap> filtered(const QList<QVariantMap> &rows) const { return rows; }
+    QList<QVariantMap> filtered(const QList<QVariantMap> &rows) const;
 
     // Starts loading again, with a new generation, nothing looked up and no error. Returns
     // the generation.
@@ -169,6 +183,9 @@ protected:
     bool m_descending = false;
     // Whether every row's books have been looked up (series and authors only)
     bool m_allLookedUp = false;
+    // setQuery()'s filter
+    QStringList m_formats;
+    bool m_localOnly = false;
     // Rows whose books have been looked up since the list was loaded, by id
     QSet<int> m_lookedUp;
     // Rows built from the local books while offline, to fetch again once online

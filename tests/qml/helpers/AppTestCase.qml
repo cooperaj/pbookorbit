@@ -105,6 +105,19 @@ UiTestCase {
         tap(option, find("sortMenu"))
     }
 
+    // Shows only "Ebooks" or "Audiobooks", by unticking the other
+    function showOnly(pageName, option) {
+        tap("filterButton", find(pageName))
+        tap(option === "Ebooks" ? "Audiobooks" : "Ebooks", find("filterMenu"))
+    }
+
+    function setDownloadedOnly(pageName) {
+        tap("filterButton", find(pageName))
+        tap("downloadedOnly", find("filterMenu"))
+        // The menu stays open for the switch
+        tap("filterButton", find(pageName))
+    }
+
     // Opens a book's menu as holding its row would, and returns it. A real hold takes over a
     // second, for the hold and then the frame on the row, so this skips the wait;
     // tst_bookmenu's test_holdingABookOpensItsMenu holds for real.

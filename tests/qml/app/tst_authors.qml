@@ -6,9 +6,9 @@ import "../helpers"
 // books), James S. A. Corey (four Expanse books, one an audiobook) and Ann Leckie (one book
 // in no series). The list comes first, each time the tab opens, then the books of the
 // authors in view, which set their formats, book and series counts, a book with an ebook
-// and audiobook counting once, saved until looked up again. Unlike collections and series,
-// authors have the library's filter, which by format needs every author looked up, and
-// tapping one opens their info page. Offline, the authors are the downloaded books'.
+// and audiobook counting once, saved until looked up again. Like series, authors have the
+// library's filter, which by format needs every author looked up, and tapping one opens
+// their info page. Offline, the authors are the downloaded books'.
 //
 // The page itself is tested in components/tst_grouplistpage.qml, and what every group list
 // shares in tst_series.qml.
@@ -68,19 +68,6 @@ AppTestCase {
         const list = find("authorsPage").list
         tryVerify(() => list.count === 60, 5000, "every author is listed")
         return list
-    }
-
-    // Shows only "Ebooks" or "Audiobooks", by unticking the other
-    function showOnly(option) {
-        tap("filterButton", find("authorsPage"))
-        tap(option === "Ebooks" ? "Audiobooks" : "Ebooks", find("filterMenu"))
-    }
-
-    function setDownloadedOnly() {
-        tap("filterButton", find("authorsPage"))
-        tap("downloadedOnly", find("filterMenu"))
-        // The menu stays open for the switch
-        tap("filterButton", find("authorsPage"))
     }
 
     // Counts settle once each author's books are in
@@ -164,7 +151,7 @@ AppTestCase {
         wait(300)
         verify(!lookedUp("author").includes("Author 60"), "not the last")
 
-        showOnly("Audiobooks")
+        showOnly("authorsPage", "Audiobooks")
 
         tryVerify(() => lookedUp("author").includes("Author 60"), 5000, "every author, without scrolling")
     }
@@ -174,7 +161,7 @@ AppTestCase {
         openManyAuthors()
         tryVerify(() => lookedUp("author").includes("Author 01"), 5000, "the first are looked up")
 
-        setDownloadedOnly()
+        setDownloadedOnly("authorsPage")
         wait(500)
 
         verify(!lookedUp("author").includes("Author 60"), "not the last")
@@ -204,7 +191,7 @@ AppTestCase {
     function test_audiobooksFilter() {
         openLoadedAuthors()
 
-        showOnly("Audiobooks")
+        showOnly("authorsPage", "Audiobooks")
 
         compare(rows(), "Frank Herbert (1), James S. A. Corey (1)")
         compare(row("Frank Herbert").group.formats, ["epub", "m4b"])
@@ -214,7 +201,7 @@ AppTestCase {
     function test_ebooksFilter() {
         openLoadedAuthors()
 
-        showOnly("Ebooks")
+        showOnly("authorsPage", "Ebooks")
 
         compare(rows(), "Ann Leckie (1), Dan Simmons (2), Frank Herbert (3), James S. A. Corey (3)",
                 "all but the audiobook-only Leviathan Wakes")
@@ -223,7 +210,7 @@ AppTestCase {
     function test_downloadedOnly() {
         openLoadedAuthors({books: [dune]})
 
-        setDownloadedOnly()
+        setDownloadedOnly("authorsPage")
 
         tryVerify(() => rows() === "Frank Herbert (1)", 5000, "only their downloaded book: " + rows())
     }
@@ -231,7 +218,7 @@ AppTestCase {
     function test_downloadedOnlyWithoutDownloadsSaysSo() {
         openLoadedAuthors()
 
-        setDownloadedOnly()
+        setDownloadedOnly("authorsPage")
 
         const empty = find("emptyState", find("authorsPage"))
         tryVerify(() => empty.visible, 5000, "No authors")

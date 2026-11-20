@@ -292,7 +292,10 @@ their row:
   books-of page (an author's, series' or collection's books) and the search results use
   it.
 - `GroupListPage` has a `GroupRow` per group and reports taps. The Collections, Series and
-  Authors tabs and an author's series use it.
+  Authors tabs and an author's series use it. Series and authors take the content type
+  and Downloaded only (`GroupList::setQuery()`), keeping groups with matching books and
+  counting only those. A format needs every group's books looked up, so the spinner
+  stays until then; Downloaded only uses the downloaded books in the list's library.
 
 `BookRow` and `GroupRow` both extend `ListRow`, the row layout, and fill its picture with
 `Cover` (a group shows two, an author their `AuthorPortrait`). Both draw a `CoversImage`, the
@@ -553,7 +556,7 @@ On a 401 the client refreshes and retries the request once.
   every library's without `libraryId`, with `libraryNames` for the libraries each is in,
   with `coverBookIds` for its covers but no cover versions, formats or ebook and
   audiobook pairs. The client gets those from the series' books, `POST
-  /libraries/:id/books` filtered on `series includesAny [names]`.
+  /books/query` (or the list's library's) filtered on `series includesAny [names]`.
 - `GET /series?libraryId=&author=<text>` lists series with any author whose name contains
   the text, ignoring case. `author=Martin` matches every Martin, so the client filters to
   series whose `authors` include the exact name.

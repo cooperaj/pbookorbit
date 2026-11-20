@@ -273,8 +273,32 @@ AppTestCase {
         openFilterMenu("seriesPage")
 
         compare(libraryOptions(), "[All libraries], Books, Audiobooks, Comics")
-        verify(!present("Ebooks", find("filterMenu")), "no content types")
-        verify(!find("downloadedOnly", find("filterMenu")).visible, "nor Downloaded only")
+        verify(find("Ebooks", find("filterMenu")).visible, "with content types")
+        verify(find("downloadedOnly", find("filterMenu")).visible, "and Downloaded only")
+    }
+
+    // Downloaded only counts the library's downloaded books, and any whose library isn't
+    // known, as the book list does
+    function test_downloadedSeriesOfALibrary() {
+        open(savedSession, {books: [
+            {id: 21, libraryId: 1, title: "Hyperion", authors: ["Dan Simmons"], seriesName: "Hyperion Cantos",
+             formats: ["epub"], file: "hyperion.epub"},
+            {id: 22, libraryId: 2, title: "Leviathan Wakes", authors: ["James S. A. Corey"],
+             seriesName: "The Expanse", formats: ["m4b"], file: "leviathan.m4b"},
+            {id: 23, title: "Dune", authors: ["Frank Herbert"], seriesName: "Dune", formats: ["epub"],
+             file: "dune.epub"},
+        ]})
+        bookRow("Hyperion")
+        fakeServer.respond("GET", "/api/v1/series", 200, "series/list.json")
+        tap("SeriesTab")
+        openFilterMenu("seriesPage")
+        tap("library Audiobooks", find("filterMenu"))
+        tryVerify(() => seriesAskedFor("2") === 1, 5000)
+
+        setDownloadedOnly("seriesPage")
+
+        tryVerify(() => groupRows("seriesPage") === "Dune (1), The Expanse (1)", 5000,
+                  "only Audiobooks' and the unknown: " + groupRows("seriesPage"))
     }
 
     function test_choosingASeriesLibrary() {

@@ -273,6 +273,19 @@ QStringList seriesNames(const QVariantMap &book)
     return names;
 }
 
+QVariantList booksIn(const QVariantList &books, int libraryId)
+{
+    if (libraryId < 0)
+        return books;
+    QVariantList inLibrary;
+    for (const QVariant &book : books) {
+        const QVariant id = book.toMap().value("libraryId");
+        if (!id.isValid() || id.toInt() == libraryId)
+            inLibrary.append(book);
+    }
+    return inLibrary;
+}
+
 QString authorSortKey(const QString &name)
 {
     const int space = name.trimmed().lastIndexOf(' ');

@@ -238,9 +238,7 @@ void SeriesList::showLocal()
     QMap<QString, QList<QVariantMap>> booksOf;   // series name -> books
     for (const QVariant &value : std::as_const(m_localBooks)) {
         const QVariantMap book = value.toMap();
-        if (!m_author.isEmpty() && !book.value("authors").toStringList().contains(m_author, Qt::CaseInsensitive))
-            continue;
-        for (const QString &name : seriesNames(book))
+        for (const QString &name : groupsOf(book))
             booksOf[name].append(book);
     }
 
@@ -294,6 +292,13 @@ void SeriesList::showLocal()
     showLocalRows();
 }
 
+QStringList SeriesList::groupsOf(const QVariantMap &book) const
+{
+    if (!m_author.isEmpty() && !book.value("authors").toStringList().contains(m_author, Qt::CaseInsensitive))
+        return {};
+    return seriesNames(book);
+}
+
 AuthorSeriesList::AuthorSeriesList(Session *session, Database *database, Details *details,
                                    GroupDetails *groupDetails, QObject *parent)
     : SeriesList(session, database, details, groupDetails, parent)
@@ -325,15 +330,6 @@ AuthorList::AuthorList(Session *session, Database *database, Details *details, G
     m_detailFields = {"seriesCount", "books", "bookSeries"};
 }
 
-void AuthorList::setQuery(const QString &sortField, bool descending, const QStringList &formats,
-                          bool localOnly)
-{
-    m_formats = formats;
-    m_localOnly = localOnly;
-    setSort(sortField, descending);
-    lookUpWantedRows();
-}
-
 QVariantMap AuthorList::row(int authorId) const
 {
     for (const QVariantMap &row : shownRows()) {
@@ -341,14 +337,6 @@ QVariantMap AuthorList::row(int authorId) const
             return row;
     }
     return QVariantMap();
-}
-
-void AuthorList::setLocalBooks(const QVariantList &books)
-{
-    m_localBooks = books;
-    if (m_localOnly)
-        show();
-    GroupList::setLocalBooks(books);
 }
 
 void AuthorList::loadPage(int page, int generation)
@@ -412,7 +400,7 @@ void AuthorList::showLocal()
     QMap<QString, QList<QVariantMap>> booksOf;   // author -> books
     for (const QVariant &value : std::as_const(m_localBooks)) {
         const QVariantMap book = value.toMap();
-        for (const QString &author : book.value("authors").toStringList())
+        for (const QString &author : groupsOf(book))
             booksOf[author].append(book);
     }
 
@@ -464,63 +452,7 @@ void AuthorList::showLocal()
     showLocalRows();
 }
 
-QList<QVariantMap> AuthorList::filtered(const QList<QVariantMap> &rows) const
+QStringList AuthorList::groupsOf(const QVariantMap &book) const
 {
-    if (m_formats.isEmpty() && !m_localOnly)
-        return rows;
-
-    // Only authors with books in the chosen formats (or local ones, with localOnly), counting
-    // just those books and showing their formats, as the filtered book list does. Authors
-    // whose books aren't looked up yet wait.
-    QHash<QString, QHash<QString, QStringList>> downloaded;         // author -> key -> formats
-    QHash<QString, QHash<QString, QStringList>> downloadedSeries;   // author -> key -> series
-    for (const QVariant &value : std::as_const(m_localBooks)) {
-        const QVariantMap book = value.toMap();
-        bool wanted = m_formats.isEmpty();
-        for (const QString &format : book.value("downloadedFormats").toStringList())
-            wanted = wanted || m_formats.contains(format);
-        if (!wanted)
-            continue;
-        for (const QString &author : book.value("authors").toStringList()) {
-            QStringList &formats = downloaded[author][companionKey(book)];
-            addNew(formats, ownFormats(book));
-            QStringList &series = downloadedSeries[author][companionKey(book)];
-            addNew(series, seriesNames(book));
-        }
-    }
-
-    QList<QVariantMap> shown;
-    for (QVariantMap row : rows) {
-        // Matching books by key, with their formats and series
-        QHash<QString, QStringList> wantedBooks;
-        QHash<QString, QStringList> wantedSeries;
-        if (m_localOnly) {
-            wantedBooks = downloaded.value(row.value("name").toString());
-            wantedSeries = downloadedSeries.value(row.value("name").toString());
-        } else {
-            const QVariantMap books = row.value("books").toMap();
-            const QVariantMap bookSeries = row.value("bookSeries").toMap();
-            for (auto it = books.constBegin(); it != books.constEnd(); ++it) {
-                const QStringList formats = it.value().toStringList();
-                bool wanted = false;
-                for (const QString &format : formats)
-                    wanted = wanted || m_formats.contains(format);
-                if (wanted) {
-                    wantedBooks.insert(it.key(), formats);
-                    wantedSeries.insert(it.key(), bookSeries.value(it.key()).toStringList());
-                }
-            }
-        }
-        if (wantedBooks.isEmpty())
-            continue;
-        QStringList formats;
-        for (const QStringList &bookFormats : std::as_const(wantedBooks))
-            addNew(formats, bookFormats);
-        sortFormats(formats);
-        row.insert("bookCount", int(wantedBooks.size()));
-        row.insert("seriesCount", seriesCount(wantedSeries));
-        row.insert("formats", formats);
-        shown.append(row);
-    }
-    return shown;
+    return book.value("authors").toStringList();
 }

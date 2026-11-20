@@ -175,6 +175,30 @@ AppTestCase {
         compare(find("sortButton", find("authorSeriesPage")).text, "By Recently added")
     }
 
+    // Filtered like the Series tab: only Endymion has an audiobook
+    function test_audiobooksFilter() {
+        openAuthors()
+        openTheirSeries("Dan Simmons", "authorseries/dan-simmons-series.json")
+        tryVerify(() => rows() === danSimmonsSeries, 5000)
+
+        showOnly("authorSeriesPage", "Audiobooks")
+
+        tryVerify(() => rows() === "Endymion (1)", 5000, rows())
+    }
+
+    // Only theirs, not another author's downloaded series
+    function test_downloadedOnly() {
+        openAuthors({books: [
+            {id: 1, title: "Dune", authors: ["Frank Herbert"], seriesName: "Dune", formats: ["epub"], file: "Dune.epub"},
+            {id: 7, title: "Ilium", authors: ["Dan Simmons"], seriesName: "Ilium", formats: ["epub"], file: "Ilium.epub"}]})
+        openTheirSeries("Dan Simmons", "authorseries/dan-simmons-series.json")
+        tryVerify(() => rows() === danSimmonsSeries, 5000)
+
+        setDownloadedOnly("authorSeriesPage")
+
+        tryVerify(() => rows() === "Ilium (1)", 5000, rows())
+    }
+
     function test_noSeriesSaysSo() {
         openAuthors()
 

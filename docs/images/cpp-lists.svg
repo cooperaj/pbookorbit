@@ -55,7 +55,7 @@
   <rect class="box" x="580" y="16" width="280" height="70" rx="4"/>
   <text class="name" x="720" y="38" text-anchor="middle">GroupList</text>
   <text class="muted" x="720" y="56" text-anchor="middle">model: BookListModel</text>
-  <text class="muted" x="720" y="73" text-anchor="middle">loaded whole, sorted locally</text>
+  <text class="muted" x="720" y="73" text-anchor="middle">loaded whole, sorted and filtered locally</text>
 
   <line class="line" x1="568" y1="150" x2="676" y2="88" marker-end="url(#l-extends)"/>
   <line class="line" x1="720" y1="150" x2="720" y2="88" marker-end="url(#l-extends)"/>
@@ -70,7 +70,7 @@
   <text class="muted" x="720" y="193" text-anchor="middle">a few per lookup</text>
   <rect class="box" x="804" y="150" width="136" height="60" rx="4"/>
   <text class="name" x="872" y="173" text-anchor="middle">AuthorList</text>
-  <text class="muted" x="872" y="193" text-anchor="middle">setQuery(), row()</text>
+  <text class="muted" x="872" y="193" text-anchor="middle">a few per lookup, row()</text>
 
   <line class="line" x1="720" y1="244" x2="720" y2="212" marker-end="url(#l-extends)"/>
   <text class="muted" x="736" y="233">extends</text>

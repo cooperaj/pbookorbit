@@ -68,11 +68,22 @@ void GroupList::lookUpRows(int first, int last)
     lookUpWantedRows();
 }
 
+void GroupList::setQuery(const QString &sortField, bool descending, const QStringList &formats,
+                         bool localOnly)
+{
+    m_formats = formats;
+    m_localOnly = localOnly;
+    setSort(sortField, descending);
+    lookUpWantedRows();
+}
+
 void GroupList::setLocalBooks(const QVariantList &books)
 {
     m_localBooks = books;
     if (!m_session->online() && m_local)
         showLocal();
+    else if (m_localOnly)
+        show();
 }
 
 void GroupList::clear()
@@ -197,6 +208,72 @@ void GroupList::restoreCache()
         m_cached.append(withSavedDetails(row.toMap()));
     if (!m_cached.isEmpty())
         show();
+}
+
+QList<QVariantMap> GroupList::filtered(const QList<QVariantMap> &rows) const
+{
+    if (m_formats.isEmpty() && !m_localOnly)
+        return rows;
+
+    // With localOnly, the local books in the list's library (all of them offline, where
+    // none can be chosen) in the chosen formats, by group
+    QHash<QString, QHash<QString, QStringList>> downloaded;         // group -> key -> formats
+    QHash<QString, QHash<QString, QStringList>> downloadedSeries;   // group -> key -> series
+    if (m_localOnly) {
+        const QVariantList books = booksIn(m_localBooks, m_session->online() ? m_libraryId : -1);
+        for (const QVariant &value : books) {
+            const QVariantMap book = value.toMap();
+            bool wanted = m_formats.isEmpty();
+            for (const QString &format : book.value("downloadedFormats").toStringList())
+                wanted = wanted || m_formats.contains(format);
+            if (!wanted)
+                continue;
+            const QString key = companionKey(book);
+            for (const QString &group : groupsOf(book)) {
+                addNew(downloaded[group][key], ownFormats(book));
+                addNew(downloadedSeries[group][key], seriesNames(book));
+            }
+        }
+    }
+
+    // Only groups with matching books, counting just those and showing their formats, as
+    // the filtered book list does. Groups whose books aren't looked up yet wait.
+    QList<QVariantMap> shown;
+    for (QVariantMap row : rows) {
+        // Matching books by key, with their formats and series
+        QHash<QString, QStringList> wantedBooks;
+        QHash<QString, QStringList> wantedSeries;
+        if (m_localOnly) {
+            wantedBooks = downloaded.value(row.value("name").toString());
+            wantedSeries = downloadedSeries.value(row.value("name").toString());
+        } else {
+            const QVariantMap books = row.value("books").toMap();
+            const QVariantMap bookSeries = row.value("bookSeries").toMap();
+            for (auto it = books.constBegin(); it != books.constEnd(); ++it) {
+                const QStringList formats = it.value().toStringList();
+                bool wanted = false;
+                for (const QString &format : formats)
+                    wanted = wanted || m_formats.contains(format);
+                if (wanted) {
+                    wantedBooks.insert(it.key(), formats);
+                    wantedSeries.insert(it.key(), bookSeries.value(it.key()).toStringList());
+                }
+            }
+        }
+        if (wantedBooks.isEmpty())
+            continue;
+        QStringList formats;
+        for (const QStringList &bookFormats : std::as_const(wantedBooks))
+            addNew(formats, bookFormats);
+        sortFormats(formats);
+        row.insert("bookCount", int(wantedBooks.size()));
+        row.insert("formats", formats);
+        // Authors' rows count their series
+        if (row.contains("seriesCount"))
+            row.insert("seriesCount", seriesCount(wantedSeries));
+        shown.append(row);
+    }
+    return shown;
 }
 
 void GroupList::lookUpWantedRows()

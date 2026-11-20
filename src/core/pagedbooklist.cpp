@@ -137,15 +137,7 @@ void PagedBookList::setLibraryPaths(int libraryId)
 QVariantList PagedBookList::localBooksIn(int libraryId) const
 {
     // Offline, where no library can be chosen, all of them
-    if (libraryId < 0 || !m_session->online())
-        return m_localBooks;
-    QVariantList books;
-    for (const QVariant &book : m_localBooks) {
-        const QVariant id = book.toMap().value("libraryId");
-        if (!id.isValid() || id.toInt() == libraryId)
-            books.append(book);
-    }
-    return books;
+    return booksIn(m_localBooks, m_session->online() ? libraryId : -1);
 }
 
 void PagedBookList::withLibrary(std::function<void()> then)

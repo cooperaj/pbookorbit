@@ -43,6 +43,8 @@ protected:
     void loadPage(int page, int generation) override;
     void showLocal() override;
     void lookUp(const QList<int> &ids, int generation) override;
+    // Its series, those by the author if there is one
+    QStringList groupsOf(const QVariantMap &book) const override;
 
     // The author whose series these are, or empty for all
     QString m_author;
@@ -64,40 +66,21 @@ public:
 // The authors: {kind: "author", id, name, sortName ("Martin, George R.R."),
 // bookCount, photo (imageUrl, or ""), lastAddedAt, formats, seriesCount (-1 until their
 // books are looked up), bookSeries}. Formats, counts and series come from looking up an
-// author's books, a few authors to a request. With a filter set, counts and formats cover
-// only matching books.
+// author's books, a few authors to a request.
 class AuthorList : public GroupList
 {
     Q_OBJECT
-    // Whether every author's books have been looked up this time. Filtering by format needs
-    // this.
-    Q_PROPERTY(bool allLookedUp READ allLookedUp NOTIFY changed)
 
 public:
     AuthorList(Session *session, Database *database, Details *details, GroupDetails *groupDetails,
                QObject *parent = nullptr);
 
-    bool allLookedUp() const { return m_allLookedUp; }
-
-    // Sorts authors by "name", "sortName", "bookCount" or "lastAddedAt", and keeps only those
-    // with books in formats (and, with localOnly, among the local books). Choosing formats,
-    // without localOnly, looks up every author's books.
-    Q_INVOKABLE void setQuery(const QString &sortField, bool descending, const QStringList &formats,
-                              bool localOnly = false);
     // The author's unfiltered row, or empty if not listed
     Q_INVOKABLE QVariantMap row(int authorId) const;
-
-    void setLocalBooks(const QVariantList &books) override;
 
 protected:
     void loadPage(int page, int generation) override;
     void showLocal() override;
     void lookUp(const QList<int> &ids, int generation) override;
-    // Filtering by format, not just to the local books
-    bool lookUpAll() const override { return !m_formats.isEmpty() && !m_localOnly; }
-    QList<QVariantMap> filtered(const QList<QVariantMap> &rows) const override;
-
-private:
-    QStringList m_formats;
-    bool m_localOnly = false;
+    QStringList groupsOf(const QVariantMap &book) const override;
 };

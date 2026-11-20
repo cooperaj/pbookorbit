@@ -208,6 +208,38 @@ AppTestCase {
                   "the list's counts, not the saved ones: " + rows())
     }
 
+    // Filtered like the authors (see tst_authors.qml): only series with audiobooks,
+    // counting just those
+    function test_audiobooksFilter() {
+        openLoadedSeries()
+
+        showOnly("seriesPage", "Audiobooks")
+
+        tryVerify(() => rows() === "Dune (1), The Expanse (1)", 5000, rows())
+        compare(row("The Expanse").group.formats, ["m4b"])
+    }
+
+    function test_downloadedOnly() {
+        openSeries({books: [{id: 1, title: "Dune", authors: ["Frank Herbert"], seriesName: "Dune",
+                             seriesIndex: 1, formats: ["epub"], file: "Dune.epub"}]})
+        tryVerify(() => rows() === "Dune (3), Hyperion Cantos (1), The Expanse (2)", 5000)
+
+        setDownloadedOnly("seriesPage")
+
+        tryVerify(() => rows() === "Dune (1)", 5000, "only the downloaded book's: " + rows())
+    }
+
+    function test_downloadedOnlyWithoutDownloadsSaysSo() {
+        openLoadedSeries()
+
+        setDownloadedOnly("seriesPage")
+
+        const empty = find("emptyState", find("seriesPage"))
+        tryVerify(() => empty.visible, 5000, "No series")
+        compare(empty.title, "No series")
+        compare(empty.text, "Turn off Downloaded only to see every series.")
+    }
+
     function test_noSeriesSaysSo() {
         openLibrary()
         fakeServer.respond("GET", series, 200, "series/none.json")

@@ -9,6 +9,7 @@ GroupListPage {
 
     title: "Series / " + name
     groups: bookOrbit.authorSeries
-    emptyTitle: "No series"
-    emptyText: bookOrbit.session.online ? "None of their books are in a series." : offlineText("series with downloaded books")
+    noun: "series"
+    unfilteredText: "None of their books are in a series."
+    offlineGroups: "series with downloaded books"
 }

@@ -148,7 +148,7 @@ Window {
         onApplied: bookOrbit.collections.setSort(sortField, descending())
     }
     // Series sorts from BookOrbit's series page: A-Z, then most books, latest added and
-    // most read first
+    // most read first. Filtered by their books, like the library.
     ListQuery {
         id: seriesQuery
         sorts: [
@@ -157,11 +157,10 @@ Window {
             { name: "Recently added", field: "lastAddedAt", descending: true },
             { name: "Read progress", field: "readProgress", descending: true }
         ]
-        hasContentType: false
         hasLibraries: true
         allLibraries: true
         onLibraryChosen: (id) => root.chooseGroupLibrary(seriesQuery, bookOrbit.series, id)
-        onApplied: bookOrbit.series.setSort(sortField, descending())
+        onApplied: bookOrbit.series.setQuery(sortField, descending(), formats, downloadedOnly)
     }
     // Author sorts from BookOrbit's authors page: A-Z by name or surname, most books and
     // latest added first. Filtered by their books, like the library.
@@ -196,8 +195,7 @@ Window {
     ListQuery {
         id: authorSeriesQuery
         sorts: seriesQuery.sorts
-        hasContentType: false
-        onApplied: bookOrbit.authorSeries.setSort(sortField, descending())
+        onApplied: bookOrbit.authorSeries.setQuery(sortField, descending(), formats, downloadedOnly)
     }
     // In the library Authors shows
     function openAuthorSeries(name) {
@@ -313,8 +311,10 @@ Window {
                 libraryQuery.applied()
             if (showingBooksOf && !booksOfQuery.downloadedChosen)
                 booksOfQuery.applied()
-            if (!authorsQuery.downloadedChosen)
-                authorsQuery.applied()
+            for (const query of [authorsQuery, seriesQuery, authorSeriesQuery]) {
+                if (!query.downloadedChosen)
+                    query.applied()
+            }
             // Offline, series are the downloaded books'
             if (showingSeries)
                 bookOrbit.series.load()
@@ -457,9 +457,9 @@ Window {
         objectName: "seriesPage"
         visible: bookOrbit.session.signedIn && root.showingSeries
         groups: bookOrbit.series
-        emptyTitle: "No series"
-        emptyText: bookOrbit.session.online ? "Series show here once books in the library belong to one."
-                                    : offlineText("series with downloaded books")
+        noun: "series"
+        unfilteredText: "Series show here once books in the library belong to one."
+        offlineGroups: "series with downloaded books"
         anchors.top: header.bottom
         anchors.bottom: footer.top
         anchors.left: parent.left
@@ -479,16 +479,10 @@ Window {
         objectName: "authorsPage"
         visible: bookOrbit.session.signedIn && root.showingAuthors
         groups: bookOrbit.authors
-        // Filtered by format, authors appear once every author's books have been looked up.
-        // Downloaded only uses the downloaded books.
-        loaded: bookOrbit.authors.loaded && (bookOrbit.authors.allLookedUp || authorsQuery.allContent
-                                             || authorsQuery.downloadedOnly)
-        emptyTitle: authorsQuery.downloadedOnly || authorsQuery.allContent ? "No authors"
-                    : "No authors with " + authorsQuery.contentNoun
-        emptyText: !bookOrbit.session.online ? offlineText("authors of downloaded books")
-                   : authorsQuery.downloadedOnly ? "Turn off Downloaded only to see every author."
-                   : !authorsQuery.allContent ? "Tick Ebooks and Audiobooks to see every author."
-                   : "Authors show here once the library has books."
+        noun: "author"
+        pluralNoun: "authors"
+        unfilteredText: "Authors show here once the library has books."
+        offlineGroups: "authors of downloaded books"
         anchors.top: header.bottom
         anchors.bottom: footer.top
         anchors.left: parent.left
