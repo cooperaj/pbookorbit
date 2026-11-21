@@ -4,6 +4,7 @@
 #include "core/database.h"
 #include "core/diagnostics.h"
 #include "core/formats.h"
+#include "core/openbook.h"
 #include "core/session.h"
 
 #include <common_utilities/einkinterface.h>
@@ -418,7 +419,7 @@ bool Downloads::openWith(int bookId, const QString &format, const QString &app)
         return false;
     const QByteArray file = path.toUtf8();
     SetFileHandler(file.constData(), app.toUtf8().constData());
-    const int rc = OpenBook(file.constData(), "", OB_ADDTOLAST | OB_WITHRETURN);
+    const int rc = openBook(file, "", OB_ADDTOLAST | OB_WITHRETURN);
     (rc < 0 ? diagnostics::log : diagnostics::trace)(QString("OpenBook %1 with %2 -> %3").arg(path, app).arg(rc));
     return true;
 }
@@ -447,7 +448,7 @@ bool Downloads::open(int bookId, const QString &kind)
         return rc >= 0;
     }
     // Adds it to the system's recent books, and returns here when the reader closes
-    const int rc = OpenBook(path.toUtf8().constData(), "", OB_ADDTOLAST | OB_WITHRETURN);
+    const int rc = openBook(path.toUtf8(), "", OB_ADDTOLAST | OB_WITHRETURN);
     (rc < 0 ? diagnostics::log : diagnostics::trace)(QString("OpenBook %1 -> %2").arg(path).arg(rc));
     return true;
 }

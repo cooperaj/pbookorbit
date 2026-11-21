@@ -17,6 +17,7 @@ SOURCES += \
     $$PWD/core/launcherfiles.cpp \
     $$PWD/core/listfilter.cpp \
     $$PWD/core/network.cpp \
+    $$PWD/core/openbook.cpp \
     $$PWD/core/pagedbooklist.cpp \
     $$PWD/core/recentsearches.cpp \
     $$PWD/core/savefile.cpp \
@@ -49,6 +50,7 @@ HEADERS += \
     $$PWD/core/launcherfiles.h \
     $$PWD/core/listfilter.h \
     $$PWD/core/network.h \
+    $$PWD/core/openbook.h \
     $$PWD/core/pagedbooklist.h \
     $$PWD/core/recentsearches.h \
     $$PWD/core/savefile.h \

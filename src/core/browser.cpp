@@ -1,5 +1,6 @@
 #include "core/browser.h"
 #include "core/diagnostics.h"
+#include "core/openbook.h"
 
 #include <inkview.h>
 #include <QFileInfo>
@@ -36,7 +37,7 @@ bool Browser::open(const QString &address)
         return false;
     }
     const QByteArray encoded = url.toEncoded();
-    const int rc = OpenBook(m_app.toUtf8().constData(), encoded.constData(), 0);
+    const int rc = openBook(m_app.toUtf8(), encoded, 0);
     (rc < 0 ? diagnostics::log : diagnostics::trace)(QString("OpenBook %1 %2 -> %3").arg(m_app, QString::fromUtf8(encoded)).arg(rc));
     return rc >= 0;
 }

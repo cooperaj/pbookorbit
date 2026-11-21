@@ -3,8 +3,6 @@
 - Offline collections only know the books of collections looked up while online (see
   `group_details` in docs/technical.md), so a collection never scrolled to online won't
   list its downloaded books offline.
-- Libraries: the list shows the first library (`withLibrary()` in `src/core/session.cpp`).
-  Choose one when the server has several.
 - Jump rail: dragging along it, and jumping by date for the date sorts (the jump-buckets
   endpoint returns days or months for those).
 - Test data for reading status: the `app` test account has no reading progress or
@@ -12,8 +10,6 @@
   environment variable that makes `PagedBookList::decorateBook()` give books sample progress and statuses.
 - Check the system library's schema on firmware 6.11 and add it to `CHECKED_FIRMWARE` in
   `src/core/systemlibrary.cpp` if it's the same.
-- Opening a downloaded book in the emulator froze the app until it was force-quit (seen
-  offline, 28 October 2026). Try the same book online to see whether offline matters.
 - Find books: review unsure matches in a list. Since any title match is now offered, a
   device with many books can have dozens, and the dialog lists four and adds them all or
   none. Give them a page of their own, a row per file with the book it looks like, to

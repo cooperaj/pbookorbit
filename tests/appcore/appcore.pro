@@ -4,5 +4,7 @@ CONFIG += staticlib c++17
 QT += quick network
 
 INCLUDEPATH += ../../src
+# Keeps the calls the emulator build leaves out (core/openbook.h), for the fakes
+DEFINES += PBOOKORBIT_TESTS
 include(../../src/sources.pri)
 include($$(PB_KIT)/qmake/pocketbook.pri)
