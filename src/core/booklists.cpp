@@ -18,7 +18,7 @@ LibraryBooks::LibraryBooks(Session *session, Database *database, Details *detail
     // Each library's books are cached apart, under the one last used until the libraries
     // are fetched
     const auto nameCache = [this]() {
-        const int libraryId = m_session->libraryId() >= 0 ? m_session->libraryId() : m_session->savedLibraryId();
+        const int libraryId = m_session->libraryIdOrSaved();
         m_cacheName = libraryId >= 0 ? QString("library:%1").arg(libraryId) : QString();
     };
     nameCache();
@@ -35,7 +35,7 @@ void LibraryBooks::setQuery(const QString &sortField, bool descending, const QSt
 
 QVariantList LibraryBooks::localBooks() const
 {
-    return localBooksIn(m_session->libraryId());
+    return localBooksIn(m_session->libraryIdOrSaved());
 }
 
 void SearchResults::setPaths()

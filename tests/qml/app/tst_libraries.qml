@@ -148,6 +148,45 @@ AppTestCase {
                   "only Audiobooks' and the unknown: " + titlesIn(find("bookList")))
     }
 
+    // Downloaded only asks the server for no books, so the book list fetches the libraries
+    // itself, for the menu and the chosen one's downloads
+    function openDownloadedOnly(options) {
+        open(Object.assign({libraryId: "2", downloadedOnly: "1"}, savedSession), Object.assign({books: [
+            {id: 21, libraryId: 1, title: "Ancillary Justice", authors: ["Ann Leckie"], formats: ["epub"],
+             file: "justice.epub"},
+            {id: 22, libraryId: 2, title: "Leviathan Wakes", authors: ["James S. A. Corey"], formats: ["m4b"],
+             file: "leviathan.m4b"},
+        ]}, options))
+    }
+
+    function expectDownloadedOnlyOffersTheLibraries() {
+        tryCompare(bookOrbit.session, "libraryId", 2)
+        compare(titlesIn(find("bookList")), "Leviathan Wakes")
+        compare(find("filterButton", find("bookList")).text, "Audiobooks", "the button names it")
+        openFilterMenu("bookList")
+        compare(libraryOptions(), "Books, [Audiobooks], Comics")
+        compare(asked(audiobooks).length + asked("/api/v1/libraries/1/books").length, 0, "no books asked for")
+    }
+
+    function test_startingDownloadedOnlyOffersTheLibraries() {
+        openDownloadedOnly()
+
+        compare(titlesIn(find("bookList")), "Leviathan Wakes", "the saved library's, before the libraries are in")
+        expectDownloadedOnlyOffersTheLibraries()
+    }
+
+    // Offline, every library's downloads and no libraries to choose from
+    function test_downloadedOnlyOffersTheLibrariesBackOnline() {
+        openDownloadedOnly({offline: true})
+        compare(titlesIn(find("bookList")), "Ancillary Justice, Leviathan Wakes", "every library's offline")
+
+        testApp.offline = false
+        tap("menuButton")
+        tap("reconnect")
+
+        expectDownloadedOnlyOffersTheLibraries()
+    }
+
     // The item with this name, if there is one
     function present(name, under) {
         return findChild(under, name) || findVisual(under, name)

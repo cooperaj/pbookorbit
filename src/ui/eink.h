@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QTimer>
 
 // E-ink update modes for QML, via the pocketbook2 platform plugin.
 //
@@ -19,7 +20,7 @@ class Eink : public QObject
     Q_PROPERTY(bool nightMode READ nightMode NOTIFY nightModeChanged)
 
 public:
-    using QObject::QObject;
+    explicit Eink(QObject *parent = nullptr);
 
     // Lets system night mode invert the app as it does the built-in ones, and redraws on
     // toggle. InkView only inverts apps that opt in, which by default is only those in
@@ -49,6 +50,10 @@ signals:
     void nightModeChanged();
 
 private:
+    // For leaveA2Soon(). Not the platform's timedLeaveA2(): the plugin cancels that when a
+    // finger moves (its flickStarted), which most taps do, so tapping a button while the
+    // list settled left A2 on.
+    QTimer m_leaveA2Timer;
     bool m_dynamicUpdates = false;
     bool m_nightMode = false;
 };

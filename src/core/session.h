@@ -80,6 +80,8 @@ public:
     // The library the book list showed last, as saved, or -1. Known before the libraries
     // are fetched, so it may have gone since.
     int savedLibraryId() const;
+    // libraryId, or the saved one until the libraries are fetched
+    int libraryIdOrSaved() const { return m_libraryId >= 0 ? m_libraryId : savedLibraryId(); }
 
     // server is as typed, e.g. "books.example.com". Defaults to https.
     Q_INVOKABLE void signIn(const QString &server, const QString &username, const QString &password);

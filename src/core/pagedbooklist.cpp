@@ -79,6 +79,22 @@ void PagedBookList::refresh()
     if (m_onlyListed) {
         m_onlyBooks = localBooks();
         showListedBooks();
+
+        // Nothing else fetches the libraries while only downloaded books are listed, and
+        // the library menu and the books in the chosen library need them. Quiet: the
+        // books on the device are already shown.
+        if (m_session->online() && m_session->libraryId() < 0) {
+            const int generation = m_queryGeneration;
+            m_session->withLibrary([this, generation](int) {
+                // Unchanged when the saved library was shown, and redrawing would scroll
+                // the list back to the top
+                QVariantList books = localBooks();
+                if (generation != m_queryGeneration || books == m_onlyBooks)
+                    return;
+                m_onlyBooks = std::move(books);
+                showListedBooks();
+            }, [](int, const QString &) {});
+        }
         return;
     }
 

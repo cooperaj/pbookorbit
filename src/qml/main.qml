@@ -372,14 +372,12 @@ Window {
         if (!shownQuery && !bookOrbit.session.signedIn)
             prepareLibrary()
     }
-    // Lists that aren't downloaded only show other books online than offline
+    // Every list shows other books online than offline: the server's, or with Downloaded
+    // only, the chosen library's downloads rather than every library's (fetching the
+    // libraries once back online)
     function connectionChanged() {
-        if (!bookOrbit.searchFilter.downloadedOnly)
-            searchRevision++
-        if (!bookOrbit.filter.downloadedOnly)
-            filterChanged()
-        else
-            applyChangedFilter()
+        searchRevision++
+        filterChanged()
     }
     // Sets the book list's query without loading it, for bookOrbit.start()
     function prepareLibrary() {
@@ -430,6 +428,12 @@ Window {
     readonly property bool overlayOpen: dropdownOpen || menu.visible || bookMenu.visible
                                         || deleteDialog.visible || downloadDialog.visible
                                         || findBooksDialog.visible || bookInfoPage.menuOpen
+    // Opened while a list settles after scrolling: end A2 now, so the full-quality redraw
+    // comes with the menu or dialog rather than a moment later, while it's being read
+    onOverlayOpenChanged: {
+        if (overlayOpen)
+            eink.leaveA2()
+    }
 
     function pageFront(direction) {
         if (frontPageButtons && frontPageButtons.visible && !overlayOpen)
