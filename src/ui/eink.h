@@ -28,6 +28,12 @@ public:
     void followNightMode();
     bool nightMode() const { return m_nightMode; }
 
+    // Leaves redrawing the area the on-screen keyboard covered to the app, which redraws the
+    // whole window when the keyboard closes anyway. The plugin's own update of that area
+    // adds a full e-ink update (about 0.4 s) that everything after it waits for. Call after
+    // the platform plugin has started.
+    void skipKeyboardCloseUpdate();
+
     // Switches a screen rectangle (window coordinates) to A2 for a flick. Stays in A2 until
     // leaveA2Soon() or leaveA2(). Calling again cancels a pending timed exit.
     Q_INVOKABLE void enterA2ForFlick(int x, int y, int width, int height);

@@ -229,7 +229,9 @@ opens covers it, so toolbar buttons (`IconButton`) and the sort-order icon draw 
 pressed look with the fast black-and-white waveform (`Eink::requireFastUpdate()`, about
 240 ms). It asks the platform plugin for `DynamicBW`, not `PartialBW`: the plugin keeps the
 highest-ranked type asked for since its last update, and `PartialBW` ranks below the
-default.
+default. The plugin's own update of the keyboard's area after it closes is turned off
+(`Eink::skipKeyboardCloseUpdate()`): the app redraws the whole window then anyway, and
+the extra update made everything after it wait about 0.4 s.
 
 The firmware can log each update the platform plugin and inkview make, with its region,
 type and any wait for the panel. This line in `system/config/logger.cfg` on the device's

@@ -93,6 +93,12 @@ void Eink::requireHqUpdate()
     }
 }
 
+void Eink::skipKeyboardCloseUpdate()
+{
+    if (auto *platform = einkPlatform())
+        platform->setKeyboardUpdateAfterClose(false);
+}
+
 void Eink::requireFastUpdate()
 {
     // DynamicBW rather than PartialBW: the plugin keeps the highest-ranked type asked for
