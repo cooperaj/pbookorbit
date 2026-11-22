@@ -42,6 +42,11 @@ public:
     // it over anything on top of it, such as a menu.
     Q_INVOKABLE void requireHqUpdate();
 
+    // Draws the next update with the fast black-and-white waveform, about half the time of
+    // the standard one, for a button's pressed look: what the tap opens overlaps it, so it
+    // waits until the pressed look has finished drawing.
+    Q_INVOKABLE void requireFastUpdate();
+
     // Enables dynamic updates while a text field has focus. Disabling redraws the window at
     // normal quality.
     Q_INVOKABLE void setDynamicUpdates(bool enabled);

@@ -93,6 +93,17 @@ void Eink::requireHqUpdate()
     }
 }
 
+void Eink::requireFastUpdate()
+{
+    // DynamicBW rather than PartialBW: the plugin keeps the highest-ranked type asked for
+    // since the last update, and PartialBW ranks below the default Partial, so it would
+    // never be used
+    if (auto *platform = einkPlatform()) {
+        platform->requireUpdateType(pocketbook::utilities::EinkPlatformInterface::UpdateType::DynamicBW);
+        diagnostics::trace("next update fast");
+    }
+}
+
 void Eink::setDynamicUpdates(bool enabled)
 {
     auto *platform = einkPlatform();

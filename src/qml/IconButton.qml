@@ -2,7 +2,8 @@ import QtQuick
 
 // Toolbar button showing a system theme icon at natural size, with pressedIcon drawn over
 // it while pressed (like BitmapButton in the SDK's qml_test). Without a pressed icon the
-// normal one stays; with neither, fallbackText shows.
+// normal one stays; with neither, fallbackText shows. The pressed look draws with the fast
+// e-ink waveform, so what the tap opens doesn't wait long behind it.
 Item {
     id: button
     property string icon          // theme resource name, e.g. "home"
@@ -45,6 +46,7 @@ Item {
     MouseArea {
         id: mouse
         anchors.fill: parent
+        onPressedChanged: if (pressed) eink.requireFastUpdate()
         onClicked: button.clicked()
     }
 }

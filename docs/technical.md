@@ -216,12 +216,31 @@ except when the launcher starts the app again after an update, which appends to 
 `diagnostics::trace()` only writes while diagnostics logging is on (tap the title six
 times). It records each request with status and timing, Wi-Fi connections and changes in
 the network state (`QueryNetwork()`, checked every 2 seconds), the book list switching A2
-on and off while scrolling (see `src/ui/eink.h`), and every 10 seconds the frames rendered,
+on and off while scrolling and updates asked to be HQ or fast (see `src/ui/eink.h`), and every 10 seconds the frames rendered,
 memory use (`VmRSS`), thread count and network state.
 
 Every frame on e-ink is a slow screen update, so `frames` should be 0 when the app is
 idle. Anything that animates (a blinking cursor, `BusyIndicator`, transitions, Flickable
 momentum) keeps the display busy and makes the whole device feel frozen.
+
+Updates that overlap queue: each waits until the panel has finished the one before, about
+450 ms with the standard waveform. A button's pressed look is drawn first and what the tap
+opens covers it, so toolbar buttons (`IconButton`) and the sort-order icon draw their
+pressed look with the fast black-and-white waveform (`Eink::requireFastUpdate()`, about
+240 ms). It asks the platform plugin for `DynamicBW`, not `PartialBW`: the plugin keeps the
+highest-ranked type asked for since its last update, and `PartialBW` ranks below the
+default.
+
+The firmware can log each update the platform plugin and inkview make, with its region,
+type and any wait for the panel. This line in `system/config/logger.cfg` on the device's
+storage turns it on for the app's next start, logging to `/tmp/p7` (create it first;
+cleared on restart):
+
+```
+pbookorbit=/P7.Sink=FileTxt /P7.Pool=2048 /P7.Trc.Verb=0 /P7.Format="%lv {%tf} %ti [%fs:%fl] %mn %ms" /P7.Dir=/tmp/p7/ /P7.Roll=4mb /P7.Files=8
+```
+
+Delete the file to turn it off; the logging slows updates a little.
 
 ## C++ objects
 

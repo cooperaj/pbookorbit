@@ -89,6 +89,7 @@ Item {
             visible: button.iconIsButton && !bar.onlyOpenTab
             width: content.x + iconImage.width + button.spacing / 2
             height: parent.height
+            onPressedChanged: if (pressed) eink.requireFastUpdate()
             onClicked: button.iconClicked()
         }
     }
