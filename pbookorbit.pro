@@ -1,6 +1,6 @@
 TARGET = pbookorbit.app
 QT += quick network
-CONFIG += c++17 qtquickcompiler
+CONFIG += c++17
 
 INCLUDEPATH += src
 
