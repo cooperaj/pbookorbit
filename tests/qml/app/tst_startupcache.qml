@@ -39,7 +39,7 @@ AppTestCase {
     }
 
     // The saved rows keep the list's length and its A-Z sections, so the rail works and the
-    // list doesn't jump when the rest arrive
+    // list doesn't jump when the rest arrive. They start under the sub-toolbar.
     function test_startKeepsTheLengthAndSections() {
         openAndCache("libraries/books-100-page0.json", "libraries/jump-buckets-100.json")
         fakeServer.hold("POST", refresh)
@@ -48,6 +48,8 @@ AppTestCase {
 
         const list = find("bookList")
         tryCompare(list, "count", 100)
+        tryVerify(() => list.originY < 0, 5000, "the sub-toolbar is above the first row")
+        tryCompare(list, "contentY", list.originY, 1000, "and showing")
         const rail = find("libraryRail")
         tryVerify(() => rail.visible, 5000, "the rail shows")
         compare(rail.sections.length, 25, "A to Y")

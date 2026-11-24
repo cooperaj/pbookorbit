@@ -134,7 +134,34 @@ Rectangle {
             onTriggered: rows.loadVisibleRows()
         }
         onContentYChanged: loadTimer.restart()
-        onCountChanged: loadTimer.restart()
+        // Rows in an empty list start at the top, under the sub-toolbar. Left to itself, the
+        // view puts the first row at the top if the rows come before it and its sub-toolbar
+        // have a size, hiding the sub-toolbar until something scrolls it back (the cached rows
+        // at startup, which come while the page is built).
+        property bool wasEmpty: true
+        property bool toTop: false
+        property int toTopTries: 0
+        function moveToTop() {
+            if (!toTop || height <= 0 || (headerItem && headerItem.height <= 0))
+                return
+            positionViewAtBeginning()
+            // Ignored in the middle of the view's layout, when the sub-toolbar gets its height
+            if (contentY !== originY && ++toTopTries < 3)
+                Qt.callLater(moveToTop)
+            else
+                toTop = false
+        }
+        onCountChanged: {
+            if (wasEmpty && count > 0) {
+                toTop = true
+                toTopTries = 0
+            }
+            wasEmpty = count === 0
+            moveToTop()
+            loadTimer.restart()
+        }
+        onHeightChanged: moveToTop()
+        onOriginYChanged: moveToTop()
 
         // The sub-toolbar and any error scroll away with the rows. The first row sits right
         // under the bar, as in the system library.
@@ -176,7 +203,10 @@ Rectangle {
             }
         }
 
-        onMovementStarted: page.scrollStarted()
+        onMovementStarted: {
+            toTop = false
+            page.scrollStarted()
+        }
         A2Scrolling { target: rows }
 
         delegate: page.delegate

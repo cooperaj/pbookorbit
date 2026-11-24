@@ -340,4 +340,18 @@ UiTestCase {
         compare(root.rail.objectName, "myRail")
         verify(findChild(root, "myEmpty"))
     }
+
+    // Rows that arrive before the page has a size still start under the sub-toolbar (the
+    // cached rows at startup, on the device)
+    function test_rowsBeforeASizeStartAtTheTop() {
+        rowModel.clear()
+        make(0, withQuery({model: rowModel, width: 0, height: 0}))
+
+        fillRows(30)
+        root.width = 600
+        root.height = 800
+
+        tryVerify(() => root.list.originY < 0, 2000, "the sub-toolbar is above the first row")
+        compare(root.list.contentY, root.list.originY, "and showing")
+    }
 }
