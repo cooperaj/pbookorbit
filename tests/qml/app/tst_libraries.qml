@@ -221,6 +221,20 @@ AppTestCase {
         compare(bookOrbit.session.libraryId, 2)
     }
 
+    // Until the libraries are in, the button says Library, not the content type it shows
+    // with a single library
+    function test_libraryUntilTheLibrariesAreIn() {
+        fakeServer.hold("GET", "/api/v1/libraries")
+        open(savedSession)
+        const button = find("filterButton", find("bookList"))
+        tryVerify(() => asked("/api/v1/libraries").length > 0, 5000, "the libraries are asked for")
+
+        compare(button.text, "Library")
+
+        fakeServer.release("GET", "/api/v1/libraries")
+        tryCompare(button, "text", "Books")
+    }
+
     function test_oneLibraryHasNoChoice() {
         openLibrary()
         bookRow("Hyperion")

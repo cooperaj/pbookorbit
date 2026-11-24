@@ -327,8 +327,9 @@ Downloaded only are every query's `filter`: `bookOrbit.filter`, or search's own.
 and Audiobooks are checkboxes, and the last one ticked can't be unticked. A query with
 `hasLibraries` puts a Libraries section (radio buttons, plus All libraries with
 `allLibraries`) above them when the server has several and can be reached, and its filter
-button then names the library; it says `libraryChosen(id)` and leaves the view to act on
-it. Two components extend it with their row:
+button then names the library (Library while the libraries are fetched); it says
+`libraryChosen(id)` and leaves the view to act on it. Two components extend it with their
+row:
 
 - `BookListPage` has a `BookRow` per book and reports taps and holds. The library, a
   books-of page (an author's, series' or collection's books) and the search results use

@@ -45,11 +45,13 @@ QtObject {
     }
 
     // The filter button's label: the library when there's a choice of them, else the
-    // content type
+    // content type. Library while the libraries are fetched.
     readonly property string filterName: {
         const library = libraryOptions.find(option => option.id === libraryId)
         if (library)
             return library.name
+        if (hasLibraries && bookOrbit.session.online && bookOrbit.session.libraries.length === 0)
+            return "Library"
         return allContent ? "All titles" : ebooks ? "Ebooks" : "Audiobooks"
     }
     // Whether the view has a filter button
