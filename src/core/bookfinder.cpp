@@ -347,10 +347,11 @@ void BookFinder::start()
         finish(generation);
         return;
     }
+    // Every library, once they're known
     m_session->withLibrary(
-        [this, generation](int libraryId) {
+        [this, generation](int) {
             if (generation == m_generation)
-                loadLibraryPage(libraryId, 0, generation);
+                loadLibraryPage(Session::booksPath(m_session->libraryToQuery(-1)), 0, generation);
         },
         [this, generation](int, const QString &message) {
             if (generation == m_generation)
@@ -358,14 +359,14 @@ void BookFinder::start()
         });
 }
 
-void BookFinder::loadLibraryPage(int libraryId, int page, int generation)
+void BookFinder::loadLibraryPage(const QString &path, int page, int generation)
 {
     const QJsonObject query{
         {"sort", QJsonArray{QJsonObject{{"field", "title"}, {"dir", "asc"}}}},
         {"pagination", QJsonObject{{"page", page}, {"size", LIBRARY_PAGE_SIZE}}},
     };
-    m_session->request("POST", QString("/libraries/%1/books").arg(libraryId), QJsonDocument(query),
-        [this, libraryId, page, generation](const QByteArray &data) {
+    m_session->request("POST", path, QJsonDocument(query),
+        [this, path, page, generation](const QByteArray &data) {
             if (generation != m_generation)
                 return;
             const QJsonObject reply = QJsonDocument::fromJson(data).object();
@@ -384,7 +385,7 @@ void BookFinder::loadLibraryPage(int libraryId, int page, int generation)
             if (m_libraryTotal > 0)
                 setPercent(LIBRARY_PERCENT * int(m_library.size()) / m_libraryTotal);
             if (!items.isEmpty() && m_library.size() < m_libraryTotal)
-                loadLibraryPage(libraryId, page + 1, generation);
+                loadLibraryPage(path, page + 1, generation);
             else
                 matchFiles(generation);
         },

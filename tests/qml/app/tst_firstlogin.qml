@@ -38,6 +38,20 @@ AppTestCase {
         verify(!find("findBooksDialog").visible, "no offer")
     }
 
+    // Only the first sign-in on the device asks; after that it's in the menu
+    function test_signingInAgainDoesNotOfferAgain() {
+        open({}, {files: bookOnDevice})
+        signInAsNewUser()
+        tap("closeButton", find("findBooksDialog"))
+        tap("menuButton")
+        tap("signOut")
+        verify(find("loginPage").visible)
+
+        signInAsNewUser()
+
+        verify(!find("findBooksDialog").visible, "no offer")
+    }
+
     // Found books are recorded as downloaded, and marked so in the library among the others
     function test_findingBooksMarksThemDownloaded() {
         open({}, {files: bookOnDevice})
@@ -53,6 +67,21 @@ AppTestCase {
         expectOnDevice("Dune", "epub")
         expectNotOnDevice("Hyperion")
         expectNotOnDevice("Neuromancer")
+    }
+
+    // Every library is searched, not just the one the book list shows
+    function test_findingBooksSearchesEveryLibrary() {
+        fakeServer.respond("GET", "/api/v1/libraries", 200, "libraries/several.json")
+        fakeServer.respond("POST", "/api/v1/libraries/1/books", 200, "libraries/search-hail-mary.json")
+        fakeServer.respond("POST", everyLibrary, 200, "libraries/books.json")
+        open({}, {files: bookOnDevice})
+        signInAsNewUser()
+        const dialog = find("findBooksDialog")
+
+        tap("searchButton", dialog)
+
+        tryCompare(dialog, "step", "done")
+        verify(downloads.isOnDevice(1), "Dune, in another library, is recorded as downloaded")
     }
 
     // Books not in the library are counted after the found ones

@@ -78,7 +78,8 @@ private:
     QList<LocalFile> unrecordedFiles() const;
     // Matches from the KOReader plugin's state files for this server: local path -> match
     QHash<QString, KoreaderMatch> koreaderMatches() const;
-    void loadLibraryPage(int libraryId, int page, int generation);
+    // A page of every library's books
+    void loadLibraryPage(const QString &path, int page, int generation);
     // Once the library has loaded, splits files into found and still to look up
     void matchFiles(int generation);
     // Looks up the next candidate for m_pending[index]

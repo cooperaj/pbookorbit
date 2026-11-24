@@ -14,6 +14,9 @@
   device with many books can have dozens, and the dialog lists four and adds them all or
   none. Give them a page of their own, a row per file with the book it looks like, to
   accept or reject each (and all at once).
+- Find books: offer it again after signing in to a different server. The offer is only
+  made once per device (the `findBooksOffered` flag), so a second server's library is
+  never offered, though "Find books on this device" in the menu still works.
 - Read each book file's own metadata (title, authors, series, identifiers; EPUB's OPF,
   MOBI's EXTH), so Find books can match files whose name and hash no longer match the
   server's copy, and offline pages can show details nothing saved. Check first what the
