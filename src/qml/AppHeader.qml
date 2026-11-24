@@ -37,19 +37,15 @@ Rectangle {
         onClicked: header.homeClicked()
     }
 
-    StyledText {
+    HeaderTitle {
         id: titleText
         objectName: "appTitle"
         anchors.centerIn: parent
         anchors.verticalCenterOffset: -separator.height / 2
         // Centred, so reserve the wider side's button width on both sides
-        width: parent.width - 2 * (header.margin + Math.max(homeButton.width, rightButtons.width))
-        horizontalAlignment: Text.AlignHCenter
-        elide: Text.ElideRight
+        width: parent.width - 2 * (header.margin + Math.max(homeButton.width, rightButtons.width) + titleGap)
         // Lets part of the title be coloured with <font color="...">
         textFormat: Text.StyledText
-        size: Units.body
-        font.capitalization: Font.AllUppercase
 
         // Full toolbar height, across the title's width
         MouseArea {
@@ -79,8 +75,9 @@ Rectangle {
 
     // Just after the title's text, outside its layout so the title stays centred: a red
     // badge with a crossed-out Wi-Fi sign (src/icons/offline.svg), a little taller than
-    // the capitals. Keeps its colours in night mode. On whole pixels: smoothed between
-    // them, its edge picks up black from outside the image.
+    // the capitals; over the faded end of a title too long to fit. Keeps its colours in
+    // night mode. On whole pixels: smoothed between them, its edge picks up black from
+    // outside the image.
     Image {
         id: offlineIcon
         objectName: "offlineIcon"
@@ -89,7 +86,8 @@ Rectangle {
         height: width
         sourceSize.width: width
         sourceSize.height: height
-        x: Math.round(titleText.x + (titleText.width + Math.min(titleText.contentWidth, titleText.width)) / 2 + Units.dp(5))
+        x: Math.round(titleText.overflows ? titleText.x + titleText.width - width
+                      : titleText.x + (titleText.width + titleText.contentWidth) / 2 + Units.dp(5))
         y: Math.round(titleText.y + (titleText.height - height) / 2)
         source: Night.image("qrc:/icons/offline.bmp")
     }

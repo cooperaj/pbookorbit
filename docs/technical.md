@@ -530,7 +530,8 @@ Layout follows the system apps at large sizes:
 
 - List rows, info cells and wrapping text grow with the text (`Units.textScale()`).
 - Toolbars, the sub-toolbar, buttons and menu rows keep their height and cut their text
-  short. Menus widen to fit, up to the window's width.
+  short. A toolbar's title fades out at its right end instead (`HeaderTitle.qml`), as in
+  the firmware's Qt apps. Menus widen to fit, up to the window's width.
 - Icons, covers, section boxes and the jump rail's letters keep their size.
 
 ### Diagnostics log
