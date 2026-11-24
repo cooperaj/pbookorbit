@@ -36,12 +36,12 @@ Item {
         sourceSize.height: button.iconSize
         name: button.pressedIcon
     }
-    Text {
+    StyledText {
         id: fallback
         anchors.centerIn: parent
         visible: image.status !== Image.Ready
         text: button.fallbackText
-        font.pointSize: Units.body
+        size: Units.body
         font.bold: true
     }
     PressArea {

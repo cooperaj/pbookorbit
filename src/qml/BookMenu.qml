@@ -141,7 +141,7 @@ Item {
     PopupMenu {
         id: menu
         // Top level with the row
-        width: Units.dp(274)
+        minWidth: Units.dp(274)
         x: parent.width - Units.dp(22) - width
         y: Math.max(bookMenu.listRect.y,
                     Math.min(bookMenu.rowRect.y, parent.height - Units.dp(11) - height))

@@ -208,11 +208,11 @@ InfoPage {
                         height: parent.height
                         color: "black"
                     }
-                    Text {
+                    StyledText {
                         anchors.centerIn: parent
                         text: half.modelData[0]
                         color: half.chosen ? "white" : "black"
-                        font.pointSize: Units.body
+                        size: Units.body
                         font.capitalization: Font.AllUppercase
                     }
                     MouseArea {
@@ -301,11 +301,11 @@ InfoPage {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: (page.pageButtons.height - height) / 2
                 spacing: Units.dp(8)
-                Text {
+                StyledText {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Choose action"
                     color: actionMouse.pressed ? "white" : "black"
-                    font.pointSize: Units.body
+                    size: Units.body
                     font.capitalization: Font.AllUppercase
                 }
                 ThemeIcon {
@@ -339,7 +339,7 @@ InfoPage {
             }
 
             PopupMenu {
-                width: Units.dp(280)
+                minWidth: Units.dp(280)
                 x: (parent.width - width) / 2
                 y: (parent.height - height) / 2
 

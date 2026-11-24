@@ -189,7 +189,7 @@ Rectangle {
                         page.query.reverseSort()
                     }
                 }
-                Text {
+                StyledText {
                     id: errorLine
                     objectName: "errorLine"
                     x: Units.dp(26)
@@ -197,7 +197,7 @@ Rectangle {
                     visible: page.showErrorLine && page.error !== "" && rows.count > 0
                     topPadding: Units.dp(8)
                     text: page.error
-                    font.pointSize: Units.body
+                    size: Units.body
                     wrapMode: Text.Wrap
                 }
             }

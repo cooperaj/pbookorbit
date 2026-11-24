@@ -26,9 +26,9 @@ Item {
 
     signal pressed(var action)
 
-    component DialogText: Text {
+    component DialogText: StyledText {
         width: parent ? parent.width : 0
-        font.pointSize: Units.bodySmall
+        size: Units.bodySmall
         wrapMode: Text.Wrap
     }
 
@@ -135,11 +135,11 @@ Item {
                         bottomLeftRadius: index === 0 ? panel.radius - panel.border.width : 0
                         bottomRightRadius: index === dialog.buttons.length - 1 ? panel.radius - panel.border.width : 0
                     }
-                    Text {
+                    StyledText {
                         anchors.centerIn: parent
                         text: modelData[0]
                         color: press.pressed ? "white" : "black"
-                        font.pointSize: Units.body
+                        size: Units.body
                         font.capitalization: Font.AllUppercase
                     }
                     // Divider before this button

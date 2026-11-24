@@ -3,6 +3,7 @@
 // Declares the functions below with C linkage, as libinkview has them, and checks their
 // signatures against it
 #include <inkview.h>
+#include <inkview/accessibility_text.h>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
@@ -51,6 +52,13 @@ void FakeInkview::reset(const QVariantMap &apps, bool night, const QString &vers
     m_openedTasks.clear();
     m_libraryScans = 0;
     emit changed();
+}
+
+void FakeInkview::setTextSettings(int scale, bool bold, bool contrast)
+{
+    textScale = scale;
+    boldText = bold;
+    highContrast = contrast;
 }
 
 void FakeInkview::bookOpened(const QString &path, const QString &parameters, const QString &app)
@@ -155,6 +163,23 @@ int IvGetAppCapability(void)
 void IvSetAppCapability(int caps)
 {
     FakeInkview::instance()->appCapabilities = caps;
+}
+
+// Text accessibility
+
+int iv_text_scale_percentage()
+{
+    return FakeInkview::instance()->textScale;
+}
+
+bool iv_text_bold_enabled()
+{
+    return FakeInkview::instance()->boldText;
+}
+
+bool iv_text_contrast_enabled()
+{
+    return FakeInkview::instance()->highContrast;
 }
 
 // The device, its firmware and its task manager

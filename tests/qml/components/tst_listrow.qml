@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import "../helpers"
 import "../../../src/qml"
+import "../../../src/qml/units.js" as Units
 
 // The row every list shares, with its fields set directly: its lines, formats, section
 // boxes, and which touches count as taps or holds (TapArea's own rules are tested in
@@ -135,5 +136,26 @@ UiTestCase {
 
         compare(clicks.count, 0)
         compare(holds.count, 0)
+    }
+
+    function cleanup() {
+        textSettings(100)
+    }
+
+    // As in the system library: the text grows and the row with it, keeping its lines in
+    // order and apart; the cover keeps its size
+    function test_growsWithTheSystemTextSize() {
+        const row = show([{subtitle: "Frank Herbert", details: ["Completed", "Dune - 1"]}])
+        const height = row.height
+        const coverHeight = row.coverHeight
+
+        textSettings(200)
+
+        verify(row.height > 1.5 * height, "taller: " + row.height + " from " + height)
+        compare(row.coverHeight, coverHeight)
+        const title = find("title", row), author = find("author", row), status = find("status", row)
+        verify(title.y + title.height <= author.y + 1, "the title above the second line")
+        verify(author.y + author.height <= status.y + 1, "the second line above the details")
+        verify(status.y + status.height <= row.height, "the details inside the row")
     }
 }

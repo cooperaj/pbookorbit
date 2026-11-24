@@ -102,4 +102,18 @@ UiTestCase {
         verify(!find("filterButton").visible, "not the other button")
         verify(!find("iconButton", find("sortButton")).visible, "not the icon button")
     }
+
+    // As in the system library at large text sizes: each button keeps to half the bar,
+    // its label cut short before the arrow
+    function test_longLabelsAreCutShort() {
+        make({width: 240})
+
+        for (const name of ["filterButton", "sortButton"]) {
+            const button = find(name)
+            verify(button.width <= button.maxWidth, name + " fits half the bar")
+            verify(find("label", button).truncated, name + " label cut short")
+        }
+        verify(find("filterButton").x + find("filterButton").width < find("sortButton").x,
+               "the buttons don't overlap")
+    }
 }

@@ -142,9 +142,12 @@ Rectangle {
                 anchors.margins: searchBox.thickBorder
                 anchors.verticalCenter: parent.verticalCenter
                 leftPadding: Units.dp(3)
-                font.pointSize: Units.body
+                // As StyledText
+                font.family: accessibility.fontFamily
+                font.pointSize: Units.body * Units.textScale()
+                font.bold: accessibility.boldText
                 placeholderText: "Search…"
-                placeholderTextColor: "#949494"
+                placeholderTextColor: Units.grey("#949494")
                 background: null
                 // Search when typing pauses, not on every letter. Clearing (under three
                 // characters) needn't wait.
@@ -192,11 +195,11 @@ Rectangle {
         width: parent.width
         height: Units.listElementHeight
 
-        Text {
+        StyledText {
             anchors.centerIn: parent
             text: "Recent searches"
-            color: "#737373"
-            font.pointSize: Units.body
+            color: Units.grey("#737373")
+            size: Units.body
             font.capitalization: Font.AllUppercase
         }
         Line {
@@ -232,7 +235,7 @@ Rectangle {
                 bookOrbit.recentSearches.add(search)
             }
 
-            Text {
+            StyledText {
                 anchors.left: parent.left
                 anchors.leftMargin: Units.dp(42)
                 anchors.right: parent.right
@@ -240,7 +243,7 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 text: modelData
                 color: recentRow.foreground
-                font.pointSize: Units.body
+                size: Units.body
                 elide: Text.ElideRight
             }
         }

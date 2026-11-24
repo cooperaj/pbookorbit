@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import "../helpers"
 import "../../../src/qml"
+import "../../../src/qml/units.js" as Units
 
 // A drop-down menu in the system style: as wide as its widest visible row, never narrower
 // than the system's smallest menu, squared off where it joins a tab, and with no line under
@@ -87,5 +88,22 @@ UiTestCase {
         menu.joinedCorner = "topRight"
         compare(menu.topLeftRadius, menu.radius)
         compare(menu.topRightRadius, 0)
+    }
+
+    function cleanup() {
+        textSettings(100)
+    }
+
+    // Larger text widens it, but never past the window's edges
+    function test_neverWiderThanItsWindow() {
+        const menu = make()
+        const wide = menu.width
+
+        textSettings(200)
+
+        verify(menu.contentWidth + 2 * (menu.border.width + menu.padding) > test.width,
+               "the long row is wider than the window")
+        verify(menu.width > wide, "wider with larger text")
+        compare(menu.width, test.width - 2 * Units.dp(11))
     }
 }

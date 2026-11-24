@@ -32,11 +32,14 @@ PressableRow {
               : item.locked ? "checkbox_square_on_disabled" : "checkbox_square_on"
         inverted: item.pressed
     }
-    Text {
+    StyledText {
         id: label
         x: Units.dp(66)
+        // Cut short if the menu can't widen enough for it
+        width: Math.min(implicitWidth, parent.width - x - Units.dp(15))
         anchors.verticalCenter: parent.verticalCenter
         color: item.foreground
-        font.pointSize: Units.body
+        size: Units.body
+        elide: Text.ElideRight
     }
 }

@@ -30,12 +30,15 @@ Item {
         showSeparator: false
         onClicked: item.clicked()
 
-        Text {
+        StyledText {
             id: label
             x: item.sideMargin
+            // Cut short if the menu can't widen enough for it
+            width: Math.min(implicitWidth, toggle.x - x - Units.dp(15))
             anchors.verticalCenter: parent.verticalCenter
-            color: item.enabled ? row.foreground : Units.disabledColor
-            font.pointSize: Units.body
+            color: item.enabled ? row.foreground : Units.grey(Units.disabledColor)
+            size: Units.body
+            elide: Text.ElideRight
         }
         // The theme's 145x61px switch at 3/4 size
         ThemeIcon {

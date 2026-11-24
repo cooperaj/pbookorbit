@@ -107,6 +107,14 @@ TestCase {
             keyClick(c)
     }
 
+    // The system's text settings (Settings > Accessibility), as if just changed: size 100 to
+    // 200 (percent), bold text and grey text contrast. A test that sets them puts them back
+    // with textSettings(100) in its cleanup().
+    function textSettings(scale, bold, contrast) {
+        inkview.setTextSettings(scale, bold === true, contrast === true)
+        accessibility.reload()
+    }
+
     function signIn(server, username, password) {
         type("serverField", server)
         type("usernameField", username)

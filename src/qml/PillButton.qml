@@ -21,7 +21,7 @@ Rectangle {
     radius: height / 2
     // One device pixel like the native buttons, so not dp-scaled
     border.width: 1
-    border.color: dimmed ? Units.disabledColor : "black"
+    border.color: dimmed ? Units.grey(Units.disabledColor) : "black"
     color: mouse.pressed ? "black" : "white"
 
     Row {
@@ -35,11 +35,11 @@ Rectangle {
             opacity: button.dimmed ? 0.5 : 1
             name: mouse.pressed && button.pressedIcon ? button.pressedIcon : button.icon
         }
-        Text {
+        StyledText {
             id: label
             anchors.verticalCenter: parent.verticalCenter
-            color: mouse.pressed ? "white" : button.dimmed ? Units.disabledColor : "black"
-            font.pointSize: Units.body
+            color: mouse.pressed ? "white" : button.dimmed ? Units.grey(Units.disabledColor) : "black"
+            size: Units.body
             font.capitalization: Font.AllUppercase
         }
     }

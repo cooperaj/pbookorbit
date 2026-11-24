@@ -13,6 +13,9 @@ import "night.js" as Night
 // accent-coloured pill with a small e-reader mark if on the device (where the system
 // shows its cloud icon).
 //
+// The text grows with the system's text size and the row with it, as in the system
+// library; the cover and section boxes keep their size.
+//
 // Tapping sends clicked(). A holdable row sends held() after a hold, and then no
 // clicked().
 Item {
@@ -34,7 +37,14 @@ Item {
     signal held()
 
     readonly property bool squareSection: sectionLabel.length <= 4
-    readonly property int rowHeight: Units.dp(83)
+    // Baselines of the title, second line and details, which spread as text grows (see
+    // Units.textScale()), with dp(10) above and below the text
+    readonly property real textGrowth: Units.textScale() * Units.lineSpacing()
+    readonly property real titleDp: 10 + 14 * Units.textScale()
+    readonly property int titleBaseline: Units.dp(titleDp)
+    readonly property int subtitleBaseline: Units.dp(titleDp + 25 * textGrowth)
+    readonly property int detailsBaseline: Units.dp(titleDp + 49 * textGrowth)
+    readonly property int rowHeight: Units.dp(titleDp + 49 * textGrowth + 10)
     readonly property int lineLeft: Units.dp(26)               // after the date box
     readonly property int contentLeft: Units.dp(33)            // the cover
     readonly property int contentRight: width - contentLeft    // rows end as far from the right
@@ -76,23 +86,23 @@ Item {
         width: row.contentRight - x - Units.dp(4)
         height: row.height
 
-        Text {
+        StyledText {
             objectName: "title"
-            y: Units.dp(24) - baselineOffset
+            y: row.titleBaseline - baselineOffset
             width: parent.width
             text: row.title
-            font.pointSize: Units.bodyLarge
+            size: Units.bodyLarge
             font.bold: true
             elide: Text.ElideRight
         }
-        Text {
+        StyledText {
             id: subtitle
             objectName: "author"
-            y: Units.dp(49) - baselineOffset
+            y: row.subtitleBaseline - baselineOffset
             // Leave room for the formats on the right
             width: parent.width - (formatRow.width > 0 ? formatRow.width + Units.dp(12) : 0)
             text: row.subtitle
-            font.pointSize: Units.bodySmall
+            size: Units.bodySmall
             elide: Text.ElideRight
         }
         // Formats, centred on the second line: "EPUB  AZW3  M4B", with those on the device
@@ -120,7 +130,7 @@ Item {
                         objectName: "onDevicePill"
                         visible: format.onDevice
                         width: pillContent.width + 2 * Units.dp(7)
-                        height: Units.dp(16)
+                        height: Math.max(Units.dp(16), label.implicitHeight)
                         radius: height / 2
                         color: Night.color(bookOrbit.theme.accentColor)
                     }
@@ -149,12 +159,12 @@ Item {
                                 color: Night.color(bookOrbit.theme.accentTextColor)
                             }
                         }
-                        Text {
+                        StyledText {
                             id: label
                             anchors.verticalCenter: parent.verticalCenter
                             text: format.modelData.toUpperCase()
-                            color: format.onDevice ? Night.color(bookOrbit.theme.accentTextColor) : "#606060"
-                            font.pointSize: Units.textInIcons
+                            color: format.onDevice ? Night.color(bookOrbit.theme.accentTextColor) : Units.grey("#606060")
+                            size: Units.textInIcons
                         }
                     }
                 }
@@ -166,33 +176,33 @@ Item {
             width: parent.width
             spacing: Units.dp(13)
 
-            Text {
+            StyledText {
                 id: first
                 objectName: "status"
-                y: Units.dp(73) - baselineOffset
+                y: row.detailsBaseline - baselineOffset
                 visible: text !== ""
                 width: Math.min(implicitWidth, detailRow.width)
                 text: row.details[0] || ""
-                font.pointSize: Units.bodySmall
+                size: Units.bodySmall
                 font.italic: true
                 elide: Text.ElideRight
             }
-            Text {
+            StyledText {
                 objectName: "separator"
-                y: Units.dp(73) - baselineOffset
+                y: row.detailsBaseline - baselineOffset
                 visible: first.visible && second.visible
                 text: "|"
-                color: "#6e6e71"
-                font.pointSize: Units.bodySmall
+                color: Units.grey("#6e6e71")
+                size: Units.bodySmall
             }
-            Text {
+            StyledText {
                 id: second
                 objectName: "series"
-                y: Units.dp(73) - baselineOffset
+                y: row.detailsBaseline - baselineOffset
                 visible: text !== ""
                 width: Math.max(0, detailRow.width - x)
                 text: row.details[1] || ""
-                font.pointSize: Units.bodySmall
+                size: Units.bodySmall
                 font.italic: true
                 elide: Text.ElideRight
             }
@@ -218,15 +228,18 @@ Item {
         border.width: 1
         border.color: "black"
 
-        Text {
+        StyledText {
             anchors.centerIn: parent
             width: parent.width - Units.dp(4)
+            height: parent.height
             horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
             text: row.sectionLabel
-            font.pointSize: 9
+            size: 9
             font.bold: true
-            // Smaller for longer numbers such as 10.5
-            fontSizeMode: Text.HorizontalFit
+            // Smaller for longer numbers such as 10.5, and to fit the box at larger text
+            // sizes
+            fontSizeMode: Text.Fit
             minimumPointSize: Units.textInIcons
         }
     }
@@ -243,11 +256,19 @@ Item {
         border.width: 1
         border.color: "black"
 
-        Text {
+        StyledText {
             anchors.centerIn: parent
+            // Sideways, so its width runs down the box
+            width: parent.height
+            height: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
             rotation: -90
             text: row.sectionLabel
-            font.pointSize: Units.textInIcons
+            size: Units.textInIcons
+            // Smaller to fit the box at larger text sizes
+            fontSizeMode: Text.Fit
+            minimumPointSize: Units.textInIcons
         }
     }
 }

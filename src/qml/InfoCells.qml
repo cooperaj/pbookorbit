@@ -11,7 +11,8 @@ Item {
     property bool showTopLine: true
     signal cellClicked(int index)
     visible: cells.some(cell => cell[1] !== "")
-    height: visible ? Units.dp(82) : 0
+    // dp(82), the label and value's part of it growing with the text (see ListRow)
+    height: visible ? Units.dp(32 + 50 * Units.textScale() * Units.lineSpacing()) : 0
 
     Line {
         visible: cellRow.showTopLine
@@ -54,19 +55,19 @@ Item {
                     width: parent.width - 2 * x - (cell.tappable ? chevron.width + Units.dp(6) : 0)
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Units.dp(8)
-                    Text {
+                    StyledText {
                         width: parent.width
                         text: modelData[0]
-                        color: mouse.pressed ? "#c0c0c0" : "#808080"
-                        font.pointSize: Units.body
+                        color: mouse.pressed ? Units.grey("#c0c0c0", "white") : Units.grey("#808080")
+                        size: Units.body
                         font.capitalization: Font.AllUppercase
                         elide: Text.ElideRight
                     }
-                    Text {
+                    StyledText {
                         width: parent.width
                         text: modelData[1]
                         color: mouse.pressed ? "white" : "black"
-                        font.pointSize: Units.body
+                        size: Units.body
                         elide: Text.ElideRight
                     }
                 }

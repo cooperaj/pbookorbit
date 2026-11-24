@@ -58,10 +58,10 @@ Item {
     }
 
     // Field label, under its underline, left aligned
-    component FieldLabel: Text {
+    component FieldLabel: StyledText {
         width: parent.width
         topPadding: Units.dp(3)
-        font.pointSize: Units.body
+        size: Units.body
         font.capitalization: Font.AllUppercase
     }
 
@@ -69,7 +69,10 @@ Item {
     component FormField: TextField {
         id: field
         width: parent.width
-        font.pointSize: Units.body
+        // As StyledText
+        font.family: accessibility.fontFamily
+        font.pointSize: Units.body * Units.textScale()
+        font.bold: accessibility.boldText
         leftPadding: Units.dp(10)
         rightPadding: Units.dp(10)
         topPadding: Units.dp(10)
@@ -122,7 +125,7 @@ Item {
                 color: Night.color(bookOrbit.theme.accentColor)
                 readonly property color textColor: Night.color(bookOrbit.theme.accentTextColor)
 
-                Text {
+                StyledText {
                     objectName: "serverPillText"
                     anchors.left: parent.left
                     anchors.leftMargin: Units.dp(16)
@@ -131,7 +134,7 @@ Item {
                     // https:// is assumed, so only http:// is shown
                     text: bookOrbit.session.serverUrl.replace(/^https:\/\//, "")
                     color: serverPill.textColor
-                    font.pointSize: Units.body
+                    size: Units.body
                     elide: Text.ElideMiddle
                 }
                 IconButton {
@@ -187,12 +190,12 @@ Item {
         }
 
         // The last error. Keeps its space so the button doesn't jump.
-        Text {
+        StyledText {
             objectName: "errorText"
             width: parent.width
             height: Math.max(implicitHeight, Units.dp(40))
             text: bookOrbit.session.busy ? "" : bookOrbit.session.error
-            font.pointSize: Units.body
+            size: Units.body
             wrapMode: Text.Wrap
         }
 

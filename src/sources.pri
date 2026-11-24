@@ -27,6 +27,7 @@ SOURCES += \
     $$PWD/core/zipreader.cpp \
     $$PWD/ui/accents.cpp \
     $$PWD/ui/covers.cpp \
+    $$PWD/ui/accessibility.cpp \
     $$PWD/ui/eink.cpp \
     $$PWD/ui/einkcolors.cpp \
     $$PWD/ui/invertedimageprovider.cpp \
@@ -61,6 +62,7 @@ HEADERS += \
     $$PWD/core/zipreader.h \
     $$PWD/ui/accents.h \
     $$PWD/ui/covers.h \
+    $$PWD/ui/accessibility.h \
     $$PWD/ui/eink.h \
     $$PWD/ui/einkcolors.h \
     $$PWD/ui/invertedimageprovider.h \

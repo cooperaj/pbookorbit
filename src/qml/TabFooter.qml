@@ -52,17 +52,21 @@ Rectangle {
                     }
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        width: label.implicitWidth + 2 * Units.dp(12)
-                        height: Units.dp(22)
+                        // Taller for larger text, and the label cut short if it's wider
+                        // than the tab, as in the system's home screen
+                        width: label.width + 2 * Units.dp(12)
+                        height: Math.max(Units.dp(22), label.implicitHeight)
                         radius: height / 2
                         color: tab.current ? "black" : "white"
 
-                        Text {
+                        StyledText {
                             id: label
                             anchors.centerIn: parent
+                            width: Math.min(implicitWidth, tab.width - 2 * Units.dp(12))
                             text: tab.modelData.label
+                            elide: Text.ElideRight
                             color: tab.current ? "white" : "black"
-                            font.pointSize: Units.textInIcons
+                            size: Units.textInIcons
                             font.bold: true
                         }
                     }

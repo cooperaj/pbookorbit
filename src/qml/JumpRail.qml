@@ -122,7 +122,7 @@ Item {
         y: jumpRail.entriesTop
         Repeater {
             model: jumpRail.entries
-            Text {
+            StyledText {
                 required property var modelData
                 readonly property bool hasBooks: modelData.index !== undefined
                 width: jumpRail.width
@@ -130,12 +130,15 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 text: modelData.label
-                font.pointSize: Units.bodySmall
+                size: Units.bodySmall
+                // Packed into the list's height, so larger text wouldn't fit. Bold only
+                // with books, whatever the system's bold text, so they still stand out.
+                scaled: false
                 // Smaller for longer numbers such as 150
                 fontSizeMode: Text.HorizontalFit
                 minimumPointSize: 5
                 font.bold: hasBooks
-                color: hasBooks ? "black" : "#b4b4b4"
+                color: hasBooks ? "black" : Units.grey("#b4b4b4")
             }
         }
     }

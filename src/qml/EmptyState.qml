@@ -18,23 +18,24 @@ Item {
         // The middle of the text 38% of the way down
         y: Math.round(parent.height * 0.38 - height / 2)
 
-        Text {
+        StyledText {
             id: titleText
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
-            font.pointSize: Units.heading
-            font.weight: Font.Light
+            size: Units.heading
+            // Bold when the system's bold text is on
+            font.weight: accessibility.boldText ? Font.Bold : Font.Light
         }
-        Text {
+        StyledText {
             id: bodyText
             visible: text !== ""
             width: parent.width
             topPadding: Units.dp(10)
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
-            lineHeight: 1.15
-            font.pointSize: Units.body
+            lineHeight: 1.15 * Units.lineSpacing()
+            size: Units.body
         }
     }
 }

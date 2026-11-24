@@ -29,6 +29,7 @@ one of the device's built-in apps rather than a port of something else.
 - It can find books you already had on the device (from KOReader's BookOrbit plugin, for
   example) and mark them as downloaded.
 - Works with night mode, and uses your BookOrbit accent colour.
+- Follows the system's text size, bold text, grey text contrast and OpenDyslexic font.
 - Adds its own tile to the applications screen, and shows up properly in the task
   manager.
 

@@ -37,7 +37,7 @@ Rectangle {
         onClicked: header.homeClicked()
     }
 
-    Text {
+    StyledText {
         id: titleText
         objectName: "appTitle"
         anchors.centerIn: parent
@@ -48,7 +48,7 @@ Rectangle {
         elide: Text.ElideRight
         // Lets part of the title be coloured with <font color="...">
         textFormat: Text.StyledText
-        font.pointSize: Units.body
+        size: Units.body
         font.capitalization: Font.AllUppercase
 
         // Full toolbar height, across the title's width

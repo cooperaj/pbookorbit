@@ -44,16 +44,16 @@ Item {
         width: parent.width
         spacing: Units.dp(6)
 
-        Text {
+        StyledText {
             // Clear of the chevron
             width: parent.width - (field.tappable ? chevron.width + Units.dp(6) : 0)
             text: field.label
             color: mouse.pressed ? "white" : "black"
-            font.pointSize: Units.body
+            size: Units.body
             font.bold: true
             wrapMode: Text.Wrap
         }
-        Text {
+        StyledText {
             id: valueText
             objectName: "value"
             width: parent.width - (field.tappable ? chevron.width + Units.dp(6) : 0)
@@ -61,7 +61,7 @@ Item {
             color: mouse.pressed || linkMouse.pressed ? "white" : "black"
             font.underline: field.link
             textFormat: Format.isHtml(field.value) ? Text.RichText : Text.PlainText
-            font.pointSize: Units.body
+            size: Units.body
             wrapMode: Text.Wrap
         }
         Item {

@@ -1,6 +1,6 @@
 // Sizes and the type scale, matching the firmware's own Qt controls (the Global,
 // GlobalValues and FontStyles singletons of com.pocketbook.controls in /ebrmain/qml).
-// dpScale is set in main.cpp.
+// dpScale and accessibility are set in main.cpp.
 
 // Density-independent size: dp(56) is the same physical size on every device. The
 // firmware's sizes aren't always whole dp (its header is dp(55.46)). To convert a pixel
@@ -22,10 +22,29 @@ var listElementHeight = dp(56)
 var panelBorder = fromDesign(8)     // menus and dialogs
 var disabledColor = "#808080"       // text and borders of disabled controls
 
-// The firmware's type scale, in points. Its styles, where they differ: Heading3 is
-// heading, BodyL bodyLarge, BodyS bodySmall, TextInIcons1 textInIcons.
+// The firmware's type scale, in points, before the system's text size (see StyledText).
+// Its styles, where they differ: Heading3 is heading, BodyL bodyLarge, BodyS bodySmall,
+// TextInIcons1 textInIcons.
 var heading = 13.44
 var bodyLarge = 9.6
 var body = 8.16
 var bodySmall = 7.2
 var textInIcons = 6
+
+// The system's text size (Settings > Accessibility), 1 to 2. Text grows with it, and so
+// does content laid out around text, such as a list row; toolbars, buttons and menu rows
+// keep their height, and pictures their size.
+function textScale() {
+    return accessibility.textScale
+}
+
+// Lines close up a little as text grows, as in the firmware's apps: 0.9 at the largest
+function lineSpacing() {
+    return 1 - 0.1 * (accessibility.textScale - 1)
+}
+
+// A grey text colour, or black (or contrasted, e.g. white on a pressed row) with the
+// system's grey text contrast on
+function grey(color, contrasted) {
+    return accessibility.highContrast ? (contrasted || "black") : color
+}

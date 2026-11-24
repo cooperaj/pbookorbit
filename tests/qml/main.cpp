@@ -24,6 +24,7 @@
 #include "fakekeyboard.h"
 #include "fakeserver.h"
 #include "ui/covers.h"
+#include "ui/accessibility.h"
 #include "ui/eink.h"
 #include "ui/invertedimageprovider.h"
 #include "ui/launchertile.h"
@@ -330,6 +331,7 @@ public slots:
         context->setContextProperty("fakeServer", server);
         auto *inkview = new FakeInkview(engine);
         context->setContextProperty("inkview", inkview);
+        context->setContextProperty("accessibility", new Accessibility(engine));
         // Not measured from the device: tall enough to cover the sign-in form's password field
         auto *keyboard = new FakeKeyboard(QSizeF(600, 800), 440, engine);
         context->setContextProperty("keyboard", keyboard);

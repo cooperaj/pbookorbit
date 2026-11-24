@@ -17,14 +17,14 @@ Rectangle {
         onClicked: header.back()
     }
 
-    Text {
+    StyledText {
         id: titleText
         anchors.centerIn: parent
         // Centred, so reserve the back button's width on both sides
         width: parent.width - 2 * (backButton.x + backButton.width)
         horizontalAlignment: Text.AlignHCenter
         elide: Text.ElideRight
-        font.pointSize: Units.body
+        size: Units.body
         font.capitalization: Font.AllUppercase
     }
 

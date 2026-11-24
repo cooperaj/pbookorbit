@@ -1,5 +1,4 @@
 #include <inkview.h>
-#include <QFont>
 #include <QFontInfo>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -15,6 +14,7 @@
 #include "ui/covers.h"
 #include "core/downloads.h"
 #include "core/updater.h"
+#include "ui/accessibility.h"
 #include "ui/eink.h"
 #include "ui/invertedimageprovider.h"
 #include "ui/launchertile.h"
@@ -31,7 +31,6 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
     diagnostics::captureQtMessages();
-    app.setFont(QFont(QString::fromUtf8(iv_get_default_font(FONT_FAMILY))));
     // A blinking cursor redraws the screen twice a second while a text field has focus, and
     // every redraw is a slow e-ink update. Keep it solid.
     app.styleHints()->setCursorFlashTime(0);
@@ -42,6 +41,9 @@ int main(int argc, char *argv[])
     Database database(qEnvironmentVariable("PBOOKORBIT_DB", QString::fromUtf8(CONFIGPATH "/pbookorbit.db")));
     // First, before anything logs: the diagnostics setting lives in the database
     diagnostics::Log diagnosticsLog(&database);
+    // Also sets the app's font
+    Accessibility accessibility;
+    accessibility.followChanges();
     BookOrbitClient client(&database);
 
     // /mnt/ext1/system/cache on the device, ./system/cache in the emulator
@@ -72,6 +74,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("browser", &browser);
     engine.rootContext()->setContextProperty("updater", &updater);
     engine.rootContext()->setContextProperty("eink", &eink);
+    engine.rootContext()->setContextProperty("accessibility", &accessibility);
     engine.rootContext()->setContextProperty("diagnostics", &diagnosticsLog);
     engine.rootContext()->setContextProperty("launcherTile", &launcherTile);
     // Icons from the system theme: image://theme/<name>

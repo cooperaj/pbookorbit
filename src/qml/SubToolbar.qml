@@ -48,6 +48,8 @@ Item {
         property bool iconIsButton: false
         property string pressedIcon
         property bool held: false
+        // Its label is cut short to keep it this wide at most
+        property int maxWidth: (bar.width - 2 * Units.dp(26) - Units.dp(16)) / 2
         signal clicked()
         signal iconClicked()
 
@@ -56,7 +58,7 @@ Item {
 
         // The tab, without a separate icon button
         Rectangle {
-            x: button.iconIsButton ? content.x + label.x - Units.dp(4) : 0
+            x: button.iconIsButton ? content.x + labelBox.x - Units.dp(4) : 0
             width: parent.width - x
             height: parent.height + bar.tabOverhang
             color: "black"
@@ -74,13 +76,31 @@ Item {
                 name: button.iconIsButton && (iconMouse.pressed || button.held) ? button.pressedIcon : button.icon
                 inverted: !button.iconIsButton && button.open
             }
-            Text {
-                id: label
+            // The label, cut short if need be, then its arrow
+            Item {
+                id: labelBox
                 anchors.verticalCenter: parent.verticalCenter
-                text: button.text + " ↓"
-                color: button.open ? "white" : "black"
-                font.pointSize: Units.body
-                font.capitalization: button.capitals ? Font.AllUppercase : Font.MixedCase
+                width: label.width + arrowText.implicitWidth
+                height: label.implicitHeight
+
+                StyledText {
+                    id: label
+                    objectName: "label"
+                    width: Math.min(implicitWidth, button.maxWidth - Units.dp(8) - iconImage.width
+                                    - button.spacing - arrowText.implicitWidth)
+                    text: button.text
+                    color: button.open ? "white" : "black"
+                    size: Units.body
+                    font.capitalization: button.capitals ? Font.AllUppercase : Font.MixedCase
+                    elide: Text.ElideRight
+                }
+                StyledText {
+                    id: arrowText
+                    x: label.width
+                    text: " ↓"
+                    color: label.color
+                    size: Units.body
+                }
             }
         }
         MouseArea {

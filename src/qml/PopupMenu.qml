@@ -16,8 +16,11 @@ Panel {
     property int sidePadding: padding
 
     // At least as wide as the Sudoku menu (whose rows are short), otherwise as wide as the
-    // widest visible row (the library menu)
-    width: Math.max(Units.dp(222), contentWidth + 2 * (border.width + sidePadding))
+    // widest visible row (the library menu), which larger text sizes widen; never wider
+    // than the window, less the gap the system leaves at its edges
+    property int minWidth: Units.dp(222)
+    width: Math.min(parent ? parent.width - 2 * Units.dp(11) : Infinity,
+                    Math.max(minWidth, contentWidth + 2 * (border.width + sidePadding)))
     readonly property real contentWidth: {
         let widest = 0
         for (const row of column.children) {

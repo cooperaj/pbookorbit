@@ -32,7 +32,7 @@ PressableRow {
         name: item.icon
         inverted: item.pressed
     }
-    Text {
+    StyledText {
         id: label
         anchors.left: parent.left
         anchors.leftMargin: item.icon !== "" ? Units.dp(52) : item.subItem ? Units.dp(38) : Units.dp(18)
@@ -40,7 +40,7 @@ PressableRow {
         anchors.rightMargin: Units.dp(10) + (item.arrow !== "" ? arrow.width + arrow.anchors.rightMargin : 0)
         anchors.verticalCenter: parent.verticalCenter
         color: item.foreground
-        font.pointSize: Units.body
+        size: Units.body
         elide: Text.ElideRight
     }
     // The theme's 21px arrow, near the right edge

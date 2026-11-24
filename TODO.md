@@ -1,5 +1,9 @@
 # To do
 
+- Larger text sizes: toolbars, the sub-toolbar, menu rows and buttons keep their height and
+  cut their labels short, as the system apps do, so at 2x the library filter reads
+  "ADAM'S …" and the title "POCKETBOOK × B…". Try letting them grow with their text
+  instead, and see whether the lists stay usable with fewer rows to a page.
 - Offline collections only know the books of collections looked up while online (see
   `group_details` in docs/technical.md), so a collection never scrolled to online won't
   list its downloaded books offline.
