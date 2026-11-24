@@ -92,6 +92,8 @@ UiTestCase {
 
         verify(find("sortButton").open, "the sort button is the open tab")
         verify(!find("filterButton").open, "the filter button isn't")
+        compare(find("menuArrow", find("sortButton")).name, "arrow_up", "its arrow points up")
+        compare(find("menuArrow", find("filterButton")).name, "arrow_down")
     }
 
     // The copy drawn over the faded page while a menu is open has just that menu's tab

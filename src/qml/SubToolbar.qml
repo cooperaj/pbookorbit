@@ -4,7 +4,8 @@ import "units.js" as Units
 // Bar under the toolbar with a filter button on the left and a sort button on the right,
 // modelled on Libby on an Era Color. While its menu is open, a button becomes a black tab
 // running down over the menu's top border so they read as one shape. The down arrow after
-// each label marks a menu. As in the system library, the sort icon is a separate round
+// each label marks a menu: the theme's, as in the system's drop-downs and Libby, sitting on
+// the label's baseline, and pointing up while its menu is open. As in the system library, the sort icon is a separate round
 // button that reverses the sort and shows its direction; it isn't part of the tab, so it
 // doesn't change while the menu is open. Its labels and icon show a query's sort and filter.
 Item {
@@ -79,27 +80,29 @@ Item {
             // The label, cut short if need be, then its arrow
             Item {
                 id: labelBox
+                readonly property int arrowGap: Units.dp(8)
                 anchors.verticalCenter: parent.verticalCenter
-                width: label.width + arrowText.implicitWidth
+                width: label.width + arrowGap + arrow.width
                 height: label.implicitHeight
 
                 StyledText {
                     id: label
                     objectName: "label"
                     width: Math.min(implicitWidth, button.maxWidth - Units.dp(8) - iconImage.width
-                                    - button.spacing - arrowText.implicitWidth)
+                                    - button.spacing - labelBox.arrowGap - arrow.width)
                     text: button.text
                     color: button.open ? "white" : "black"
                     size: Units.body
                     font.capitalization: button.capitals ? Font.AllUppercase : Font.MixedCase
                     elide: Text.ElideRight
                 }
-                StyledText {
-                    id: arrowText
-                    x: label.width
-                    text: " ↓"
-                    color: label.color
-                    size: Units.body
+                ThemeIcon {
+                    id: arrow
+                    objectName: "menuArrow"
+                    x: label.width + labelBox.arrowGap
+                    y: Math.round(label.baselineOffset - height)
+                    name: button.open ? "arrow_up" : "arrow_down"
+                    inverted: button.open
                 }
             }
         }
