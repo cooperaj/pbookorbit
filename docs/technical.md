@@ -230,12 +230,17 @@ pressed look with the fast black-and-white waveform (`Eink::requireFastUpdate()`
 240 ms). It asks the platform plugin for `DynamicBW`, not `PartialBW`: the plugin keeps the
 highest-ranked type asked for since its last update, and `PartialBW` ranks below the
 default. The plugin's own update of the keyboard's area after it closes is turned off
-(`Eink::skipKeyboardCloseUpdate()`): the app redraws the whole window then anyway, and
-the extra update made everything after it wait about 0.4 s.
+(`Eink::reduceKeyboardUpdates()`): the app redraws the whole window then anyway, and
+the extra update made everything after it wait about 0.4 s. The keyboard's word
+suggestions are hidden (`KBD_HIDE_SUGGESTIONS`): inkview redrew the whole keyboard after
+each key and waited for each suggestion's update, adding about 50 ms before the letter
+appeared. The keyboard draws its keys itself, with the standard waveform; no keyboard flag
+or plugin call changes that.
 
 The firmware can log each update the platform plugin and inkview make, with its region,
 type and any wait for the panel. This line in `system/config/logger.cfg` on the device's
-storage turns it on for the app's next start, logging to `/tmp/p7` (create it first;
+storage turns it on for the app's next start, logging to `/tmp/p7` (create it first,
+writable by the app, which doesn't run as root: `mkdir /tmp/p7 && chmod 777 /tmp/p7`;
 cleared on restart):
 
 ```

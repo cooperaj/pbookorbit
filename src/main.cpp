@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
                     LauncherFiles::current());
     Eink eink;
     eink.followNightMode();
-    eink.skipKeyboardCloseUpdate();
+    eink.reduceKeyboardUpdates();
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("screenWidth", ScreenWidth());

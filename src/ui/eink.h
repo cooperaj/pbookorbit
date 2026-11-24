@@ -28,11 +28,12 @@ public:
     void followNightMode();
     bool nightMode() const { return m_nightMode; }
 
-    // Leaves redrawing the area the on-screen keyboard covered to the app, which redraws the
-    // whole window when the keyboard closes anyway. The plugin's own update of that area
-    // adds a full e-ink update (about 0.4 s) that everything after it waits for. Call after
-    // the platform plugin has started.
-    void skipKeyboardCloseUpdate();
+    // Trims the on-screen keyboard's own screen updates. Redrawing the area it covered is
+    // left to the app, which redraws the whole window when the keyboard closes anyway; the
+    // plugin's update of that area adds a full e-ink update (about 0.4 s) that everything
+    // after it waits for. Word suggestions are hidden: inkview redraws them after each key
+    // and waits for the panel to finish each one. Call after the platform plugin has started.
+    void reduceKeyboardUpdates();
 
     // Switches a screen rectangle (window coordinates) to A2 for a flick. Stays in A2 until
     // leaveA2Soon() or leaveA2(). Calling again cancels a pending timed exit.

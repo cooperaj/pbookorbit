@@ -93,10 +93,15 @@ void Eink::requireHqUpdate()
     }
 }
 
-void Eink::skipKeyboardCloseUpdate()
+void Eink::reduceKeyboardUpdates()
 {
-    if (auto *platform = einkPlatform())
-        platform->setKeyboardUpdateAfterClose(false);
+    auto *platform = einkPlatform();
+    if (!platform)
+        return;
+
+    platform->setKeyboardUpdateAfterClose(false);
+    // Added to the flags the plugin opens the keyboard with
+    platform->setAdditionalKeyboardFlags(platform->getAdditionalKeyboardFlags() | KBD_HIDE_SUGGESTIONS);
 }
 
 void Eink::requireFastUpdate()
