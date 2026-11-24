@@ -24,8 +24,9 @@ CollectionList::CollectionList(Session *session, Database *database, Details *de
 {
     m_cacheName = "collections";
     m_detailsKind = "collections";
-    // The list has no covers, so the saved ones show until the books are looked up
-    m_detailFields = {"authors", "covers"};
+    // The list has no covers, so the saved ones show until the books are looked up. Each
+    // book's formats, for filtering.
+    m_detailFields = {"authors", "covers", "books"};
 }
 
 void CollectionList::loadPage(int, int generation)
@@ -168,6 +169,8 @@ SeriesList::SeriesList(Session *session, Database *database, Details *details, G
 {
     m_cacheName = "series";
     m_detailsKind = "series";
+    // Each book's formats, for filtering
+    m_detailFields = {"books"};
 }
 
 void SeriesList::loadPage(int page, int generation)

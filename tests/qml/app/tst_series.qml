@@ -250,6 +250,44 @@ AppTestCase {
         compare(row("The Expanse").group.formats, ["m4b"])
     }
 
+    // Filtered, series show from their saved books while they're looked up again: no
+    // spinner, and not an empty list before the lookups come back
+    function openAudiobookSeries() {
+        openLoadedSeries()
+        showOnly("seriesPage", "Audiobooks")
+        tryVerify(() => rows() === "Dune (1), The Expanse (1)", 5000, rows())
+        // The menu stays open for more changes
+        tap("filterButton", find("seriesPage"))
+        wait(2500)
+    }
+
+    function test_filteredSeriesShowWhileLookedUpAgain() {
+        openAudiobookSeries()
+        tap("LibraryTab")
+        fakeServer.hold("POST", everyLibrary)
+        const requests = seriesRequests()
+
+        tap("SeriesTab")
+
+        tryVerify(() => seriesRequests() > requests, 5000, "the list is asked for again")
+        wait(300)
+        compare(rows(), "Dune (1), The Expanse (1)", "the saved books' series")
+        verify(!find("emptyState", find("seriesPage")).visible, "no empty state")
+        fakeServer.release("POST", everyLibrary)
+    }
+
+    function test_startShowsTheLastFilteredSeries() {
+        openAudiobookSeries()
+        fakeServer.hold("GET", series)
+
+        reopen()
+        tap("SeriesTab")
+
+        tryVerify(() => rows() === "Dune (1), The Expanse (1)", 5000, "the saved rows: " + rows())
+        verify(!find("spinner", find("seriesPage")).visible, "no spinner over them")
+        fakeServer.release("GET", series)
+    }
+
     function test_downloadedOnly() {
         openSeries({books: [{id: 1, title: "Dune", authors: ["Frank Herbert"], seriesName: "Dune",
                              seriesIndex: 1, formats: ["epub"], file: "Dune.epub"}]})

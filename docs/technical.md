@@ -87,17 +87,17 @@ the device plugged in, `sqlite3 <mount>/system/config/pbookorbit.db` opens it fr
   most recently are kept.
 - `group_details` keeps what looking up a series', collection's or author's books found,
   by kind (`series`, `collections`, `authors`, with `:<libraryId>` for one library's, as
-  counts differ by library) and id: the count with an ebook and
-  audiobook as one, the formats, the cover versions, a collection's authors, and an
-  author's books' formats and series (for the format filter and their info page). Only
-  rows that have been on screen are looked up, each once per time their list loads,
-  starting with those in view: series and authors about twenty to a request, collections
-  one each (books don't say which collections they're in), saving the collection's book
-  ids to `collection_books` too. Filtering the authors by format needs every author's
-  books, so choosing Ebooks or Audiobooks looks them all up. Once a whole list has loaded,
-  the details of rows no longer in it are deleted. Rows
-  show the saved details until then, and keep them if the lookup fails. `list_cache` and
-  `group_details` are cleared on signing out.
+  counts differ by library) and id: the count with an ebook and audiobook as one, the
+  formats, the cover versions, a collection's authors, each book's formats (so a filtered
+  list shows at once, before the lookups), and an author's books' series (for their info
+  page). Only rows that have been on screen are looked up, each once per time their list
+  loads, starting with those in view: series and authors about twenty to a request,
+  collections one each (books don't say which collections they're in), saving the
+  collection's book ids to `collection_books` too. Filtering the authors by format needs
+  every author's books, so choosing Ebooks or Audiobooks looks them all up. Once a whole
+  list has loaded, the details of rows no longer in it are deleted. Rows show the saved
+  details until then, and keep them if the lookup fails. `list_cache` and `group_details`
+  are cleared on signing out.
 
 Only downloaded books are cached at the moment. Their entries are replaced whenever they
 appear in a list fetched from the server, so status and progress stay current. Deleting a book's files leaves its cache

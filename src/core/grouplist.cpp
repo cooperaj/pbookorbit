@@ -132,6 +132,7 @@ void GroupList::clear()
     m_cacheRead = false;
     m_loaded = false;
     m_lookedUp.clear();
+    m_allLookedUp = false;
     m_wanted.clear();
     m_model.reset(0);
     m_jumpSections.clear();
@@ -150,6 +151,7 @@ void GroupList::forgetLocalRows()
 int GroupList::startLoad()
 {
     m_lookedUp.clear();
+    m_allLookedUp = false;
     m_wanted.clear();
     setError(QString());
     return ++m_generation;
