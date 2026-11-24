@@ -197,7 +197,7 @@ Rectangle {
                     visible: page.showErrorLine && page.error !== "" && rows.count > 0
                     topPadding: Units.dp(8)
                     text: page.error
-                    font.pointSize: 8
+                    font.pointSize: Units.body
                     wrapMode: Text.Wrap
                 }
             }

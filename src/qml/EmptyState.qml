@@ -23,7 +23,7 @@ Item {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
-            font.pointSize: 14
+            font.pointSize: Units.heading
             font.weight: Font.Light
         }
         Text {
@@ -34,7 +34,7 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
             lineHeight: 1.15
-            font.pointSize: 8
+            font.pointSize: Units.body
         }
     }
 }

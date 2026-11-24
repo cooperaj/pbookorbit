@@ -61,7 +61,7 @@ Item {
     component FieldLabel: Text {
         width: parent.width
         topPadding: Units.dp(3)
-        font.pointSize: 8
+        font.pointSize: Units.body
         font.capitalization: Font.AllUppercase
     }
 
@@ -69,7 +69,7 @@ Item {
     component FormField: TextField {
         id: field
         width: parent.width
-        font.pointSize: 8
+        font.pointSize: Units.body
         leftPadding: Units.dp(10)
         rightPadding: Units.dp(10)
         topPadding: Units.dp(10)
@@ -131,7 +131,7 @@ Item {
                     // https:// is assumed, so only http:// is shown
                     text: bookOrbit.session.serverUrl.replace(/^https:\/\//, "")
                     color: serverPill.textColor
-                    font.pointSize: 8
+                    font.pointSize: Units.body
                     elide: Text.ElideMiddle
                 }
                 IconButton {
@@ -192,7 +192,7 @@ Item {
             width: parent.width
             height: Math.max(implicitHeight, Units.dp(40))
             text: bookOrbit.session.busy ? "" : bookOrbit.session.error
-            font.pointSize: 8
+            font.pointSize: Units.body
             wrapMode: Text.Wrap
         }
 

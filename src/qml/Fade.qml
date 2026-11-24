@@ -6,7 +6,7 @@ Rectangle {
     id: fade
     signal tapped()
 
-    color: Qt.rgba(1, 1, 1, 0.6)
+    color: Qt.rgba(1, 1, 1, 0.5)
 
     MouseArea {
         anchors.fill: parent

@@ -212,7 +212,7 @@ InfoPage {
                         anchors.centerIn: parent
                         text: half.modelData[0]
                         color: half.chosen ? "white" : "black"
-                        font.pointSize: 8
+                        font.pointSize: Units.body
                         font.capitalization: Font.AllUppercase
                     }
                     MouseArea {
@@ -305,7 +305,7 @@ InfoPage {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Choose action"
                     color: actionMouse.pressed ? "white" : "black"
-                    font.pointSize: 8
+                    font.pointSize: Units.body
                     font.capitalization: Font.AllUppercase
                 }
                 ThemeIcon {
@@ -314,7 +314,7 @@ InfoPage {
                     inverted: actionMouse.pressed
                 }
             }
-            MouseArea {
+            PressArea {
                 id: actionMouse
                 anchors.fill: parent
                 onClicked: actions.visible = true

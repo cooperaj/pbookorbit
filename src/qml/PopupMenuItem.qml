@@ -40,7 +40,7 @@ PressableRow {
         anchors.rightMargin: Units.dp(10) + (item.arrow !== "" ? arrow.width + arrow.anchors.rightMargin : 0)
         anchors.verticalCenter: parent.verticalCenter
         color: item.foreground
-        font.pointSize: 8
+        font.pointSize: Units.body
         elide: Text.ElideRight
     }
     // The theme's 21px arrow, near the right edge

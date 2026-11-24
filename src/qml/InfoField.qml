@@ -49,7 +49,7 @@ Item {
             width: parent.width - (field.tappable ? chevron.width + Units.dp(6) : 0)
             text: field.label
             color: mouse.pressed ? "white" : "black"
-            font.pointSize: 8
+            font.pointSize: Units.body
             font.bold: true
             wrapMode: Text.Wrap
         }
@@ -61,7 +61,7 @@ Item {
             color: mouse.pressed || linkMouse.pressed ? "white" : "black"
             font.underline: field.link
             textFormat: Format.isHtml(field.value) ? Text.RichText : Text.PlainText
-            font.pointSize: 8
+            font.pointSize: Units.body
             wrapMode: Text.Wrap
         }
         Item {

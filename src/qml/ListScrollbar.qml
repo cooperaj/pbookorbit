@@ -3,7 +3,8 @@ import "units.js" as Units
 
 // Scrollbar at the far right of a list, as in the system library: a black bar sized and
 // positioned by how much of the list is visible. Place beside the list in the same parent.
-// Book lists have a row per book, loaded or not, so it spans the whole list.
+// Book lists have a row per book, loaded or not, so it spans the whole list. Thickness and
+// shortest length are the firmware's (its ScrollIndicator).
 Rectangle {
     id: scrollbar
     property Flickable list
@@ -17,8 +18,8 @@ Rectangle {
 
     visible: list.visible && list.contentHeight > list.height
     x: parent.width - Units.dp(8)
-    width: Units.dp(4)
-    height: Math.max(Units.dp(10), trackHeight * list.height / Math.max(1, list.contentHeight))
+    width: Units.dp(4.3)
+    height: Math.max(Units.dp(25), trackHeight * list.height / Math.max(1, list.contentHeight))
     y: trackTop + (trackHeight - height) * scrolled
     color: "black"
 }

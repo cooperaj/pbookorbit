@@ -5,7 +5,7 @@ import "units.js" as Units
 // thick black border and rounded corners (PopupMenu, SystemDialog)
 Rectangle {
     radius: Units.dp(9)
-    border.width: Units.dp(4)
+    border.width: Units.panelBorder
     border.color: "black"
     color: "white"
 }

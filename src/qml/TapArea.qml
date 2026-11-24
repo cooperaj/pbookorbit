@@ -8,7 +8,8 @@ import "units.js" as Units
 //    busy), a swipe can arrive as a press and a distant release.
 //  - The press isn't during or just after a scroll. Lifting the finger off a scroll that
 //    stops with it can register as a tap.
-MouseArea {
+// Its pressed look, if any, draws with the fast waveform (see PressArea).
+PressArea {
     id: area
     signal tapped()
 

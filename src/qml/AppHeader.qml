@@ -6,7 +6,8 @@ import "night.js" as Night
 // Offline, a small crossed-out Wi-Fi icon follows the title.
 // As in the system apps, home goes to the dashboard. The title is tappable too; six quick
 // taps emit secretTapped(). Follows AppHeader.qml from the SDK's qml_test: theme icons at
-// natural size, dp(15) from the edges. Taller than dp(56) if the theme's icons are.
+// natural size, dp(15) from the edges. The firmware's header height, or taller if the
+// theme's icons are.
 Rectangle {
     id: header
     property alias title: titleText.text
@@ -20,7 +21,7 @@ Rectangle {
     signal menuClicked()
 
     readonly property int margin: Units.dp(15)
-    height: Math.max(Units.dp(56), homeButton.height, rightButtons.height) + separator.height
+    height: Math.max(Units.headerHeight, homeButton.height, rightButtons.height) + separator.height
     color: "white"
 
     IconButton {
@@ -47,7 +48,7 @@ Rectangle {
         elide: Text.ElideRight
         // Lets part of the title be coloured with <font color="...">
         textFormat: Text.StyledText
-        font.pointSize: 8
+        font.pointSize: Units.body
         font.capitalization: Font.AllUppercase
 
         // Full toolbar height, across the title's width

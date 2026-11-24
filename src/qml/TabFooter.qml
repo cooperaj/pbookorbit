@@ -62,7 +62,7 @@ Rectangle {
                             anchors.centerIn: parent
                             text: tab.modelData.label
                             color: tab.current ? "white" : "black"
-                            font.pointSize: 6
+                            font.pointSize: Units.textInIcons
                             font.bold: true
                         }
                     }

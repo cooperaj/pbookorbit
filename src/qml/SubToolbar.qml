@@ -16,7 +16,7 @@ Item {
     readonly property bool showFilter: query ? query.hasFilter : false
     // How far an open tab reaches below the bar: PopupMenu's border, less the bar's line,
     // which the menu starts on
-    property int tabOverhang: Units.dp(4) - 1
+    property int tabOverhang: Units.panelBorder - 1
     // For a copy drawn over the faded page while a menu is open, showing just the open tab
     property bool onlyOpenTab: false
     // While set, the sort icon keeps its pressed look and the direction it had when set, so
@@ -79,7 +79,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: button.text + " ↓"
                 color: button.open ? "white" : "black"
-                font.pointSize: 8
+                font.pointSize: Units.body
                 font.capitalization: button.capitals ? Font.AllUppercase : Font.MixedCase
             }
         }
@@ -89,13 +89,12 @@ Item {
         }
         // Icon tap area: full height, from the button's left edge to halfway into the gap
         // before the label
-        MouseArea {
+        PressArea {
             id: iconMouse
             objectName: "iconButton"
             visible: button.iconIsButton && !bar.onlyOpenTab
             width: content.x + iconImage.width + button.spacing / 2
             height: parent.height
-            onPressedChanged: if (pressed) eink.requireFastUpdate()
             onClicked: button.iconClicked()
         }
     }

@@ -225,9 +225,10 @@ momentum) keeps the display busy and makes the whole device feel frozen.
 
 Updates that overlap queue: each waits until the panel has finished the one before, about
 450 ms with the standard waveform. A button's pressed look is drawn first and what the tap
-opens covers it, so toolbar buttons (`IconButton`) and the sort-order icon draw their
-pressed look with the fast black-and-white waveform (`Eink::requireFastUpdate()`, about
-240 ms). It asks the platform plugin for `DynamicBW`, not `PartialBW`: the plugin keeps the
+opens covers it, so every pressed look (buttons, menu rows, tappable info fields; see
+`PressArea.qml`) draws with the fast black-and-white waveform (`Eink::requireFastUpdate()`,
+about 240 ms). Taps that change nothing on screen, such as a book row's, don't ask for it,
+or the next screen and its covers would draw in black and white. It asks the platform plugin for `DynamicBW`, not `PartialBW`: the plugin keeps the
 highest-ranked type asked for since its last update, and `PartialBW` ranks below the
 default. The plugin's own update of the keyboard's area after it closes is turned off
 (`Eink::reduceKeyboardUpdates()`): the app redraws the whole window then anyway, and

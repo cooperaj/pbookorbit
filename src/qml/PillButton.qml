@@ -3,8 +3,8 @@ import "units.js" as Units
 
 // Button in PocketBook's native style, measured from the OverDrive sign-in screen on an Era
 // Color: pill-shaped with a 1px pure black border, capitalised label, optional theme icon
-// on the left. Inverted while pressed. While busy, a spinner turns at its right end and it
-// can't be pressed.
+// on the left. Inverted while pressed, grey while disabled. While busy, a spinner turns at
+// its right end and it can't be pressed. Sizes are the firmware's (its RoundedTextButton).
 Rectangle {
     id: button
     property alias text: label.text
@@ -13,16 +13,16 @@ Rectangle {
     property bool busy: false
     signal clicked()
 
-    readonly property int padding: Units.dp(36)
+    readonly property int padding: Units.fromDesign(64)
+    readonly property bool dimmed: !enabled && !busy
 
     implicitWidth: Math.max(Units.dp(200), content.implicitWidth + 2 * padding)
-    implicitHeight: Units.dp(56)
+    implicitHeight: Units.elementHeight
     radius: height / 2
     // One device pixel like the native buttons, so not dp-scaled
     border.width: 1
-    border.color: "black"
+    border.color: dimmed ? Units.disabledColor : "black"
     color: mouse.pressed ? "black" : "white"
-    opacity: enabled || busy ? 1 : 0.4
 
     Row {
         id: content
@@ -32,13 +32,14 @@ Rectangle {
         ThemeIcon {
             anchors.verticalCenter: parent.verticalCenter
             visible: name !== "" && status === Image.Ready
+            opacity: button.dimmed ? 0.5 : 1
             name: mouse.pressed && button.pressedIcon ? button.pressedIcon : button.icon
         }
         Text {
             id: label
             anchors.verticalCenter: parent.verticalCenter
-            color: mouse.pressed ? "white" : "black"
-            font.pointSize: 8
+            color: mouse.pressed ? "white" : button.dimmed ? Units.disabledColor : "black"
+            font.pointSize: Units.body
             font.capitalization: Font.AllUppercase
         }
     }
@@ -49,7 +50,7 @@ Rectangle {
         anchors.rightMargin: (parent.height - height) / 2
         anchors.verticalCenter: parent.verticalCenter
     }
-    MouseArea {
+    PressArea {
         id: mouse
         anchors.fill: parent
         enabled: !button.busy

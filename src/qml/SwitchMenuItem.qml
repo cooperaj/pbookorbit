@@ -5,7 +5,7 @@ import "units.js" as Units
 // rather than replacing them: label on the left, aligned with the radio buttons above, and
 // the system's pill switch on the right, as in system settings. A black line closes the
 // group above (like under a MenuHeading), with a gap before the row. Smaller than the radio
-// rows (8pt, switch at 3/4 size) to keep it low-key. The row below the line is the tap
+// rows (switch at 3/4 size) to keep it low-key. The row below the line is the tap
 // target, inverted while pressed (see PressableRow). Dimmed when disabled.
 Item {
     id: item
@@ -34,8 +34,8 @@ Item {
             id: label
             x: item.sideMargin
             anchors.verticalCenter: parent.verticalCenter
-            color: item.enabled ? row.foreground : "#808080"
-            font.pointSize: 8
+            color: item.enabled ? row.foreground : Units.disabledColor
+            font.pointSize: Units.body
         }
         // The theme's 145x61px switch at 3/4 size
         ThemeIcon {

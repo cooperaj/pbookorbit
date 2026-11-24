@@ -12,6 +12,7 @@
         <file>qml/PopupMenu.qml</file>
         <file>qml/Panel.qml</file>
         <file>qml/PopupMenuItem.qml</file>
+        <file>qml/PressArea.qml</file>
         <file>qml/PressableRow.qml</file>
         <file>qml/OpenWithItem.qml</file>
         <file>qml/SearchPage.qml</file>

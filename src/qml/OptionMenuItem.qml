@@ -37,6 +37,6 @@ PressableRow {
         x: Units.dp(66)
         anchors.verticalCenter: parent.verticalCenter
         color: item.foreground
-        font.pointSize: 8
+        font.pointSize: Units.body
     }
 }

@@ -9,7 +9,7 @@ Rectangle {
     property alias title: titleText.text
     signal back()
 
-    height: Units.dp(56) + 1
+    height: Units.headerHeight + 1
     color: "white"
 
     BackButton {
@@ -24,7 +24,7 @@ Rectangle {
         width: parent.width - 2 * (backButton.x + backButton.width)
         horizontalAlignment: Text.AlignHCenter
         elide: Text.ElideRight
-        font.pointSize: 8
+        font.pointSize: Units.body
         font.capitalization: Font.AllUppercase
     }
 

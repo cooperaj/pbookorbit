@@ -21,7 +21,7 @@ Rectangle {
     property ListMenus menus: null
 
     // Same height as the main toolbar, so the page below doesn't jump
-    property int headerHeight: Units.dp(56)
+    property int headerHeight: Units.headerHeight
     // True while the search box has focus, for faster e-ink updates
     readonly property bool typing: searchField.activeFocus
     // Long enough to search (bookOrbit.search.find() ignores shorter text)
@@ -142,7 +142,7 @@ Rectangle {
                 anchors.margins: searchBox.thickBorder
                 anchors.verticalCenter: parent.verticalCenter
                 leftPadding: Units.dp(3)
-                font.pointSize: 8
+                font.pointSize: Units.body
                 placeholderText: "Search…"
                 placeholderTextColor: "#949494"
                 background: null
@@ -190,13 +190,13 @@ Rectangle {
         visible: !page.showingResults
         anchors.top: header.bottom
         width: parent.width
-        height: Units.dp(56)
+        height: Units.listElementHeight
 
         Text {
             anchors.centerIn: parent
             text: "Recent searches"
             color: "#737373"
-            font.pointSize: 8
+            font.pointSize: Units.body
             font.capitalization: Font.AllUppercase
         }
         Line {
@@ -220,7 +220,7 @@ Rectangle {
             required property string modelData
             objectName: "recent " + modelData
             width: ListView.view.width
-            height: Units.dp(56)
+            height: Units.listElementHeight
             lineStartInset: Units.dp(26)
             lineEndInset: Units.dp(26)
             lineColor: "#7f7f7f"
@@ -240,7 +240,7 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 text: modelData
                 color: recentRow.foreground
-                font.pointSize: 8
+                font.pointSize: Units.body
                 elide: Text.ElideRight
             }
         }

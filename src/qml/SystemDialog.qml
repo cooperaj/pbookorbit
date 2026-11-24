@@ -28,7 +28,7 @@ Item {
 
     component DialogText: Text {
         width: parent ? parent.width : 0
-        font.pointSize: 7.25
+        font.pointSize: Units.bodySmall
         wrapMode: Text.Wrap
     }
 
@@ -139,7 +139,7 @@ Item {
                         anchors.centerIn: parent
                         text: modelData[0]
                         color: press.pressed ? "white" : "black"
-                        font.pointSize: 8
+                        font.pointSize: Units.body
                         font.capitalization: Font.AllUppercase
                     }
                     // Divider before this button
@@ -148,7 +148,7 @@ Item {
                         vertical: true
                         color: "#7f7f7f"
                     }
-                    MouseArea {
+                    PressArea {
                         id: press
                         anchors.fill: parent
                         onClicked: dialog.pressed(modelData[1])

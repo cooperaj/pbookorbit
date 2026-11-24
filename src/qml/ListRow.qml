@@ -47,6 +47,7 @@ Item {
     TapArea {
         anchors.fill: parent
         list: row.ListView.view
+        pressedLook: false
         enabled: row.tappable
         pressAndHoldInterval: 750
         onTapped: row.clicked()
@@ -80,7 +81,7 @@ Item {
             y: Units.dp(24) - baselineOffset
             width: parent.width
             text: row.title
-            font.pointSize: 10
+            font.pointSize: Units.bodyLarge
             font.bold: true
             elide: Text.ElideRight
         }
@@ -91,7 +92,7 @@ Item {
             // Leave room for the formats on the right
             width: parent.width - (formatRow.width > 0 ? formatRow.width + Units.dp(12) : 0)
             text: row.subtitle
-            font.pointSize: 7.25
+            font.pointSize: Units.bodySmall
             elide: Text.ElideRight
         }
         // Formats, centred on the second line: "EPUB  AZW3  M4B", with those on the device
@@ -153,7 +154,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: format.modelData.toUpperCase()
                             color: format.onDevice ? Night.color(bookOrbit.theme.accentTextColor) : "#606060"
-                            font.pointSize: 6
+                            font.pointSize: Units.textInIcons
                         }
                     }
                 }
@@ -172,7 +173,7 @@ Item {
                 visible: text !== ""
                 width: Math.min(implicitWidth, detailRow.width)
                 text: row.details[0] || ""
-                font.pointSize: 7.25
+                font.pointSize: Units.bodySmall
                 font.italic: true
                 elide: Text.ElideRight
             }
@@ -182,7 +183,7 @@ Item {
                 visible: first.visible && second.visible
                 text: "|"
                 color: "#6e6e71"
-                font.pointSize: 7.25
+                font.pointSize: Units.bodySmall
             }
             Text {
                 id: second
@@ -191,7 +192,7 @@ Item {
                 visible: text !== ""
                 width: Math.max(0, detailRow.width - x)
                 text: row.details[1] || ""
-                font.pointSize: 7.25
+                font.pointSize: Units.bodySmall
                 font.italic: true
                 elide: Text.ElideRight
             }
@@ -226,7 +227,7 @@ Item {
             font.bold: true
             // Smaller for longer numbers such as 10.5
             fontSizeMode: Text.HorizontalFit
-            minimumPointSize: 6
+            minimumPointSize: Units.textInIcons
         }
     }
 
@@ -246,7 +247,7 @@ Item {
             anchors.centerIn: parent
             rotation: -90
             text: row.sectionLabel
-            font.pointSize: 6
+            font.pointSize: Units.textInIcons
         }
     }
 }

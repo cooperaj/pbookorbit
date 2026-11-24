@@ -16,7 +16,7 @@ Item {
 
     visible: list.visible && list.contentHeight > list.height
     width: parent.width
-    height: Units.dp(57)
+    height: Units.fromDesign(105)
 
     // A ListView's origin shifts as it lays out unmeasured rows, so paging into either end
     // uses the ListView's own positioning instead of a computed one. An info page's
@@ -48,7 +48,7 @@ Item {
         property alias icon: image.name
         signal clicked()
 
-        width: Units.dp(84)
+        width: Units.dp(82)
         height: parent.height
         // No line on the outer side or bottom
         clip: true
@@ -58,7 +58,7 @@ Item {
             x: button.innerLeft ? 0 : -hidden
             width: button.width + hidden
             height: button.height + hidden
-            radius: Units.dp(6)
+            radius: Units.dp(5.4)
             color: Qt.rgba(1, 1, 1, 0.5)
             border.width: 1
             border.color: "black"

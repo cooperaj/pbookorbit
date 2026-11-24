@@ -58,7 +58,7 @@ Item {
                         width: parent.width
                         text: modelData[0]
                         color: mouse.pressed ? "#c0c0c0" : "#808080"
-                        font.pointSize: 8
+                        font.pointSize: Units.body
                         font.capitalization: Font.AllUppercase
                         elide: Text.ElideRight
                     }
@@ -66,7 +66,7 @@ Item {
                         width: parent.width
                         text: modelData[1]
                         color: mouse.pressed ? "white" : "black"
-                        font.pointSize: 8
+                        font.pointSize: Units.body
                         elide: Text.ElideRight
                     }
                 }

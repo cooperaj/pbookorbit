@@ -130,7 +130,7 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 text: modelData.label
-                font.pointSize: 7
+                font.pointSize: Units.bodySmall
                 // Smaller for longer numbers such as 150
                 fontSizeMode: Text.HorizontalFit
                 minimumPointSize: 5
