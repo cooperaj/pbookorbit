@@ -32,7 +32,8 @@ Rectangle {
     // RailLayout), if not centred on its own
     property var jumpSections: []
     property bool alphabetical: true
-    property bool descending: query ? query.sortDescending : false
+    // The rows' direction: the old one while the sort icon is held (see sortIconHeld)
+    readonly property bool descending: sortIconHeld ? heldDescending : query ? query.sortDescending : false
     property int minSections: 1
     property RailLayout railLayout: null
 
@@ -68,6 +69,30 @@ Rectangle {
         target: page.query
         function onApplied() { rows.positionViewAtBeginning() }
         function onLibraryChosen() { rows.positionViewAtBeginning() }
+    }
+
+    // After the sort icon is tapped, until the rows change: the icon keeps its pressed look
+    // and old direction, and the rail its old order, so they change in the same screen
+    // update as the rows. Otherwise they get an update of their own, which the rows' update
+    // then waits behind. Lists that change at once (downloaded books only) release it in
+    // the same frame.
+    property bool sortIconHeld: false
+    property bool heldDescending: false
+    Connections {
+        // A model object; a plain count of rows never changes
+        target: page.sortIconHeld && typeof page.model === "object" ? page.model : null
+        ignoreUnknownSignals: true
+        function onModelReset() { page.sortIconHeld = false }
+        function onRowsInserted() { page.sortIconHeld = false }
+        function onRowsRemoved() { page.sortIconHeld = false }
+        function onDataChanged() { page.sortIconHeld = false }
+    }
+    onErrorChanged: sortIconHeld = false
+    // For a list that comes back unchanged, or not at all
+    Timer {
+        running: page.sortIconHeld
+        interval: 3000
+        onTriggered: page.sortIconHeld = false
     }
 
     PageHeader {
@@ -128,7 +153,14 @@ Rectangle {
                     sortOpen: page.menus?.sortOpen ?? false
                     onFilterClicked: page.menus?.filterClicked()
                     onSortClicked: page.menus?.sortClicked()
-                    onSortIconClicked: page.query.reverseSort()
+                    holdSortIcon: page.sortIconHeld
+                    onSortIconClicked: {
+                        // Before reversing; tapped again while held, it keeps the rows' direction
+                        if (!page.sortIconHeld)
+                            page.heldDescending = page.descending
+                        page.sortIconHeld = true
+                        page.query.reverseSort()
+                    }
                 }
                 Text {
                     id: errorLine

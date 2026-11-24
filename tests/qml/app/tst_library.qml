@@ -32,6 +32,35 @@ AppTestCase {
         tryVerify(() => fakeServer.requests.some(byDate), 5000, "the library is asked for by date")
     }
 
+    // Reversing: the rail and the sort icon change with the rows, in one screen update,
+    // not as their own sections arrive first
+    function test_reversingChangesTheRailWithTheRows() {
+        openLibrary30()
+        const rail = find("libraryRail")
+        tryVerify(() => rail.visible, 5000, "the rail shows")
+        const labels = () => rail.sections.map(s => s.label + s.index).join(" ")
+        const reversed = ["T", "M", "F", "C", "B", "A"].map((label, i) => ({key: label.toLowerCase(), label: label, index: 5 * i}))
+        fakeServer.respondJson("POST", "/api/v1/libraries/1/books/jump-buckets", 200,
+                               {buckets: reversed, total: 30, kind: "letter"})
+        fakeServer.hold("POST", "/api/v1/libraries/1/books")
+        const sort = find("sortButton", find("bookList"))
+
+        tap("iconButton", sort)
+
+        const descending = r => r.path === "/api/v1/libraries/1/books" && r.body.sort && r.body.sort[0].dir === "desc"
+        tryVerify(() => fakeServer.requests.some(descending), 5000, "the reversed sections are in, the rows asked for")
+        compare(labels(), "A0 B5 C10 F15 M20 T25", "the rail waits for the rows")
+        verify(!rail.descending, "in its old order")
+        verify(sort.held, "so does the icon")
+
+        fakeServer.release("POST", "/api/v1/libraries/1/books")
+
+        tryCompare(rail, "sections", reversed.map(s => ({label: s.label, index: s.index})), 5000)
+        verify(rail.descending)
+        verify(!sort.held)
+        compare(sort.icon, "sorting_ascending")
+    }
+
     // The sections' labels and first rows, from the top to row last
     function sectionsTo(last) {
         const list = find("bookList")

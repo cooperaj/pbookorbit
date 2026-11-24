@@ -317,10 +317,14 @@ a scrollbar, jump rail, page buttons, spinner and empty state. A page opened ove
 views gives it a `title`, shown in a `PageHeader` with a back button. It asks for rows as
 they come into view with `rowsWanted(first, last)`, and takes its sort and filter labels,
 and the rail's direction, from its query, going back to the top whenever the query
-changes. A query's `sorts` are `{name, field, descending}`, and it gives the chosen
-`sortField` and content type `formats` for the request. The content type and Downloaded
-only are every query's `filter`: `bookOrbit.filter`, or search's own. Ebooks and
-Audiobooks are checkboxes, and the last one ticked can't be unticked. A query with
+changes. A new sort or filter keeps the old rows until the server's first page arrives,
+and what goes with them changes in the same frame, so the screen updates once: a book list
+holds its new rail sections until then (`PagedBookList::showJumpSections()`), and after a
+tap the sort icon keeps its pressed look and old direction, and the rail its old order
+(`sortIconHeld`). A query's `sorts` are `{name, field, descending}`, and it gives the
+chosen `sortField` and content type `formats` for the request. The content type and
+Downloaded only are every query's `filter`: `bookOrbit.filter`, or search's own. Ebooks
+and Audiobooks are checkboxes, and the last one ticked can't be unticked. A query with
 `hasLibraries` puts a Libraries section (radio buttons, plus All libraries with
 `allLibraries`) above them when the server has several and can be reached, and its filter
 button then names the library; it says `libraryChosen(id)` and leaves the view to act on

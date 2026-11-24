@@ -39,7 +39,7 @@ public:
     BookListModel *model() { return &m_model; }
     int total() const { return m_listGeneration == m_queryGeneration ? m_total : -1; }
     QString error() const { return m_error; }
-    QVariantList jumpSections() const { return m_jumpSections; }
+    QVariantList jumpSections() const { return m_shownJumpSections; }
 
     // Loads whichever pages cover rows first to last and aren't loaded yet. Called while
     // scrolling for the visible rows plus a screen either side.
@@ -152,6 +152,10 @@ private:
     // Loads series numbers for a list sorted by them, as its jumpSections, from page onwards
     void loadSeriesSections(int page = 0);
     void clearJumpSections();
+    // The query's sections are complete: shown with its first page, or now if that's in
+    void jumpSectionsLoaded();
+    // Puts sections on the rail, if they differ from those it shows
+    void showJumpSections(const QVariantList &sections);
     // Finds other records of the same books on a newly loaded page (e.g. a separate
     // audiobook with the same title and first author), merges their formats into the page's
     // rows and calls then with them. If the lookup fails, then gets the rows unmerged.
@@ -182,6 +186,10 @@ private:
     Sections m_sections = Sections::None;
     // For Starts, each section's first row and its label
     QHash<int, QString> m_sectionStarts;
+    // The query's sections as they load. The rail shows them with the rows they go with, so
+    // it doesn't change before the list does.
     QVariantList m_jumpSections;
+    bool m_jumpSectionsLoaded = false;
+    QVariantList m_shownJumpSections;
     QString m_error;
 };

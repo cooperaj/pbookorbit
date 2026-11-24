@@ -216,6 +216,56 @@ UiTestCase {
         compare(sortTaps.count, 0)
     }
 
+    ListModel { id: rowModel }
+    function fillRows(count) {
+        rowModel.clear()
+        for (let i = 0; i < count; i++)
+            rowModel.append({n: i})
+    }
+
+    // The icon changes with the rows, in one screen update, rather than in one of its own
+    // that the rows wait behind
+    function test_sortIconHeldUntilTheRowsChange() {
+        fillRows(3)
+        make(0, withQuery({model: rowModel}))
+        const sort = find("sortButton")
+
+        tap("iconButton", sort)
+
+        verify(root.query.sortReversed)
+        compare(sort.icon, "sorting_descending", "the direction before the tap")
+        verify(sort.held, "the pressed look")
+
+        fillRows(3)
+
+        compare(sort.icon, "sorting_ascending")
+        verify(!sort.held)
+    }
+
+    function test_sortIconReleasedOnError() {
+        fillRows(3)
+        make(0, withQuery({model: rowModel}))
+        const sort = find("sortButton")
+
+        tap("iconButton", sort)
+        root.error = "Internal server error (HTTP 500)"
+
+        compare(sort.icon, "sorting_ascending")
+        verify(!sort.held)
+    }
+
+    // A list that comes back unchanged, or not at all
+    function test_sortIconReleasedWithoutChange() {
+        make(3, withQuery())
+        const sort = find("sortButton")
+
+        tap("iconButton", sort)
+        verify(sort.held)
+
+        tryCompare(sort, "held", false, 5000)
+        compare(sort.icon, "sorting_ascending")
+    }
+
     // Rows already shown stay, with the error under the sub-toolbar
     function test_errorLineOverRows() {
         make(3, withQuery({error: "Internal server error (HTTP 500)"}))

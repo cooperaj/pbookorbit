@@ -58,9 +58,8 @@ void PagedBookList::clear()
     m_listGeneration = -1;
     m_total = 0;
     m_model.reset(0);
-    m_sectionStarts.clear();
-    m_jumpSections.clear();
-    emit jumpSectionsChanged();
+    clearJumpSections();
+    showJumpSections({});
     emit changed();
 }
 
@@ -125,6 +124,7 @@ void PagedBookList::refresh()
             // has jump buckets, and its title order can't be matched locally.
             m_sections = isDateSort(m_sortField) ? Sections::Days : Sections::None;
             clearJumpSections();
+            jumpSectionsLoaded();
             loadPage(0);
         }
     });
@@ -166,6 +166,7 @@ void PagedBookList::restartPages()
     m_loadingPages.clear();
     m_cached = false;
     m_wantedLast = -1;
+    m_jumpSectionsLoaded = false;
     setError(QString());
 }
 
@@ -178,6 +179,7 @@ void PagedBookList::clearRows()
     m_total = 0;
     m_model.reset(0);
     clearJumpSections();
+    showJumpSections({});
     emit changed();
 }
 
@@ -315,7 +317,7 @@ void PagedBookList::showListedBooks()
     m_model.reset(rows.size());
     m_model.setBooks(0, rows);
     updateSectionStarts(0, rows.size() - 1);
-    emit jumpSectionsChanged();
+    jumpSectionsLoaded();
     emit changed();
 }
 
@@ -362,7 +364,7 @@ void PagedBookList::loadJumpSections(std::function<void()> then)
                     m_sectionStarts.insert(index, dateBucketLabel(bucket.toObject(), granularity));
                 }
             }
-            emit jumpSectionsChanged();
+            jumpSectionsLoaded();
             then();
         },
         [this, generation](const QString &error) {
@@ -397,7 +399,7 @@ void PagedBookList::loadSeriesSections(int page)
             if (morePages(page, SERIES_NUMBERS_PAGE_SIZE, result))
                 loadSeriesSections(page + 1);
             else
-                emit jumpSectionsChanged();
+                jumpSectionsLoaded();
         },
         [this, generation](const QString &error) {
             if (generation == m_queryGeneration)
@@ -409,6 +411,20 @@ void PagedBookList::clearJumpSections()
 {
     m_sectionStarts.clear();
     m_jumpSections.clear();
+}
+
+void PagedBookList::jumpSectionsLoaded()
+{
+    m_jumpSectionsLoaded = true;
+    if (m_listGeneration == m_queryGeneration)
+        showJumpSections(m_jumpSections);
+}
+
+void PagedBookList::showJumpSections(const QVariantList &sections)
+{
+    if (sections == m_shownJumpSections)
+        return;
+    m_shownJumpSections = sections;
     emit jumpSectionsChanged();
 }
 
@@ -458,6 +474,10 @@ void PagedBookList::loadPage(int page)
                     }
                     const int first = page * PAGE_SIZE;
                     m_model.setBooks(first, rows);
+                    // Series numbers can still be loading; until then, no rail rather
+                    // than the old one
+                    if (firstPage)
+                        showJumpSections(m_jumpSectionsLoaded ? m_jumpSections : QVariantList());
                     if (!m_cacheName.isEmpty() && first < CACHED_ROWS) {
                         m_cacheDirty = true;
                         m_cacheTimer.start();
@@ -609,7 +629,7 @@ void PagedBookList::saveCache()
         m_database->saveListCache(m_cacheName, QVariantMap{
             {"query", m_query.toVariantMap()},
             {"total", m_total},
-            {"jumpSections", m_jumpSections},
+            {"jumpSections", m_shownJumpSections},
             {"rows", rows},
             {"savedAt", QDateTime::currentMSecsSinceEpoch()},
         });
@@ -633,7 +653,7 @@ void PagedBookList::restoreCache()
     m_cached = true;
     m_model.reset(m_total);
     m_model.setBooks(0, rows);
-    emit jumpSectionsChanged();
+    showJumpSections(m_jumpSections);
     emit changed();
 }
 

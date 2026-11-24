@@ -19,6 +19,11 @@ Item {
     property int tabOverhang: Units.dp(4) - 1
     // For a copy drawn over the faded page while a menu is open, showing just the open tab
     property bool onlyOpenTab: false
+    // While set, the sort icon keeps its pressed look and the direction it had when set, so
+    // it changes in the same screen update as the list it reversed
+    property bool holdSortIcon: false
+    property bool heldReversed: false
+    onHoldSortIconChanged: if (holdSortIcon) heldReversed = query ? query.sortReversed : false
     signal filterClicked()
     signal sortClicked()
     signal sortIconClicked()
@@ -39,9 +44,10 @@ Item {
         property bool open: false
         property int spacing: Units.dp(2)
         // Whether the icon is a separate button outside the tab. Its taps send iconClicked
-        // instead of clicked, and it shows pressedIcon while pressed.
+        // instead of clicked, and it shows pressedIcon while pressed or held.
         property bool iconIsButton: false
         property string pressedIcon
+        property bool held: false
         signal clicked()
         signal iconClicked()
 
@@ -65,7 +71,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 // Left out of the open-tab copy so the faded one beneath shows
                 opacity: button.iconIsButton && bar.onlyOpenTab ? 0 : 1
-                name: button.iconIsButton && iconMouse.pressed ? button.pressedIcon : button.icon
+                name: button.iconIsButton && (iconMouse.pressed || button.held) ? button.pressedIcon : button.icon
                 inverted: !button.iconIsButton && button.open
             }
             Text {
@@ -115,7 +121,9 @@ Item {
         id: sortButton
         objectName: "sortButton"
         x: bar.width - Units.dp(26) - width
-        icon: bar.query && bar.query.sortReversed ? "sorting_ascending" : "sorting_descending"
+        icon: (bar.holdSortIcon ? bar.heldReversed : bar.query && bar.query.sortReversed)
+              ? "sorting_ascending" : "sorting_descending"
+        held: bar.holdSortIcon
         text: bar.query ? "By " + bar.query.sortName : ""
         spacing: Units.dp(10)
         open: bar.sortOpen
